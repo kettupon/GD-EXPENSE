@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET AND DOM</title>
+    <title>Expense Note Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Disable all default browser behaviors for an App-like feel */
+        /* Base Settings */
         html, body { 
             font-family: 'Inter', sans-serif; 
             background-color: #F8F4FF; 
             overscroll-behavior: none; 
-            touch-action: manipulation; /* Disables double-tap zoom */
+            touch-action: manipulation; /* No Double Tap Zoom */
             height: 100%;
             overflow: hidden;
             -webkit-user-select: none;
@@ -24,7 +24,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* Button Press Effect */
         .btn-press { transition: transform 0.05s ease, background-color 0.1s; cursor: pointer; }
         .btn-press:active { transform: scale(0.96); filter: brightness(0.92); }
         
@@ -38,13 +37,13 @@
         .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
         .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
 
-        /* --- MOBILE LAYOUT LOGIC --- */
+        /* --- MOBILE SPECIFIC LAYOUT --- */
         @media (max-width: 768px) {
-            .mobile-h-dvh { height: 100dvh; } /* Dynamic viewport height */
+            .mobile-h-dvh { height: 100dvh; }
             .mobile-hidden { display: none !important; }
             .mobile-view { display: flex !important; }
             
-            /* Input View Layout */
+            /* Forces the input section to fill the screen */
             .input-view-container {
                 display: flex;
                 flex-direction: column;
@@ -52,24 +51,42 @@
             }
 
             .display-zone {
-                flex: 0 0 auto; /* Height determined by content */
+                flex: 0 0 auto;
                 min-height: 25%;
                 z-index: 10;
             }
 
+            /* Push keypad to bottom and fill space */
             .input-zone {
-                flex: 1; /* Takes all remaining space */
-                padding-bottom: env(safe-area-inset-bottom); /* iPhone Home Bar safe area */
+                flex: 1; 
+                padding-bottom: env(safe-area-inset-bottom);
                 border-radius: 2rem 2rem 0 0;
                 box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
                 z-index: 20;
+            }
+        }
+
+        /* --- DESKTOP RESTORATION --- */
+        @media (min-width: 769px) {
+            body { overflow: auto; } /* Allow scrolling if window is tiny on desktop */
+            .desktop-card {
+                height: 90vh;
+                max-height: 900px;
+                border-radius: 1.5rem;
+            }
+            .input-zone {
+                flex: 1;
+                border-radius: 2.5rem 0 0 0; /* Original rounded corner design */
+            }
+            .display-zone {
+                flex: 0 0 35%; /* Fixed ratio for desktop */
             }
         }
     </style>
 </head>
 <body class="bg-indigo-50 md:h-screen w-full flex items-center justify-center md:p-4 text-gray-800">
 
-    <div class="bg-white w-full max-w-6xl h-full mobile-h-dvh md:h-[90vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
+    <div class="bg-white w-full max-w-6xl h-full mobile-h-dvh desktop-card shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
         
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50">
             <button onclick="switchView('input')" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation">Input</button>
@@ -89,7 +106,10 @@
             <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm">
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
-                    <button onclick="fetchEntries()" class="text-purple-600 text-[10px] font-bold uppercase tracking-widest">Refresh</button>
+                    <div class="flex items-center gap-2">
+                         <div id="live-indicator" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        <button onclick="fetchEntries(true)" class="text-purple-600 text-[10px] font-bold uppercase tracking-widest hover:text-purple-800">Refresh</button>
+                    </div>
                 </div>
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
                     </div>
@@ -128,7 +148,7 @@
             </div>
         </div>
 
-        <div id="input-section" class="w-full md:w-2/3 input-view-container bg-white relative overflow-hidden">
+        <div id="input-section" class="w-full md:w-2/3 input-view-container bg-white relative overflow-hidden flex flex-col h-full">
             
             <div class="display-zone flex flex-col bg-gray-50/80 border-b border-gray-200">
                 
@@ -143,11 +163,14 @@
                             <span class="text-xs font-bold text-gray-600">DOM: ฿<span id="m-dom-sum">0</span></span>
                         </div>
                     </div>
-                    <button onclick="fetchEntries()" class="p-1.5 active:rotate-180 transition-transform duration-500 touch-manipulation">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[8px] text-gray-400 font-bold uppercase tracking-widest hidden md:inline-block">Auto-Sync On</span>
+                        <button onclick="fetchEntries(true)" class="p-1.5 active:rotate-180 transition-transform duration-500 touch-manipulation">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="px-4 py-1 flex justify-end">
@@ -167,22 +190,22 @@
                 </div>
             </div>
 
-            <div class="input-zone flex flex-col p-4 bg-white">
+            <div class="input-zone flex flex-col p-4 bg-white md:shadow-[0_-10px_25px_-15px_rgba(0,0,0,0.05)]">
                 
-                <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%]">
-                    <button onclick="selectCategory('Food')" id="btn-Food" class="cat-btn btn-press flex flex-col justify-center items-center rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent touch-manipulation">
+                <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%] md:h-auto md:mb-6">
+                    <button onclick="selectCategory('Food')" id="btn-Food" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent touch-manipulation">
                         <span class="text-xl">🍱</span>
                         <span class="font-bold text-[9px] uppercase mt-1">Food</span>
                     </button>
-                    <button onclick="selectCategory('Grocery')" id="btn-Grocery" class="cat-btn btn-press flex flex-col justify-center items-center rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent touch-manipulation">
+                    <button onclick="selectCategory('Grocery')" id="btn-Grocery" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent touch-manipulation">
                         <span class="text-xl">🛒</span>
                         <span class="font-bold text-[9px] uppercase mt-1">Shop</span>
                     </button>
-                    <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press flex flex-col justify-center items-center rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent touch-manipulation">
+                    <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent touch-manipulation">
                         <span class="text-xl">✈️</span>
                         <span class="font-bold text-[9px] uppercase mt-1">Trip</span>
                     </button>
-                    <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press flex flex-col justify-center items-center rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent touch-manipulation">
+                    <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent touch-manipulation">
                         <span class="text-xl">✨</span>
                         <span class="font-bold text-[9px] uppercase mt-1">Etc.</span>
                     </button>
@@ -204,7 +227,7 @@
                         <button onclick="pressNum('.')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full touch-manipulation">.</button>
                     </div>
 
-                    <div class="flex flex-col gap-2 w-24 h-full">
+                    <div class="flex flex-col gap-2 w-24 md:w-32 h-full">
                         <button onclick="selectPerson('GET')" id="btn-GET" class="person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent touch-manipulation text-xl">GET</button>
                         <button onclick="selectPerson('DOM')" id="btn-DOM" class="person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent touch-manipulation text-xl">DOM</button>
                         <button onclick="submitEntry()" id="ok-btn" class="btn-press flex-1 rounded-2xl bg-gray-900 text-white font-bold text-2xl shadow-lg flex items-center justify-center touch-manipulation">OK</button>
@@ -306,15 +329,25 @@
         }
 
         // Logic
-        async function fetchEntries() {
+        // Modified to accept a flag to suppress Toast for auto-refreshes
+        async function fetchEntries(showNotification = false) {
             if (!SCRIPT_URL) return;
             try {
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
+                
+                // Compare to see if update needed (simple check) to prevent jitter?
+                // For now, we just update.
                 entries = data.sort((a,b) => new Date(b.datetime || b.dateTime) - new Date(a.datetime || a.dateTime));
+                
                 renderHistory();
                 renderDashboard();
-            } catch (e) { showToast("Sync Error", "red"); }
+                
+                if(showNotification) showToast("Synced", "green");
+            } catch (e) { 
+                if(showNotification) showToast("Sync Error", "red"); 
+                // We stay silent on auto-refresh errors to avoid spamming the user
+            }
         }
 
         async function submitEntry() {
@@ -348,7 +381,8 @@
             try {
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'create', data: newEntry }) });
                 showToast("Stored Successfully", "green");
-                setTimeout(fetchEntries, 2000); // Sync later
+                // We rely on the auto-refresh to sync properly later, or trigger one now
+                setTimeout(() => fetchEntries(false), 2000); 
             } catch (e) { showToast("Save Error", "red"); }
             okBtn.innerText = originalText;
         }
@@ -356,6 +390,9 @@
         function renderHistory() {
             const list = document.getElementById('history-list');
             const mini = document.getElementById('mini-history');
+            
+            // Small optimization: if user is editing, maybe don't re-render history?
+            // For now, we rebuild. 
             list.innerHTML = ''; mini.innerHTML = '';
             
             entries.forEach((entry, idx) => {
@@ -486,23 +523,39 @@
         async function saveEdit() {
             const data = { id: editingEntryId, name: document.getElementById('edit-name').value, amount: document.getElementById('edit-amount').value, category: document.getElementById('edit-category').value };
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', data }) });
-            closeEditModal(); showToast("Record Updated", "green"); setTimeout(fetchEntries, 1500);
+            closeEditModal(); showToast("Record Updated", "green"); setTimeout(() => fetchEntries(false), 1500);
         }
         async function deleteEntry() {
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', data: {id: editingEntryId} }) });
-            closeEditModal(); showToast("Record Deleted", "red"); setTimeout(fetchEntries, 1500);
+            closeEditModal(); showToast("Record Deleted", "red"); setTimeout(() => fetchEntries(false), 1500);
         }
 
         // Init
-        window.addEventListener('resize', () => switchView('input'));
-        // Initial view setup
+        window.addEventListener('resize', () => {
+             // Basic view reset on resize to prevent broken layouts
+             if(window.innerWidth < 768) switchView('input');
+             else switchView('dashboard');
+        });
+        
+        // Initial load
         if(window.innerWidth < 768) {
             switchView('input');
         } else {
-            fetchEntries();
+            // Desktop Default
+            document.getElementById('side-section').classList.remove('mobile-hidden');
+            document.getElementById('input-section').classList.remove('mobile-hidden');
+            document.getElementById('tab-history').classList.add('tab-active');
+            document.getElementById('history-container').classList.remove('hidden');
         }
-        // Fetch data on load
-        fetchEntries();
+        
+        fetchEntries(false);
+
+        // --- REAL TIME AUTO DISPLAY (5 Seconds) ---
+        // Runs silently (no toast) to update data
+        setInterval(() => {
+            fetchEntries(false);
+        }, 5000);
+
     </script>
 </body>
 </html>
