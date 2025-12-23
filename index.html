@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Expense Note Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F8F4FF; overscroll-behavior: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .btn-press:active { transform: scale(0.95); }
+        
+        /* Tab Transitions */
+        .tab-active {
+            border-bottom: 3px solid #6D28D9;
+            color: #1F2937 !important;
+            font-weight: 700;
+        }
+
+        /* Mobile specific heights */
+        .mobile-h { height: 100dvh; }
+        
+        /* Chart Styles */
+        .chart-bar-bg { background-color: #E5E7EB; height: 1.5rem; border-radius: 0.5rem; overflow: hidden; }
+        .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
+        .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
+
+        @media (max-width: 768px) {
+            .mobile-hidden { display: none !important; }
+            .mobile-view { display: flex !important; }
+            /* Force the input area to be more dominant */
+            .input-grid-container { height: 60vh; }
+        }
+    </style>
+</head>
+<body class="bg-indigo-50 md:h-screen w-full flex items-center justify-center md:p-4">
+
+    <!-- Main Container -->
+    <div class="bg-white w-full max-w-6xl h-full md:h-[90vh] md:rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200">
+        
+        <!-- MOBILE TOP TABS -->
+        <div class="md:hidden flex bg-white border-b border-gray-100 sticky top-0 z-20">
+            <button onclick="switchView('input')" id="tab-m-input" class="flex-1 py-4 text-sm font-semibold text-gray-400 tab-active">Input</button>
+            <button onclick="switchView('history')" id="tab-m-history" class="flex-1 py-4 text-sm font-semibold text-gray-400">History</button>
+            <button onclick="switchView('dashboard')" id="tab-m-dashboard" class="flex-1 py-4 text-sm font-semibold text-gray-400">Stats</button>
+        </div>
+
+        <!-- LEFT SECTION: Desktop Sidebar / Mobile History & Stats -->
+        <div id="side-section" class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col mobile-hidden md:flex">
+            
+            <!-- Desktop Only Tabs -->
+            <div class="bg-white border-b border-gray-200 hidden md:block">
+                <div class="flex">
+                    <button id="tab-history" onclick="switchView('history')" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors tab-active">
+                        Activity
+                    </button>
+                    <button id="tab-dashboard" onclick="switchView('dashboard')" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors">
+                        Dashboard
+                    </button>
+                </div>
+            </div>
+            
+            <!-- HISTORY VIEW -->
+            <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/50">
+                    <span class="text-xs font-bold text-gray-400 uppercase">Recent Transactions</span>
+                    <button onclick="fetchEntries()" class="text-purple-600 text-xs font-bold">Refresh</button>
+                </div>
+                <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar">
+                    <!-- Items injected here -->
+                </div>
+            </div>
+
+            <!-- DASHBOARD VIEW -->
+            <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden">
+                <h3 class="text-xl font-bold text-gray-800">Spending Overview</h3>
+                
+                <!-- Simple Filters -->
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2">Date Range</label>
+                        <div class="flex gap-2">
+                            <input type="date" id="start-date" onchange="renderDashboard()" class="w-1/2 text-xs border-none bg-gray-50 p-2 rounded-lg">
+                            <input type="date" id="end-date" onchange="renderDashboard()" class="w-1/2 text-xs border-none bg-gray-50 p-2 rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Bar -->
+                <div class="space-y-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <h4 class="font-bold text-gray-700">GET vs DOM</h4>
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-green-500">GET: ฿<span id="chart-get-total">0</span></span>
+                        <span class="text-blue-500">DOM: ฿<span id="chart-dom-total">0</span></span>
+                    </div>
+                    <div class="chart-bar-bg relative">
+                        <div id="chart-bar-get" class="chart-bar-get absolute top-0 left-0 h-full" style="width: 0%;"></div>
+                        <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full" style="width: 0%;"></div>
+                    </div>
+                </div>
+
+                <!-- Category Breakdown -->
+                <div id="category-breakdown" class="space-y-3 p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    <!-- Breakdown injected here -->
+                </div>
+            </div>
+            
+            <!-- Summary Footer (Desktop) -->
+            <div class="p-4 border-t border-gray-200 bg-white hidden md:block">
+                <div class="flex justify-between items-center text-xs font-bold text-gray-400">
+                    <span>TOTAL ENTRIES:</span>
+                    <span id="total-count" class="text-gray-800">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT SECTION: Main Input Interface -->
+        <div id="input-section" class="w-full md:w-2/3 flex flex-col h-full bg-white relative">
+            
+            <!-- MOBILE BALANCE HEADER -->
+            <div class="md:hidden flex items-center justify-between px-6 py-3 bg-gray-50/50 border-b border-gray-100">
+                <div class="flex gap-4">
+                    <div class="flex flex-col">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase">GET Total</span>
+                        <span class="text-sm font-black text-green-600">฿<span id="m-get-sum">0</span></span>
+                    </div>
+                    <div class="flex flex-col border-l border-gray-200 pl-4">
+                        <span class="text-[9px] font-bold text-gray-400 uppercase">DOM Total</span>
+                        <span class="text-sm font-black text-blue-600">฿<span id="m-dom-sum">0</span></span>
+                    </div>
+                </div>
+                <button onclick="fetchEntries()" class="p-2 bg-white rounded-full shadow-sm border border-gray-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- MOBILE RECENT PREVIEW -->
+            <div class="md:hidden px-4 pt-3 overflow-x-auto no-scrollbar flex gap-2 pb-2 border-b border-gray-50">
+                <div id="mini-history" class="flex gap-2">
+                    <!-- Mini bubbles injected here -->
+                </div>
+            </div>
+
+            <!-- Output Display -->
+            <div class="flex-none h-32 md:h-48 flex flex-col justify-end items-end p-6 md:p-8 bg-white border-b border-gray-50">
+                <div class="flex items-center gap-2 mb-1">
+                    <span id="display-person" class="hidden px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white transition-all"></span>
+                    <span id="display-category" class="text-xs font-bold text-gray-300 uppercase tracking-widest">Select Category</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-sm font-bold text-gray-200">฿</span>
+                    <div class="text-5xl md:text-8xl font-bold text-gray-900 tracking-tighter leading-none" id="display-amount">0</div>
+                </div>
+            </div>
+
+            <!-- Interaction Area (Numpad Dominant) -->
+            <div class="flex-1 flex flex-col p-4 md:p-8 gap-4 overflow-hidden">
+                
+                <!-- Categories -->
+                <div class="grid grid-cols-4 gap-2 h-16 md:h-28">
+                    <button onclick="selectCategory('Food')" id="btn-Food" class="cat-btn btn-press group flex flex-col items-center justify-center rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent">
+                        <span class="text-lg md:text-xl">🍱</span>
+                        <span class="font-bold text-[9px] md:text-[10px] mt-0.5">Food</span>
+                    </button>
+                    <button onclick="selectCategory('Grocery')" id="btn-Grocery" class="cat-btn btn-press group flex flex-col items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent">
+                        <span class="text-lg md:text-xl">🛒</span>
+                        <span class="font-bold text-[9px] md:text-[10px] mt-0.5">Grocery</span>
+                    </button>
+                    <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press group flex flex-col items-center justify-center rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent">
+                        <span class="text-lg md:text-xl">✈️</span>
+                        <span class="font-bold text-[9px] md:text-[10px] mt-0.5">Trip</span>
+                    </button>
+                    <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press group flex flex-col items-center justify-center rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent">
+                        <span class="text-lg md:text-xl">✨</span>
+                        <span class="font-bold text-[9px] md:text-[10px] mt-0.5">Etc.</span>
+                    </button>
+                </div>
+
+                <!-- Input Pad Area (2:3 Ratio Dominance) -->
+                <div class="flex-1 flex gap-3 min-h-0">
+                    <!-- Numpad -->
+                    <div class="grid grid-cols-3 gap-2 flex-grow">
+                        <button onclick="pressNum('1')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">1</button>
+                        <button onclick="pressNum('2')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">2</button>
+                        <button onclick="pressNum('3')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">3</button>
+                        <button onclick="pressNum('4')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">4</button>
+                        <button onclick="pressNum('5')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">5</button>
+                        <button onclick="pressNum('6')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">6</button>
+                        <button onclick="pressNum('7')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">7</button>
+                        <button onclick="pressNum('8')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">8</button>
+                        <button onclick="pressNum('9')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">9</button>
+                        <button onclick="clearEntry()" class="btn-press bg-red-50 rounded-2xl text-xl font-bold text-red-500">C</button>
+                        <button onclick="pressNum('0')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">0</button>
+                        <button onclick="pressNum('.')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700">.</button>
+                    </div>
+
+                    <!-- Right Column Actions -->
+                    <div class="flex flex-col gap-2 w-24 md:w-32">
+                        <button onclick="selectPerson('GET')" id="btn-GET" class="person-btn btn-press flex-1 rounded-2xl bg-green-50 text-green-700 font-black border-2 border-transparent">GET</button>
+                        <button onclick="selectPerson('DOM')" id="btn-DOM" class="person-btn btn-press flex-1 rounded-2xl bg-blue-50 text-blue-700 font-black border-2 border-transparent">DOM</button>
+                        <button onclick="submitEntry()" id="ok-btn" class="btn-press h-24 md:h-40 rounded-2xl bg-gray-900 text-white font-black text-2xl shadow-xl">OK</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit/Delete Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-50 hidden p-4 backdrop-blur-sm">
+        <div class="bg-white p-6 md:p-8 rounded-[2rem] shadow-2xl w-full max-w-md transform scale-95 transition-all">
+            <h3 class="text-xl font-black mb-4 text-gray-800">Edit Entry</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold text-gray-400 uppercase">Item Description</label>
+                    <input type="text" id="edit-name" class="w-full mt-1 p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-purple-500 font-semibold" placeholder="e.g. Starbucks">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Amount (฿)</label>
+                        <input type="number" id="edit-amount" class="w-full mt-1 p-3 bg-gray-50 rounded-xl border-none font-bold">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase">Category</label>
+                        <select id="edit-category" class="w-full mt-1 p-3 bg-gray-50 rounded-xl border-none font-semibold">
+                            <option value="Food">Food</option>
+                            <option value="Grocery">Grocery</option>
+                            <option value="Trip">Trip</option>
+                            <option value="Etc.">Etc.</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between gap-3 mt-8">
+                <button onclick="deleteEntry()" class="w-1/3 py-3 bg-red-50 text-red-500 rounded-xl font-bold btn-press">Delete</button>
+                <button onclick="closeEditModal()" class="w-1/3 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold btn-press">Cancel</button>
+                <button onclick="saveEdit()" class="w-1/3 py-3 bg-purple-600 text-white rounded-xl font-bold shadow-lg btn-press">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-xs font-black shadow-2xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[100]"></div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const SCRIPT_URL = ""; 
+
+        // State
+        let entries = [];
+        let currentAmount = '0';
+        let currentCategory = null;
+        let currentPerson = null;
+        let editingEntryId = null;
+
+        // --- View Logic ---
+        function switchView(view) {
+            const historyContainer = document.getElementById('history-container');
+            const dashboardContainer = document.getElementById('dashboard-container');
+            const sideSection = document.getElementById('side-section');
+            const inputSection = document.getElementById('input-section');
+
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
+
+            if (window.innerWidth < 768) {
+                if (view === 'input') {
+                    sideSection.classList.add('mobile-hidden');
+                    inputSection.classList.remove('mobile-hidden');
+                    document.getElementById('tab-m-input').classList.add('tab-active');
+                    renderDashboard(); // Update home balances
+                } else {
+                    inputSection.classList.add('mobile-hidden');
+                    sideSection.classList.remove('mobile-hidden');
+                    sideSection.classList.add('mobile-view');
+                    
+                    if (view === 'history') {
+                        historyContainer.classList.remove('hidden');
+                        dashboardContainer.classList.add('hidden');
+                        document.getElementById('tab-m-history').classList.add('tab-active');
+                    } else {
+                        dashboardContainer.classList.remove('hidden');
+                        historyContainer.classList.add('hidden');
+                        document.getElementById('tab-m-dashboard').classList.add('tab-active');
+                        renderDashboard();
+                    }
+                }
+            } else {
+                inputSection.classList.remove('mobile-hidden');
+                sideSection.classList.remove('mobile-hidden');
+                if (view === 'history') {
+                    historyContainer.classList.remove('hidden');
+                    dashboardContainer.classList.add('hidden');
+                    document.getElementById('tab-history').classList.add('tab-active');
+                } else if (view === 'dashboard') {
+                    dashboardContainer.classList.remove('hidden');
+                    historyContainer.classList.add('hidden');
+                    document.getElementById('tab-dashboard').classList.add('tab-active');
+                    renderDashboard();
+                }
+            }
+        }
+
+        // --- Core Functions ---
+        async function fetchEntries() {
+            if (!SCRIPT_URL) return;
+            try {
+                const res = await fetch(SCRIPT_URL);
+                const data = await res.json();
+                entries = data.sort((a,b) => new Date(b.datetime || b.dateTime) - new Date(a.datetime || a.dateTime));
+                renderHistory();
+                renderDashboard();
+            } catch (e) { showToast("Sync Error", "red"); }
+        }
+
+        async function submitEntry() {
+            if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) {
+                showToast("Select All Fields", "red"); return;
+            }
+
+            const okBtn = document.getElementById('ok-btn');
+            const originalText = okBtn.innerText;
+            okBtn.innerText = "...";
+
+            const newEntry = {
+                id: Date.now(),
+                dateTime: new Date().toISOString(),
+                category: currentCategory,
+                amount: parseFloat(currentAmount).toFixed(2),
+                person: currentPerson,
+                name: currentCategory
+            };
+
+            entries.unshift(newEntry);
+            renderHistory();
+            renderDashboard();
+            
+            try {
+                await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: JSON.stringify({ action: 'create', data: newEntry })
+                });
+                showToast("Entry Saved", "green");
+                currentAmount = '0';
+                currentPerson = null;
+                updateDisplay();
+                resetPersonUI();
+                setTimeout(fetchEntries, 2000);
+            } catch (e) { showToast("Save Error", "red"); }
+            okBtn.innerText = originalText;
+        }
+
+        // --- UI Rendering ---
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const mini = document.getElementById('mini-history');
+            const count = document.getElementById('total-count');
+            
+            list.innerHTML = '';
+            mini.innerHTML = '';
+            if (count) count.innerText = entries.length;
+
+            entries.forEach((entry, idx) => {
+                const card = document.createElement('div');
+                card.className = "p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press cursor-pointer";
+                card.onclick = () => openEditModal(entry.id);
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center ${getCatStyle(entry.category)}">
+                            ${getCatEmoji(entry.category)}
+                        </div>
+                        <div>
+                            <div class="font-bold text-gray-800 text-sm">${entry.name}</div>
+                            <div class="text-[10px] text-gray-300 font-bold">${new Date(entry.datetime || entry.dateTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-black text-gray-900">฿${entry.amount}</div>
+                        <div class="text-[8px] font-black uppercase px-2 py-0.5 rounded ${entry.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${entry.person}</div>
+                    </div>
+                `;
+                list.appendChild(card);
+
+                if (idx < 8) {
+                    const bubble = document.createElement('div');
+                    bubble.className = `flex-shrink-0 px-3 py-1.5 rounded-full border border-gray-100 flex items-center gap-1.5 bg-white shadow-sm`;
+                    bubble.innerHTML = `<span class="text-xs">${getCatEmoji(entry.category)}</span> <span class="text-[10px] font-black">฿${entry.amount}</span>`;
+                    mini.appendChild(bubble);
+                }
+            });
+        }
+
+        function renderDashboard() {
+            let filtered = entries;
+            const start = document.getElementById('start-date').value;
+            const end = document.getElementById('end-date').value;
+
+            if (start) filtered = filtered.filter(e => new Date(e.datetime || e.dateTime) >= new Date(start));
+            if (end) filtered = filtered.filter(e => new Date(e.datetime || e.dateTime) <= new Date(end));
+
+            let getSum = 0, domSum = 0, total = 0;
+            const cats = {};
+
+            filtered.forEach(e => {
+                const amt = parseFloat(e.amount);
+                total += amt;
+                if (e.person === 'GET') getSum += amt; else domSum += amt;
+                cats[e.category] = (cats[e.category] || 0) + amt;
+            });
+
+            // Update Stats Tab
+            document.getElementById('chart-get-total').innerText = getSum.toLocaleString();
+            document.getElementById('chart-dom-total').innerText = domSum.toLocaleString();
+            
+            // Update Home Screen Balances (Mobile)
+            document.getElementById('m-get-sum').innerText = getSum.toLocaleString();
+            document.getElementById('m-dom-sum').innerText = domSum.toLocaleString();
+            
+            const getW = total > 0 ? (getSum / total) * 100 : 0;
+            const domW = total > 0 ? (domSum / total) * 100 : 0;
+            document.getElementById('chart-bar-get').style.width = getW + '%';
+            document.getElementById('chart-bar-dom').style.width = domW + '%';
+
+            const breakdown = document.getElementById('category-breakdown');
+            breakdown.innerHTML = '<h4 class="font-bold text-gray-700 mb-2 text-sm uppercase tracking-widest">Categories</h4>';
+            Object.keys(cats).forEach(cat => {
+                const percent = (cats[cat] / total) * 100;
+                const row = document.createElement('div');
+                row.innerHTML = `
+                    <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                        <span>${cat}</span> <span>฿${cats[cat].toLocaleString()} (${percent.toFixed(0)}%)</span>
+                    </div>
+                    <div class="w-full bg-gray-50 h-1.5 rounded-full">
+                        <div class="bg-purple-600 h-full rounded-full" style="width: ${percent}%"></div>
+                    </div>
+                `;
+                breakdown.appendChild(row);
+            });
+        }
+
+        // --- Helper Utilities ---
+        function pressNum(n) {
+            if (currentAmount === '0' && n !== '.') currentAmount = n;
+            else if (n === '.' && currentAmount.includes('.')) return;
+            else currentAmount += n;
+            updateDisplay();
+        }
+
+        function clearEntry() { currentAmount = '0'; updateDisplay(); }
+
+        function selectCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-4', 'ring-gray-100'));
+            document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-4', 'ring-gray-100');
+            updateDisplay();
+        }
+
+        function selectPerson(p) {
+            currentPerson = p;
+            resetPersonUI();
+            const btn = document.getElementById(`btn-${p}`);
+            btn.classList.add(p === 'GET' ? 'bg-green-500' : 'bg-blue-500', 'text-white', 'shadow-lg');
+            updateDisplay();
+        }
+
+        function resetPersonUI() {
+            document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('bg-green-500', 'bg-blue-500', 'text-white', 'shadow-lg'));
+        }
+
+        function updateDisplay() {
+            document.getElementById('display-amount').innerText = currentAmount;
+            document.getElementById('display-category').innerText = currentCategory || "Select Category";
+            const dp = document.getElementById('display-person');
+            if (currentPerson) {
+                dp.innerText = currentPerson;
+                dp.className = `px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-white transition-all ${currentPerson === 'GET' ? 'bg-green-500' : 'bg-blue-500'}`;
+                dp.classList.remove('hidden');
+            } else dp.classList.add('hidden');
+        }
+
+        function getCatEmoji(c) { return {'Food':'🍱', 'Grocery':'🛒', 'Trip':'✈️', 'Etc.':'✨'}[c] || '💰'; }
+        function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
+
+        function showToast(m, c) {
+            const t = document.getElementById('toast');
+            t.innerText = m;
+            t.style.backgroundColor = c === 'green' ? '#10B981' : '#EF4444';
+            t.classList.remove('translate-y-[-100px]', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2000);
+        }
+
+        // --- Modal ---
+        function openEditModal(id) {
+            const e = entries.find(x => x.id == id);
+            if (!e) return;
+            editingEntryId = id;
+            document.getElementById('edit-name').value = e.name;
+            document.getElementById('edit-amount').value = e.amount;
+            document.getElementById('edit-category').value = e.category;
+            document.getElementById('edit-modal').classList.remove('hidden');
+        }
+        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+
+        async function saveEdit() {
+            const data = {
+                id: editingEntryId,
+                name: document.getElementById('edit-name').value,
+                amount: document.getElementById('edit-amount').value,
+                category: document.getElementById('edit-category').value
+            };
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', data }) });
+            closeEditModal();
+            showToast("Updating...", "green");
+            setTimeout(fetchEntries, 1500);
+        }
+
+        async function deleteEntry() {
+            await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', data: {id: editingEntryId} }) });
+            closeEditModal();
+            showToast("Deleting...", "red");
+            setTimeout(fetchEntries, 1500);
+        }
+
+        // Init
+        window.addEventListener('resize', () => switchView('input'));
+        fetchEntries();
+    </script>
+</body>
+</html>
