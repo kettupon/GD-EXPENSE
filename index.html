@@ -260,7 +260,7 @@
     <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
-            <div class="space-y-3">
+            <div class="space-y-4">
                 <div>
                     <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Description</label>
                     <input type="text" id="edit-name" class="w-full mt-1 p-3 bg-gray-50 rounded-xl border-none font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-purple-500">
@@ -278,6 +278,14 @@
                             <option value="Trip">Trip</option>
                             <option value="Etc.">Etc.</option>
                         </select>
+                    </div>
+                </div>
+                <!-- New Person Buttons in Edit Modal -->
+                <div>
+                    <label class="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Person</label>
+                    <div class="grid grid-cols-2 gap-3 mt-1">
+                        <button id="edit-btn-GET" onclick="selectEditPerson('GET')" class="py-2.5 rounded-xl font-bold text-xs border-2 transition-all btn-press">GET</button>
+                        <button id="edit-btn-DOM" onclick="selectEditPerson('DOM')" class="py-2.5 rounded-xl font-bold text-xs border-2 transition-all btn-press">DOM</button>
                     </div>
                 </div>
             </div>
@@ -318,6 +326,7 @@
         let currentCategory = null;
         let currentPerson = null;
         let editingEntryId = null;
+        let editingPerson = null; // Selection in the edit modal
         let isSyncing = false;
 
         // Double Tap Detection State
@@ -335,7 +344,7 @@
             if (window.innerWidth < 768) {
                 if (view === 'input') {
                     sideSection.classList.add('mobile-hidden');
-                    sideSection.classList.remove('mobile-view'); // Fix layout overlap
+                    sideSection.classList.remove('mobile-view'); 
                     inputSection.classList.remove('mobile-hidden');
                     document.getElementById('tab-m-input').classList.add('tab-active');
                     renderDashboard(); 
@@ -377,11 +386,9 @@
             const delta = now - lastExpenseClick;
             
             if (delta < 300 && delta > 0) {
-                // Double Tap Action: Reset Page
                 resetExpensePage();
                 showToast("View Refreshed", "green");
             } else {
-                // Single Tap
                 switchView('input');
             }
             lastExpenseClick = now;
@@ -501,10 +508,9 @@
                 `;
                 list.appendChild(card);
 
-                // Show exactly 2 recent activity items as requested
                 if (idx < 2) {
                     const b = document.createElement('div');
-                    b.className = "flex-shrink-0 px-2.5 py-1 rounded-lg border border-gray-100 flex items-center gap-1.5 bg-white shadow-sm opacity-90 animate-fade-in";
+                    b.className = "flex-shrink-0 px-2.5 py-1 rounded-lg border border-gray-100 flex items-center gap-1.5 bg-white shadow-sm opacity-90 animate-fade-in cursor-pointer";
                     b.innerHTML = `
                         <span class="text-[10px]">${getCatEmoji(entry.category)}</span> 
                         <span class="text-[9px] font-bold text-gray-800">฿${entry.amount}</span>
@@ -581,6 +587,22 @@
         function resetPersonUI() {
             document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('bg-green-500', 'bg-blue-500', 'text-white', 'shadow-md'));
         }
+        
+        // Modal Person Selection Logic
+        function selectEditPerson(p) {
+            editingPerson = p;
+            const getBtn = document.getElementById('edit-btn-GET');
+            const domBtn = document.getElementById('edit-btn-DOM');
+            
+            getBtn.className = p === 'GET' 
+                ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white border-green-500 shadow-sm btn-press"
+                : "py-2.5 rounded-xl font-bold text-xs border-2 bg-gray-50 text-gray-400 border-transparent btn-press";
+                
+            domBtn.className = p === 'DOM'
+                ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white border-blue-500 shadow-sm btn-press"
+                : "py-2.5 rounded-xl font-bold text-xs border-2 bg-gray-50 text-gray-400 border-transparent btn-press";
+        }
+
         function updateDisplay() {
             document.getElementById('display-amount').innerText = currentAmount;
             document.getElementById('display-category').innerText = currentCategory || "Select Category";
@@ -607,6 +629,7 @@
             document.getElementById('edit-name').value = e.name;
             document.getElementById('edit-amount').value = e.amount;
             document.getElementById('edit-category').value = e.category;
+            selectEditPerson(e.person); // Set current person in modal
             document.getElementById('edit-modal').classList.remove('hidden');
         }
         function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
@@ -619,6 +642,7 @@
                 name: document.getElementById('edit-name').value, 
                 amount: document.getElementById('edit-amount').value, 
                 category: document.getElementById('edit-category').value,
+                person: editingPerson, // Use selected person from modal
                 dateTime: originalEntry ? (originalEntry.datetime || originalEntry.dateTime) : new Date().toISOString()
             };
             
