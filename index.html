@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense Note Pro</title>
+    <title>Expense GET n DOM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -213,20 +213,20 @@
                 
                 <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%] md:h-auto md:mb-6">
                     <button onclick="selectCategory('Food')" id="btn-Food" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent touch-manipulation">
-                        <span class="text-xl">🍱</span>
-                        <span class="font-bold text-[9px] uppercase mt-1">Food</span>
+                        <div class="category-icon-wrapper mb-1"></div>
+                        <span class="font-bold text-[9px] uppercase">Food</span>
                     </button>
                     <button onclick="selectCategory('Grocery')" id="btn-Grocery" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent touch-manipulation">
-                        <span class="text-xl">🛒</span>
-                        <span class="font-bold text-[9px] uppercase mt-1">Shop</span>
+                        <div class="category-icon-wrapper mb-1"></div>
+                        <span class="font-bold text-[9px] uppercase">Shop</span>
                     </button>
                     <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent touch-manipulation">
-                        <span class="text-xl">✈️</span>
-                        <span class="font-bold text-[9px] uppercase mt-1">Trip</span>
+                        <div class="category-icon-wrapper mb-1"></div>
+                        <span class="font-bold text-[9px] uppercase">Trip</span>
                     </button>
                     <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent touch-manipulation">
-                        <span class="text-xl">✨</span>
-                        <span class="font-bold text-[9px] uppercase mt-1">Etc.</span>
+                        <div class="category-icon-wrapper mb-1"></div>
+                        <span class="font-bold text-[9px] uppercase">Etc.</span>
                     </button>
                 </div>
 
@@ -331,6 +331,19 @@
 
         // Double Tap Detection State
         let lastExpenseClick = 0;
+
+        // Category Icons Mapping (Lucide-style SVGs)
+        const CATEGORY_ICONS = {
+            'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-utensils"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
+            'Grocery': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-bag"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
+            'Trip': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plane"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>`,
+            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path><path d="M5 3v4"></path><path d="M19 17v4"></path><path d="M3 5h4"></path><path d="M17 19h4"></path></svg>`
+        };
+
+        function getCatIcon(category, size = "w-5 h-5") {
+            const rawIcon = CATEGORY_ICONS[category] || `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>`;
+            return rawIcon.replace('width="24" height="24"', `class="${size}"`);
+        }
 
         // View Switching
         function switchView(view) {
@@ -491,8 +504,8 @@
                 card.onclick = () => openEditModal(entry.id);
                 card.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(entry.category)} font-bold">
-                            ${getCatEmoji(entry.category)}
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(entry.category)}">
+                            ${getCatIcon(entry.category, "w-5 h-5")}
                         </div>
                         <div>
                             <div class="font-semibold text-gray-800 text-sm tracking-tight">${entry.name}</div>
@@ -512,7 +525,7 @@
                     const b = document.createElement('div');
                     b.className = "flex-shrink-0 px-2.5 py-1 rounded-lg border border-gray-100 flex items-center gap-1.5 bg-white shadow-sm opacity-90 animate-fade-in cursor-pointer";
                     b.innerHTML = `
-                        <span class="text-[10px]">${getCatEmoji(entry.category)}</span> 
+                        <div class="text-gray-500">${getCatIcon(entry.category, "w-3 h-3")}</div>
                         <span class="text-[9px] font-bold text-gray-800">฿${entry.amount}</span>
                         <span class="text-[7px] font-bold text-gray-300">${timeString}</span>
                     `;
@@ -554,7 +567,11 @@
                 const r = document.createElement('div');
                 r.innerHTML = `
                     <div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5">
-                        <span>${cat}</span> <span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span>
+                        <div class="flex items-center gap-1.5">
+                            ${getCatIcon(cat, "w-3 h-3 text-gray-400")}
+                            <span>${cat}</span>
+                        </div>
+                        <span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span>
                     </div>
                     <div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden">
                         <div class="bg-purple-600 h-full" style="width: ${p}%"></div>
@@ -614,7 +631,6 @@
             } else dp.classList.add('hidden');
         }
 
-        function getCatEmoji(c) { return {'Food':'🍱', 'Grocery':'🛒', 'Trip':'✈️', 'Etc.':'✨'}[c] || '💰'; }
         function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
         function showToast(m, c) {
             const t = document.getElementById('toast'); t.innerText = m;
@@ -671,21 +687,30 @@
         }
 
         // Init
+        window.onload = () => {
+            // Inject initial icons into buttons
+            const wrappers = document.querySelectorAll('.category-icon-wrapper');
+            const categories = ['Food', 'Grocery', 'Trip', 'Etc.'];
+            wrappers.forEach((wrapper, i) => {
+                wrapper.innerHTML = getCatIcon(categories[i], "w-6 h-6");
+            });
+
+            if(window.innerWidth < 768) {
+                switchView('input');
+            } else {
+                document.getElementById('side-section').classList.remove('mobile-hidden');
+                document.getElementById('input-section').classList.remove('mobile-hidden');
+                document.getElementById('tab-history').classList.add('tab-active');
+                document.getElementById('history-container').classList.remove('hidden');
+            }
+            
+            fetchEntries(false);
+        };
+
         window.addEventListener('resize', () => {
              if(window.innerWidth < 768) switchView('input');
              else switchView('dashboard');
         });
-        
-        if(window.innerWidth < 768) {
-            switchView('input');
-        } else {
-            document.getElementById('side-section').classList.remove('mobile-hidden');
-            document.getElementById('input-section').classList.remove('mobile-hidden');
-            document.getElementById('tab-history').classList.add('tab-active');
-            document.getElementById('history-container').classList.remove('hidden');
-        }
-        
-        fetchEntries(false);
 
         setInterval(() => {
             if(!isSyncing) fetchEntries(false);
