@@ -14,7 +14,7 @@
             font-family: 'Inter', sans-serif; 
             background-color: #F8F4FF; 
             overscroll-behavior: none; 
-            touch-action: manipulation; /* No Double Tap Zoom */
+            touch-action: manipulation; 
             height: 100%;
             overflow: hidden;
             -webkit-user-select: none;
@@ -37,13 +37,21 @@
         .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
         .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
 
+        /* Animation for Sync */
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+
         /* --- MOBILE SPECIFIC LAYOUT --- */
         @media (max-width: 768px) {
             .mobile-h-dvh { height: 100dvh; }
             .mobile-hidden { display: none !important; }
             .mobile-view { display: flex !important; }
             
-            /* Forces the input section to fill the screen */
             .input-view-container {
                 display: flex;
                 flex-direction: column;
@@ -56,7 +64,6 @@
                 z-index: 10;
             }
 
-            /* Push keypad to bottom and fill space */
             .input-zone {
                 flex: 1; 
                 padding-bottom: env(safe-area-inset-bottom);
@@ -68,7 +75,7 @@
 
         /* --- DESKTOP RESTORATION --- */
         @media (min-width: 769px) {
-            body { overflow: auto; } /* Allow scrolling if window is tiny on desktop */
+            body { overflow: auto; }
             .desktop-card {
                 height: 90vh;
                 max-height: 900px;
@@ -76,10 +83,10 @@
             }
             .input-zone {
                 flex: 1;
-                border-radius: 2.5rem 0 0 0; /* Original rounded corner design */
+                border-radius: 2.5rem 0 0 0;
             }
             .display-zone {
-                flex: 0 0 35%; /* Fixed ratio for desktop */
+                flex: 0 0 35%;
             }
         }
     </style>
@@ -88,12 +95,15 @@
 
     <div class="bg-white w-full max-w-6xl h-full mobile-h-dvh desktop-card shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
         
+        <!-- Mobile Tabs -->
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50">
-            <button onclick="switchView('input')" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation">Input</button>
+            <!-- Changed "Input" to "Expense" -->
+            <button onclick="switchView('input')" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation">Expense</button>
             <button onclick="switchView('history')" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation">History</button>
             <button onclick="switchView('dashboard')" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation">Stats</button>
         </div>
 
+        <!-- Sidebar / Secondary View -->
         <div id="side-section" class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col mobile-hidden md:flex min-h-0 overflow-hidden relative z-0">
             
             <div class="bg-white border-b border-gray-200 hidden md:block flex-none">
@@ -103,6 +113,7 @@
                 </div>
             </div>
             
+            <!-- History View -->
             <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm">
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
@@ -112,9 +123,11 @@
                     </div>
                 </div>
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
-                    </div>
+                    <!-- History Items Injected Here -->
+                </div>
             </div>
 
+            <!-- Stats View -->
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4">
                 <h3 class="text-xl font-bold text-gray-800 tracking-tight">Spending Stats</h3>
                 
@@ -144,14 +157,17 @@
                 </div>
 
                 <div id="category-breakdown" class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    </div>
+                    <!-- Categories -->
+                </div>
             </div>
         </div>
 
+        <!-- Main Input Section -->
         <div id="input-section" class="w-full md:w-2/3 input-view-container bg-white relative overflow-hidden flex flex-col h-full">
             
             <div class="display-zone flex flex-col bg-gray-50/80 border-b border-gray-200">
                 
+                <!-- Top Bar -->
                 <div class="flex items-center justify-between px-4 py-2 bg-white/50">
                     <div class="flex gap-4">
                         <div class="flex items-center gap-2">
@@ -165,19 +181,18 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="text-[8px] text-gray-400 font-bold uppercase tracking-widest hidden md:inline-block">Auto-Sync On</span>
-                        <button onclick="fetchEntries(true)" class="p-1.5 active:rotate-180 transition-transform duration-500 touch-manipulation">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <!-- Sync Button with Icon -->
+                        <button onclick="fetchEntries(true)" id="sync-btn" class="p-1.5 transition-colors touch-manipulation">
+                            <svg xmlns="http://www.w3.org/2000/svg" id="sync-icon" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                             </svg>
                         </button>
                     </div>
                 </div>
 
-                <div class="px-4 py-1 flex justify-end">
-                    <div id="mini-history" class="flex gap-2">
-                        </div>
-                </div>
-
+                <!-- Removed Recent History Section -->
+                
+                <!-- Display Area -->
                 <div class="flex-1 flex flex-col justify-end items-end px-6 pb-2">
                     <div class="flex items-center gap-2 mb-0.5">
                         <span id="display-person" class="hidden px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white shadow-sm"></span>
@@ -190,6 +205,7 @@
                 </div>
             </div>
 
+            <!-- Keypad -->
             <div class="input-zone flex flex-col p-4 bg-white md:shadow-[0_-10px_25px_-15px_rgba(0,0,0,0.05)]">
                 
                 <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%] md:h-auto md:mb-6">
@@ -237,6 +253,7 @@
         </div>
     </div>
 
+    <!-- Edit Modal -->
     <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md transform transition-all">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
@@ -262,9 +279,27 @@
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
-                <button onclick="deleteEntry()" class="w-1/4 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-[11px] btn-press">Delete</button>
+                <!-- Delete triggers confirmation -->
+                <button onclick="confirmDelete()" class="w-1/4 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-[11px] btn-press">Delete</button>
                 <button onclick="closeEditModal()" class="w-1/4 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Back</button>
                 <button onclick="saveEdit()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal (New) -->
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-md">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Transaction?</h3>
+            <p class="text-sm text-gray-500 mb-6">This action cannot be undone. Are you sure you want to remove this entry?</p>
+            <div class="flex gap-3">
+                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs btn-press">Cancel</button>
+                <button onclick="executeDelete()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Yes, Delete</button>
             </div>
         </div>
     </div>
@@ -281,6 +316,7 @@
         let currentCategory = null;
         let currentPerson = null;
         let editingEntryId = null;
+        let isSyncing = false;
 
         // View Switching
         function switchView(view) {
@@ -329,15 +365,26 @@
         }
 
         // Logic
-        // Modified to accept a flag to suppress Toast for auto-refreshes
+        function setSyncState(loading) {
+            isSyncing = loading;
+            const icon = document.getElementById('sync-icon');
+            if (loading) {
+                icon.classList.add('animate-spin-custom', 'text-purple-500');
+                icon.classList.remove('text-gray-400');
+            } else {
+                icon.classList.remove('animate-spin-custom', 'text-purple-500');
+                icon.classList.add('text-gray-400');
+            }
+        }
+
         async function fetchEntries(showNotification = false) {
             if (!SCRIPT_URL) return;
+            setSyncState(true);
             try {
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
                 
-                // Compare to see if update needed (simple check) to prevent jitter?
-                // For now, we just update.
+                // Sort by date descending
                 entries = data.sort((a,b) => new Date(b.datetime || b.dateTime) - new Date(a.datetime || a.dateTime));
                 
                 renderHistory();
@@ -346,7 +393,8 @@
                 if(showNotification) showToast("Synced", "green");
             } catch (e) { 
                 if(showNotification) showToast("Sync Error", "red"); 
-                // We stay silent on auto-refresh errors to avoid spamming the user
+            } finally {
+                setSyncState(false);
             }
         }
 
@@ -357,6 +405,7 @@
             const okBtn = document.getElementById('ok-btn');
             const originalText = okBtn.innerText;
             okBtn.innerText = "⏳";
+            setSyncState(true);
             
             const newEntry = {
                 id: Date.now(),
@@ -369,6 +418,8 @@
             
             // Optimistic UI update
             entries.unshift(newEntry);
+            
+            // Render BOTH history and dashboard immediately to update balance
             renderHistory();
             renderDashboard();
             
@@ -379,21 +430,22 @@
             resetPersonUI();
             
             try {
+                // Send to backend
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'create', data: newEntry }) });
                 showToast("Stored Successfully", "green");
-                // We rely on the auto-refresh to sync properly later, or trigger one now
+                
+                // Wait slightly before background sync to allow Sheet to process
                 setTimeout(() => fetchEntries(false), 2000); 
-            } catch (e) { showToast("Save Error", "red"); }
+            } catch (e) { 
+                showToast("Save Error", "red"); 
+                setSyncState(false);
+            }
             okBtn.innerText = originalText;
         }
 
         function renderHistory() {
             const list = document.getElementById('history-list');
-            const mini = document.getElementById('mini-history');
-            
-            // Small optimization: if user is editing, maybe don't re-render history?
-            // For now, we rebuild. 
-            list.innerHTML = ''; mini.innerHTML = '';
+            list.innerHTML = ''; 
             
             entries.forEach((entry, idx) => {
                 const card = document.createElement('div');
@@ -415,14 +467,6 @@
                     </div>
                 `;
                 list.appendChild(card);
-
-                // Only show top 2 in mini history to save space
-                if (idx < 2) {
-                    const b = document.createElement('div');
-                    b.className = "flex-shrink-0 px-2 py-1 rounded-lg border border-gray-100 flex items-center gap-1 bg-white shadow-sm opacity-80";
-                    b.innerHTML = `<span class="text-[10px]">${getCatEmoji(entry.category)}</span> <span class="text-[8px] font-bold">฿${entry.amount}</span>`;
-                    mini.appendChild(b);
-                }
             });
         }
 
@@ -441,8 +485,11 @@
                 cats[e.category] = (cats[e.category] || 0) + amt;
             });
 
+            // Update Dashboard Stats
             document.getElementById('chart-get-total').innerText = g.toLocaleString();
             document.getElementById('chart-dom-total').innerText = d.toLocaleString();
+            
+            // Update Top Bar Stats (Instant Balance Update)
             document.getElementById('m-get-sum').innerText = g.toLocaleString();
             document.getElementById('m-dom-sum').innerText = d.toLocaleString();
             
@@ -520,19 +567,46 @@
             document.getElementById('edit-modal').classList.remove('hidden');
         }
         function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+        
         async function saveEdit() {
-            const data = { id: editingEntryId, name: document.getElementById('edit-name').value, amount: document.getElementById('edit-amount').value, category: document.getElementById('edit-category').value };
+            setSyncState(true);
+            const originalEntry = entries.find(x => x.id == editingEntryId);
+            const data = { 
+                id: editingEntryId, 
+                name: document.getElementById('edit-name').value, 
+                amount: document.getElementById('edit-amount').value, 
+                category: document.getElementById('edit-category').value,
+                // Fix: Include original datetime to prevent data loss
+                dateTime: originalEntry ? (originalEntry.datetime || originalEntry.dateTime) : new Date().toISOString()
+            };
+            
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', data }) });
-            closeEditModal(); showToast("Record Updated", "green"); setTimeout(() => fetchEntries(false), 1500);
+            closeEditModal(); 
+            showToast("Record Updated", "green"); 
+            setTimeout(() => fetchEntries(false), 1500);
         }
-        async function deleteEntry() {
+
+        // New Delete Logic with Modal
+        function confirmDelete() {
+            document.getElementById('edit-modal').classList.add('hidden');
+            document.getElementById('delete-confirm-modal').classList.remove('hidden');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+            document.getElementById('edit-modal').classList.remove('hidden'); // Go back to edit
+        }
+
+        async function executeDelete() {
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+            setSyncState(true);
             await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', data: {id: editingEntryId} }) });
-            closeEditModal(); showToast("Record Deleted", "red"); setTimeout(() => fetchEntries(false), 1500);
+            showToast("Record Deleted", "red"); 
+            setTimeout(() => fetchEntries(false), 1500);
         }
 
         // Init
         window.addEventListener('resize', () => {
-             // Basic view reset on resize to prevent broken layouts
              if(window.innerWidth < 768) switchView('input');
              else switchView('dashboard');
         });
@@ -541,7 +615,6 @@
         if(window.innerWidth < 768) {
             switchView('input');
         } else {
-            // Desktop Default
             document.getElementById('side-section').classList.remove('mobile-hidden');
             document.getElementById('input-section').classList.remove('mobile-hidden');
             document.getElementById('tab-history').classList.add('tab-active');
@@ -550,10 +623,9 @@
         
         fetchEntries(false);
 
-        // --- REAL TIME AUTO DISPLAY (5 Seconds) ---
-        // Runs silently (no toast) to update data
+        // Auto Sync
         setInterval(() => {
-            fetchEntries(false);
+            if(!isSyncing) fetchEntries(false);
         }, 5000);
 
     </script>
