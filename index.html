@@ -97,10 +97,9 @@
         
         <!-- Mobile Tabs -->
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50">
-            <!-- Changed "Input" to "Expense" -->
-            <button onclick="switchView('input')" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation">Expense</button>
-            <button onclick="switchView('history')" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation">History</button>
-            <button onclick="switchView('dashboard')" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation">Stats</button>
+            <button onclick="handleExpenseTabClick()" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
+            <button onclick="switchView('history')" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
+            <button onclick="switchView('dashboard')" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Stats</button>
         </div>
 
         <!-- Sidebar / Secondary View -->
@@ -181,7 +180,6 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <span class="text-[8px] text-gray-400 font-bold uppercase tracking-widest hidden md:inline-block">Auto-Sync On</span>
-                        <!-- Sync Button with Icon -->
                         <button onclick="fetchEntries(true)" id="sync-btn" class="p-1.5 transition-colors touch-manipulation">
                             <svg xmlns="http://www.w3.org/2000/svg" id="sync-icon" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -190,7 +188,12 @@
                     </div>
                 </div>
 
-                <!-- Removed Recent History Section -->
+                <!-- Recent Activity Preview (Shows 2 Items) -->
+                <div class="px-4 py-1 flex justify-end gap-2 overflow-hidden">
+                    <div id="mini-history" class="flex gap-2">
+                        <!-- Recent Items Injected Here -->
+                    </div>
+                </div>
                 
                 <!-- Display Area -->
                 <div class="flex-1 flex flex-col justify-end items-end px-6 pb-2">
@@ -279,7 +282,6 @@
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
-                <!-- Delete triggers confirmation -->
                 <button onclick="confirmDelete()" class="w-1/4 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-[11px] btn-press">Delete</button>
                 <button onclick="closeEditModal()" class="w-1/4 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Back</button>
                 <button onclick="saveEdit()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Apply</button>
@@ -287,9 +289,9 @@
         </div>
     </div>
 
-    <!-- Delete Confirmation Modal (New) -->
+    <!-- Delete Confirmation Modal -->
     <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-md">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-sm text-center">
             <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -318,6 +320,9 @@
         let editingEntryId = null;
         let isSyncing = false;
 
+        // Double Tap Detection State
+        let lastExpenseClick = 0;
+
         // View Switching
         function switchView(view) {
             const historyContainer = document.getElementById('history-container');
@@ -330,6 +335,7 @@
             if (window.innerWidth < 768) {
                 if (view === 'input') {
                     sideSection.classList.add('mobile-hidden');
+                    sideSection.classList.remove('mobile-view'); // Fix layout overlap
                     inputSection.classList.remove('mobile-hidden');
                     document.getElementById('tab-m-input').classList.add('tab-active');
                     renderDashboard(); 
@@ -351,6 +357,7 @@
             } else {
                 inputSection.classList.remove('mobile-hidden');
                 sideSection.classList.remove('mobile-hidden');
+                sideSection.classList.remove('mobile-view');
                 if (view === 'history') {
                     historyContainer.classList.remove('hidden');
                     dashboardContainer.classList.add('hidden');
@@ -365,6 +372,31 @@
         }
 
         // Logic
+        function handleExpenseTabClick() {
+            const now = Date.now();
+            const delta = now - lastExpenseClick;
+            
+            if (delta < 300 && delta > 0) {
+                // Double Tap Action: Reset Page
+                resetExpensePage();
+                showToast("View Refreshed", "green");
+            } else {
+                // Single Tap
+                switchView('input');
+            }
+            lastExpenseClick = now;
+        }
+
+        function resetExpensePage() {
+            currentAmount = '0';
+            currentCategory = null;
+            currentPerson = null;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100'));
+            resetPersonUI();
+            updateDisplay();
+            fetchEntries(false);
+        }
+
         function setSyncState(loading) {
             isSyncing = loading;
             const icon = document.getElementById('sync-icon');
@@ -384,7 +416,6 @@
                 const res = await fetch(SCRIPT_URL);
                 const data = await res.json();
                 
-                // Sort by date descending
                 entries = data.sort((a,b) => new Date(b.datetime || b.dateTime) - new Date(a.datetime || a.dateTime));
                 
                 renderHistory();
@@ -416,25 +447,19 @@
                 name: currentCategory
             };
             
-            // Optimistic UI update
             entries.unshift(newEntry);
             
-            // Render BOTH history and dashboard immediately to update balance
             renderHistory();
             renderDashboard();
             
-            // Reset UI immediately
             currentAmount = '0';
             currentPerson = null;
             updateDisplay();
             resetPersonUI();
             
             try {
-                // Send to backend
                 await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'create', data: newEntry }) });
                 showToast("Stored Successfully", "green");
-                
-                // Wait slightly before background sync to allow Sheet to process
                 setTimeout(() => fetchEntries(false), 2000); 
             } catch (e) { 
                 showToast("Save Error", "red"); 
@@ -445,9 +470,15 @@
 
         function renderHistory() {
             const list = document.getElementById('history-list');
+            const mini = document.getElementById('mini-history');
             list.innerHTML = ''; 
+            mini.innerHTML = '';
             
             entries.forEach((entry, idx) => {
+                const dateObj = new Date(entry.datetime || entry.dateTime);
+                const timeString = dateObj.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const dateString = dateObj.toLocaleDateString([], {month:'short', day:'numeric'});
+                
                 const card = document.createElement('div');
                 card.className = "p-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press cursor-pointer touch-manipulation";
                 card.onclick = () => openEditModal(entry.id);
@@ -458,7 +489,9 @@
                         </div>
                         <div>
                             <div class="font-semibold text-gray-800 text-sm tracking-tight">${entry.name}</div>
-                            <div class="text-[9px] text-gray-300 font-bold">${new Date(entry.datetime || entry.dateTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                            <div class="text-[9px] text-gray-300 font-bold uppercase tracking-tighter">
+                                ${dateString} • ${timeString}
+                            </div>
                         </div>
                     </div>
                     <div class="text-right">
@@ -467,6 +500,19 @@
                     </div>
                 `;
                 list.appendChild(card);
+
+                // Show exactly 2 recent activity items as requested
+                if (idx < 2) {
+                    const b = document.createElement('div');
+                    b.className = "flex-shrink-0 px-2.5 py-1 rounded-lg border border-gray-100 flex items-center gap-1.5 bg-white shadow-sm opacity-90 animate-fade-in";
+                    b.innerHTML = `
+                        <span class="text-[10px]">${getCatEmoji(entry.category)}</span> 
+                        <span class="text-[9px] font-bold text-gray-800">฿${entry.amount}</span>
+                        <span class="text-[7px] font-bold text-gray-300">${timeString}</span>
+                    `;
+                    b.onclick = () => openEditModal(entry.id);
+                    mini.appendChild(b);
+                }
             });
         }
 
@@ -485,11 +531,8 @@
                 cats[e.category] = (cats[e.category] || 0) + amt;
             });
 
-            // Update Dashboard Stats
             document.getElementById('chart-get-total').innerText = g.toLocaleString();
             document.getElementById('chart-dom-total').innerText = d.toLocaleString();
-            
-            // Update Top Bar Stats (Instant Balance Update)
             document.getElementById('m-get-sum').innerText = g.toLocaleString();
             document.getElementById('m-dom-sum').innerText = d.toLocaleString();
             
@@ -576,7 +619,6 @@
                 name: document.getElementById('edit-name').value, 
                 amount: document.getElementById('edit-amount').value, 
                 category: document.getElementById('edit-category').value,
-                // Fix: Include original datetime to prevent data loss
                 dateTime: originalEntry ? (originalEntry.datetime || originalEntry.dateTime) : new Date().toISOString()
             };
             
@@ -586,7 +628,6 @@
             setTimeout(() => fetchEntries(false), 1500);
         }
 
-        // New Delete Logic with Modal
         function confirmDelete() {
             document.getElementById('edit-modal').classList.add('hidden');
             document.getElementById('delete-confirm-modal').classList.remove('hidden');
@@ -594,7 +635,7 @@
 
         function closeDeleteModal() {
             document.getElementById('delete-confirm-modal').classList.add('hidden');
-            document.getElementById('edit-modal').classList.remove('hidden'); // Go back to edit
+            document.getElementById('edit-modal').classList.remove('hidden'); 
         }
 
         async function executeDelete() {
@@ -611,7 +652,6 @@
              else switchView('dashboard');
         });
         
-        // Initial load
         if(window.innerWidth < 768) {
             switchView('input');
         } else {
@@ -623,7 +663,6 @@
         
         fetchEntries(false);
 
-        // Auto Sync
         setInterval(() => {
             if(!isSyncing) fetchEntries(false);
         }, 5000);
