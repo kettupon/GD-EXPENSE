@@ -66,7 +66,7 @@
 
     <div class="bg-white w-full max-w-6xl h-full mobile-h-dvh desktop-card shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
         
-        <!-- Mobile Tabs (Renamed Stats to Dashboard) -->
+        <!-- Mobile Tabs -->
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50">
             <button onclick="handleExpenseTabClick()" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
             <button onclick="switchView('history')" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
@@ -89,7 +89,8 @@
                     <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
                     <div class="flex items-center gap-2">
                          <div id="live-indicator" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                        <button onclick="fetchEntries(true)" class="text-purple-600 text-[10px] font-bold uppercase tracking-widest hover:text-purple-800">Refresh</button>
+                        <!-- Changed from Refresh to Status since it's realtime -->
+                        <span class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
                     </div>
                 </div>
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
@@ -97,7 +98,7 @@
                 </div>
             </div>
 
-            <!-- Dashboard View (Rebranded from Stats) -->
+            <!-- Dashboard View -->
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
                 <h3 class="text-xl font-bold text-gray-800 tracking-tight">Spending Dashboard</h3>
                 
@@ -228,7 +229,7 @@
         </div>
     </div>
 
-    <!-- Modals (Edit & Delete remain same as original) -->
+    <!-- Modals -->
     <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
@@ -267,20 +268,43 @@
 
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[101] uppercase tracking-wider"></div>
 
-    <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyd_rj0p7roHbLZ3HDkQcK3eLCi5kTBdd7SWToRtCamV7O3R14Os82NuNUozgaji0p38Q/exec"; 
+    <!-- MAIN LOGIC (FIREBASE) -->
+    <script type="module">
+        // Import Firebase SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, onSnapshot, query, 
+            orderBy, doc, updateDoc, deleteDoc, serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyCA1razTnJuJdrDrJ4_jaxQoOih-FnghF8",
+            authDomain: "expensegetndom.firebaseapp.com",
+            databaseURL: "https://expensegetndom-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "expensegetndom",
+            storageBucket: "expensegetndom.firebasestorage.app",
+            messagingSenderId: "550903272896",
+            appId: "1:550903272896:web:0a2d73dd023f8721b62425",
+            measurementId: "G-4ENMN4ECT3"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const expensesCol = collection(db, "expenses");
 
         // State
-        let entries = [];
+        window.entries = []; // Make global
         let currentAmount = '0';
         let currentCategory = null;
         let currentPerson = null;
         let editingEntryId = null;
         let editingPerson = null;
-        let isSyncing = false;
         let lastExpenseClick = 0;
         let deferredPrompt = null;
 
+        // --- ICONS ---
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
             'Grocery': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
@@ -293,136 +317,127 @@
             return rawIcon.replace('width="24" height="24"', `class="${size}"`);
         }
 
-        // --- PWA LOGIC ---
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById('install-banner').classList.remove('hidden');
+        function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
+
+        // --- REAL-TIME LISTENER ---
+        const q = query(expensesCol, orderBy("dateTime", "desc"));
+        onSnapshot(q, (snapshot) => {
+            window.entries = snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    // Convert Firestore Timestamp to JS Date
+                    dateTime: data.dateTime?.toDate() || new Date()
+                };
+            });
+            window.renderHistory();
+            window.renderDashboard();
+            setSyncState(false);
+        }, (error) => {
+            console.error("Error listening to changes: ", error);
         });
 
-        async function triggerPWAInstall() {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                document.getElementById('install-banner').classList.add('hidden');
-            }
-            deferredPrompt = null;
-        }
+        // --- GLOBAL FUNCTIONS (Window Binding) ---
+        
+        window.fetchEntries = function(notify) {
+            // Since it's realtime, this button just gives feedback
+            if(notify) showToast("Synced with Cloud", "green");
+        };
 
-        function switchView(view) {
-            const histCont = document.getElementById('history-container');
-            const dashCont = document.getElementById('dashboard-container');
-            const sideSec = document.getElementById('side-section');
-            const inputSec = document.getElementById('input-section');
-
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
-
-            if (window.innerWidth < 768) {
-                if (view === 'input') {
-                    sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); 
-                    inputSec.classList.remove('mobile-hidden');
-                    document.getElementById('tab-m-input').classList.add('tab-active');
-                } else {
-                    inputSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view');
-                    if (view === 'history') {
-                        histCont.classList.remove('hidden'); dashCont.classList.add('hidden');
-                        document.getElementById('tab-m-history').classList.add('tab-active');
-                    } else {
-                        dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
-                        document.getElementById('tab-m-dashboard').classList.add('tab-active');
-                        renderDashboard();
-                    }
-                }
-            } else {
-                inputSec.classList.remove('mobile-hidden'); sideSec.classList.remove('mobile-hidden', 'mobile-view');
-                if (view === 'history') {
-                    histCont.classList.remove('hidden'); dashCont.classList.add('hidden');
-                    document.getElementById('tab-history').classList.add('tab-active');
-                } else {
-                    dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
-                    document.getElementById('tab-dashboard').classList.add('tab-active');
-                    renderDashboard();
-                }
-            }
-        }
-
-        function handleExpenseTabClick() {
-            const now = Date.now();
-            if (now - lastExpenseClick < 300) { resetExpensePage(); showToast("Refreshed", "green"); } 
-            else { switchView('input'); }
-            lastExpenseClick = now;
-        }
-
-        function resetExpensePage() {
-            currentAmount = '0'; currentCategory = null; currentPerson = null;
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100'));
-            resetPersonUI(); updateDisplay(); fetchEntries(false);
-        }
-
-        function setSyncState(loading) {
-            isSyncing = loading;
-            const icon = document.getElementById('sync-icon');
-            if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500');
-            else icon.classList.remove('animate-spin-custom', 'text-purple-500');
-        }
-
-        async function fetchEntries(notify = false) {
-            setSyncState(true);
-            try {
-                const res = await fetch(SCRIPT_URL);
-                const data = await res.json();
-                entries = data.sort((a,b) => new Date(b.datetime || b.dateTime) - new Date(a.datetime || a.dateTime));
-                renderHistory(); renderDashboard();
-                if(notify) showToast("Synced", "green");
-            } catch (e) { if(notify) showToast("Error", "red"); } 
-            finally { setSyncState(false); }
-        }
-
-        async function submitEntry() {
+        window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
             const okBtn = document.getElementById('ok-btn');
             okBtn.innerText = "⏳";
             setSyncState(true);
-            const newEntry = { id: Date.now(), dateTime: new Date().toISOString(), category: currentCategory, amount: parseFloat(currentAmount).toFixed(2), person: currentPerson, name: currentCategory };
-            entries.unshift(newEntry);
-            renderHistory(); renderDashboard();
-            currentAmount = '0'; currentPerson = null; updateDisplay(); resetPersonUI();
             try {
-                await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'create', data: newEntry }) });
+                await addDoc(expensesCol, {
+                    dateTime: serverTimestamp(),
+                    category: currentCategory,
+                    amount: parseFloat(currentAmount),
+                    person: currentPerson,
+                    name: currentCategory
+                });
+                // Reset
+                currentAmount = '0'; currentPerson = null; updateDisplay(); resetPersonUI();
                 showToast("Saved", "green");
-                setTimeout(() => fetchEntries(false), 2000); 
-            } catch (e) { showToast("Error", "red"); setSyncState(false); }
-            okBtn.innerText = "OK";
-        }
+            } catch (e) { showToast("Error", "red"); console.error(e); }
+            finally { okBtn.innerText = "OK"; setSyncState(false); }
+        };
 
-        function renderHistory() {
+        window.saveEdit = async function() {
+            setSyncState(true);
+            const docRef = doc(db, "expenses", editingEntryId);
+            try {
+                await updateDoc(docRef, {
+                    name: document.getElementById('edit-name').value,
+                    amount: parseFloat(document.getElementById('edit-amount').value),
+                    category: document.getElementById('edit-category').value,
+                    person: editingPerson
+                });
+                window.closeEditModal();
+                showToast("Updated", "green");
+            } catch (e) { showToast("Error", "red"); }
+            finally { setSyncState(false); }
+        };
+
+        window.executeDelete = async function() {
+            setSyncState(true);
+            try {
+                await deleteDoc(doc(db, "expenses", editingEntryId));
+                window.closeDeleteModal();
+                showToast("Deleted", "red");
+            } catch (e) { showToast("Error", "red"); }
+            finally { setSyncState(false); }
+        };
+
+        // --- UI & NAVIGATION ---
+
+        window.pressNum = (n) => { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
+        window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
+        window.selectCategory = (cat) => { currentCategory = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); updateDisplay(); }
+        window.selectPerson = (p) => { currentPerson = p; resetPersonUI(); document.getElementById(`btn-${p}`).classList.add(p === 'GET' ? 'bg-green-500' : 'bg-blue-500', 'text-white'); updateDisplay(); }
+        window.resetPersonUI = () => { document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('bg-green-500', 'bg-blue-500', 'text-white')); }
+        window.selectEditPerson = (p) => { editingPerson = p; document.getElementById('edit-btn-GET').className = p==='GET'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; document.getElementById('edit-btn-DOM').className = p==='DOM'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; }
+        
+        function updateDisplay() { document.getElementById('display-amount').innerText = currentAmount; document.getElementById('display-category').innerText = currentCategory || "Select Category"; const dp = document.getElementById('display-person'); if (currentPerson) { dp.innerText = currentPerson; dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${currentPerson === 'GET' ? 'bg-green-500' : 'bg-blue-500'}`; dp.classList.remove('hidden'); } else dp.classList.add('hidden'); }
+        
+        window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; selectEditPerson(e.person); document.getElementById('edit-modal').classList.remove('hidden'); }
+        window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
+        window.confirmDelete = () => { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('delete-confirm-modal').classList.remove('hidden'); }
+        window.closeDeleteModal = () => { document.getElementById('delete-confirm-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.remove('hidden'); }
+
+        window.renderHistory = () => {
             const list = document.getElementById('history-list');
             const mini = document.getElementById('mini-history');
             list.innerHTML = ''; mini.innerHTML = '';
-            entries.forEach((e, idx) => {
-                const d = new Date(e.datetime || e.dateTime);
+            window.entries.forEach((e, idx) => {
+                const d = e.dateTime;
                 const card = document.createElement('div');
                 card.className = "p-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press";
-                card.onclick = () => openEditModal(e.id);
+                card.onclick = () => window.openEditModal(e.id);
                 card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm">${e.name}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</div></div>`;
                 list.appendChild(card);
                 if (idx < 2) {
                     const b = document.createElement('div');
                     b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer";
-                    b.onclick = () => openEditModal(e.id);
+                    b.onclick = () => window.openEditModal(e.id);
                     b.innerHTML = `<span class="text-[9px] font-bold">฿${e.amount}</span><span class="text-[7px] font-bold text-gray-300">${e.person}</span>`;
                     mini.appendChild(b);
                 }
             });
         }
 
-        function renderDashboard() {
-            let filtered = entries;
+        window.renderDashboard = () => {
+            let filtered = window.entries;
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
-            if (start) filtered = filtered.filter(e => new Date(e.datetime || e.dateTime) >= new Date(start));
-            if (end) filtered = filtered.filter(e => new Date(e.datetime || e.dateTime) <= new Date(end));
+            if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
+            if (end) {
+                const endDate = new Date(end);
+                endDate.setHours(23,59,59);
+                filtered = filtered.filter(e => e.dateTime <= endDate);
+            }
             let g = 0, d = 0, total = 0; const cats = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
@@ -446,29 +461,70 @@
             });
         }
 
-        function pressNum(n) { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
-        function clearEntry() { currentAmount = '0'; updateDisplay(); }
-        function selectCategory(cat) { currentCategory = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); updateDisplay(); }
-        function selectPerson(p) { currentPerson = p; resetPersonUI(); document.getElementById(`btn-${p}`).classList.add(p === 'GET' ? 'bg-green-500' : 'bg-blue-500', 'text-white'); updateDisplay(); }
-        function resetPersonUI() { document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('bg-green-500', 'bg-blue-500', 'text-white')); }
-        function selectEditPerson(p) { editingPerson = p; document.getElementById('edit-btn-GET').className = p==='GET'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; document.getElementById('edit-btn-DOM').className = p==='DOM'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; }
-        function updateDisplay() { document.getElementById('display-amount').innerText = currentAmount; document.getElementById('display-category').innerText = currentCategory || "Select Category"; const dp = document.getElementById('display-person'); if (currentPerson) { dp.innerText = currentPerson; dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${currentPerson === 'GET' ? 'bg-green-500' : 'bg-blue-500'}`; dp.classList.remove('hidden'); } else dp.classList.add('hidden'); }
-        function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
-        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = c === 'green' ? '#10B981' : '#EF4444'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
-        function openEditModal(id) { const e = entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; selectEditPerson(e.person); document.getElementById('edit-modal').classList.remove('hidden'); }
-        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
-        async function saveEdit() { setSyncState(true); const data = { id: editingEntryId, name: document.getElementById('edit-name').value, amount: document.getElementById('edit-amount').value, category: document.getElementById('edit-category').value, person: editingPerson, dateTime: new Date().toISOString() }; await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'update', data }) }); closeEditModal(); showToast("Updated", "green"); setTimeout(() => fetchEntries(false), 1500); }
-        function confirmDelete() { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('delete-confirm-modal').classList.remove('hidden'); }
-        function closeDeleteModal() { document.getElementById('delete-confirm-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.remove('hidden'); }
-        async function executeDelete() { document.getElementById('delete-confirm-modal').classList.add('hidden'); setSyncState(true); await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'delete', data: {id: editingEntryId} }) }); showToast("Deleted", "red"); setTimeout(() => fetchEntries(false), 1500); }
+        function setSyncState(loading) {
+            const icon = document.getElementById('sync-icon');
+            if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500');
+            else icon.classList.remove('animate-spin-custom', 'text-purple-500');
+        }
 
+        window.switchView = (view) => {
+            const histCont = document.getElementById('history-container');
+            const dashCont = document.getElementById('dashboard-container');
+            const sideSec = document.getElementById('side-section');
+            const inputSec = document.getElementById('input-section');
+            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
+
+            if (window.innerWidth < 768) {
+                if (view === 'input') {
+                    sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); 
+                    inputSec.classList.remove('mobile-hidden');
+                    document.getElementById('tab-m-input').classList.add('tab-active');
+                } else {
+                    inputSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view');
+                    if (view === 'history') {
+                        histCont.classList.remove('hidden'); dashCont.classList.add('hidden');
+                        document.getElementById('tab-m-history').classList.add('tab-active');
+                    } else {
+                        dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
+                        document.getElementById('tab-m-dashboard').classList.add('tab-active');
+                        window.renderDashboard();
+                    }
+                }
+            } else {
+                inputSec.classList.remove('mobile-hidden'); sideSec.classList.remove('mobile-hidden', 'mobile-view');
+                if (view === 'history') {
+                    histCont.classList.remove('hidden'); dashCont.classList.add('hidden');
+                    document.getElementById('tab-history').classList.add('tab-active');
+                } else {
+                    dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
+                    document.getElementById('tab-dashboard').classList.add('tab-active');
+                    window.renderDashboard();
+                }
+            }
+        }
+
+        window.handleExpenseTabClick = () => {
+            const now = Date.now();
+            if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } 
+            else { window.switchView('input'); }
+            lastExpenseClick = now;
+        }
+
+        window.resetExpensePage = () => {
+            currentAmount = '0'; currentCategory = null; currentPerson = null;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100'));
+            resetPersonUI(); updateDisplay();
+        }
+
+        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = c === 'green' ? '#10B981' : '#EF4444'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
+
+        // Initialization
         window.onload = () => {
             document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6"));
-            if(window.innerWidth < 768) switchView('input');
-            else { switchView('history'); }
-            fetchEntries(false);
-
-            // Register Virtual Service Worker for PWA
+            if(window.innerWidth < 768) window.switchView('input');
+            else { window.switchView('history'); }
+            
+            // PWA Logic
             if ('serviceWorker' in navigator) {
                 const swCode = "self.addEventListener('fetch', function(event) {});";
                 const blob = new Blob([swCode], {type: 'text/javascript'});
@@ -476,8 +532,10 @@
             }
         };
 
-        window.addEventListener('resize', () => { if(window.innerWidth < 768) switchView('input'); });
-        setInterval(() => { if(!isSyncing) fetchEntries(false); }, 10000);
+        window.addEventListener('resize', () => { if(window.innerWidth < 768) window.switchView('input'); });
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-banner').classList.remove('hidden'); });
+        window.triggerPWAInstall = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden'); deferredPrompt = null; }
+
     </script>
 </body>
 </html>
