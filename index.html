@@ -125,6 +125,14 @@
                     </div>
                 </div>
 
+                <!-- Daily Bar Chart Section -->
+                <div id="daily-chart-wrapper" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Daily Trend</h4>
+                    <div id="daily-chart-container" class="w-full">
+                        <!-- Chart injected here -->
+                    </div>
+                </div>
+
                 <div class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
                     <div class="flex justify-between items-end">
                         <div class="flex flex-col">
@@ -750,22 +758,38 @@
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
             const scope = document.getElementById('dashboard-scope').value;
+            
+            // Filter by Date
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
             if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
+            
+            // Filter by Scope
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            
             let g = 0, d = 0, total = 0; const cats = {};
+            const dailyTotals = {};
+
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
                 if (e.person === 'GET') g += amt; else d += amt;
                 cats[e.category] = (cats[e.category] || 0) + amt;
+
+                // Daily Stats
+                const dateKey = e.dateTime.toISOString().split('T')[0];
+                if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime };
+                dailyTotals[dateKey][e.person] += amt;
             });
+
+            // Update Summary
             document.getElementById('chart-get-total').innerText = g.toLocaleString();
             document.getElementById('chart-dom-total').innerText = d.toLocaleString();
             document.getElementById('m-get-sum').innerText = g.toLocaleString();
             document.getElementById('m-dom-sum').innerText = d.toLocaleString();
             document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%';
             document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
+            
+            // Render Categories
             const breakdown = document.getElementById('category-breakdown');
             breakdown.innerHTML = '<h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Category Totals</h4>';
             Object.keys(cats).forEach(cat => {
@@ -774,6 +798,43 @@
                 r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${cat}</span><span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full" style="width: ${p}%"></div></div>`;
                 breakdown.appendChild(r);
             });
+
+            // Render Daily Chart
+            const chartContainer = document.getElementById('daily-chart-container');
+            const sortedDates = Object.keys(dailyTotals).sort();
+            const maxDailyTotal = sortedDates.reduce((max, date) => Math.max(max, dailyTotals[date].GET + dailyTotals[date].DOM), 0);
+            
+            let chartHtml = '';
+            if (sortedDates.length === 0) {
+                chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>';
+            } else {
+                chartHtml = '<div class="flex items-end gap-3 h-40 overflow-x-auto pb-2 pt-6 px-2 no-scrollbar w-full">';
+                sortedDates.forEach(date => {
+                    const data = dailyTotals[date];
+                    const dayTotal = data.GET + data.DOM;
+                    // Colors change based on scope/mode
+                    const getBarColor = scope === 'GET' ? 'bg-green-700' : 'bg-green-400';
+                    const domBarColor = scope === 'DOM' ? 'bg-blue-700' : 'bg-blue-400';
+                    
+                    // Height relative to max day
+                    const barHeightPct = maxDailyTotal > 0 ? (dayTotal / maxDailyTotal) * 100 : 0;
+                    
+                    chartHtml += `
+                        <div class="flex flex-col items-center gap-1 min-w-[30px] h-full justify-end group relative">
+                            <div class="absolute -top-8 bg-gray-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
+                                ฿${dayTotal.toLocaleString()}
+                            </div>
+                            <div class="w-2.5 sm:w-4 bg-gray-100 rounded-t-sm rounded-b-sm flex flex-col-reverse overflow-hidden relative" style="height: ${Math.max(barHeightPct, 1)}%">
+                                <div class="${getBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.GET / dayTotal) * 100 : 0)}%"></div>
+                                <div class="${domBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.DOM / dayTotal) * 100 : 0)}%"></div>
+                            </div>
+                            <span class="text-[8px] sm:text-[9px] text-gray-400 font-bold whitespace-nowrap -rotate-45 origin-top-left mt-2">${data.dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                        </div>
+                    `;
+                });
+                chartHtml += '</div>';
+            }
+            chartContainer.innerHTML = chartHtml;
         }
 
         function setSyncState(loading) {
