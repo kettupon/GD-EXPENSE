@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM</title>
+    <title>Expense GET n DOM + Diary</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -38,12 +38,23 @@
             font-weight: 700;
         }
 
+        .diary-active {
+            border-bottom: 2px solid #EC4899 !important; /* Pink for Diary */
+            color: #DB2777 !important;
+        }
+
         .chart-bar-bg { background-color: #E5E7EB; height: 1.25rem; border-radius: 9999px; overflow: hidden; }
         .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
         .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
 
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-custom { animation: spin 1s linear infinite; }
+
+        /* Image Viewer Transition */
+        .image-modal-enter { opacity: 0; transform: scale(0.9); }
+        .image-modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
+        .image-modal-exit { opacity: 1; transform: scale(1); }
+        .image-modal-exit-active { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
 
         /* --- MOBILE SPECIFIC LAYOUT --- */
         @media (max-width: 768px) {
@@ -69,7 +80,8 @@
         <!-- Mobile Tabs -->
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50">
             <button onclick="handleExpenseTabClick()" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
-            <button onclick="switchView('history')" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
+            <!-- Modified for Double Tap -->
+            <button onclick="handleHistoryTabClick(true)" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
             <button onclick="switchView('dashboard')" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Dashboard</button>
         </div>
 
@@ -78,19 +90,19 @@
             
             <div class="bg-white border-b border-gray-200 hidden md:block flex-none">
                 <div class="flex">
-                    <button id="tab-history" onclick="switchView('history')" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors tab-active">Activity</button>
+                    <!-- Modified for Double Click -->
+                    <button id="tab-history" onclick="switchView('history')" ondblclick="toggleDiaryMode()" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors tab-active">Activity</button>
                     <button id="tab-dashboard" onclick="switchView('dashboard')" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors">Dashboard</button>
                 </div>
             </div>
             
             <!-- History View -->
             <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm">
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
+                <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm transition-colors" id="history-header">
+                    <span id="history-title" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
                     <div class="flex items-center gap-2">
                          <div id="live-indicator" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                        <!-- Changed from Refresh to Status since it's realtime -->
-                        <span class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
+                        <span id="mode-indicator" class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
                     </div>
                 </div>
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
@@ -255,6 +267,26 @@
         </div>
     </div>
 
+    <!-- Caption Modal -->
+    <div id="caption-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Diary Caption</h3>
+            <textarea id="caption-input" rows="4" class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400" placeholder="Write a memory..."></textarea>
+            <div class="flex gap-3 mt-4">
+                <button onclick="closeCaptionModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
+                <button onclick="saveCaption()" class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Save Note</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full Screen Image Viewer -->
+    <div id="image-viewer" class="fixed inset-0 bg-black z-[120] hidden flex flex-col justify-center items-center touch-none">
+        <button onclick="closeImageViewer()" class="absolute top-4 right-4 text-white p-2 z-50 bg-black/50 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
+        <img id="full-image" src="" class="max-w-full max-h-full object-contain p-2 transition-transform duration-200">
+    </div>
+
     <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-md">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-sm text-center">
             <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">🗑️</div>
@@ -266,7 +298,10 @@
         </div>
     </div>
 
-    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[101] uppercase tracking-wider"></div>
+    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[130] uppercase tracking-wider"></div>
+
+    <!-- Invisible Input for Image Upload -->
+    <input type="file" id="diary-image-input" hidden accept="image/*" onchange="handleImageFile(this)">
 
     <!-- MAIN LOGIC (FIREBASE) -->
     <script type="module">
@@ -274,7 +309,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, onSnapshot, query, 
-            orderBy, doc, updateDoc, deleteDoc, serverTimestamp 
+            orderBy, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc 
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         // Firebase Config
@@ -293,16 +328,24 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const expensesCol = collection(db, "expenses");
+        const imagesCol = collection(db, "images"); // NEW: Images collection
 
         // State
         window.entries = []; // Make global
+        window.diaryData = {}; // Map of expenseId -> { image, caption }
+        window.isDiaryMode = false;
+        
         let currentAmount = '0';
         let currentCategory = null;
         let currentPerson = null;
         let editingEntryId = null;
         let editingPerson = null;
         let lastExpenseClick = 0;
+        let lastHistoryTap = 0; // For double tap detection
         let deferredPrompt = null;
+        
+        // Upload State
+        let uploadingForId = null;
 
         // --- ICONS ---
         const CATEGORY_ICONS = {
@@ -319,7 +362,9 @@
 
         function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
 
-        // --- REAL-TIME LISTENER ---
+        // --- REAL-TIME LISTENERS ---
+        
+        // 1. Expenses Listener
         const q = query(expensesCol, orderBy("dateTime", "desc"));
         onSnapshot(q, (snapshot) => {
             window.entries = snapshot.docs.map(doc => {
@@ -327,21 +372,28 @@
                 return {
                     id: doc.id,
                     ...data,
-                    // Convert Firestore Timestamp to JS Date
                     dateTime: data.dateTime?.toDate() || new Date()
                 };
             });
             window.renderHistory();
             window.renderDashboard();
             setSyncState(false);
-        }, (error) => {
-            console.error("Error listening to changes: ", error);
+        }, (error) => console.error("Error listening to changes: ", error));
+
+        // 2. Images/Diary Listener
+        onSnapshot(imagesCol, (snapshot) => {
+            const newData = {};
+            snapshot.docs.forEach(doc => {
+                newData[doc.id] = doc.data(); // doc.id is same as expenseId
+            });
+            window.diaryData = newData;
+            // Only re-render if we are in diary mode to update thumbnails
+            if (window.isDiaryMode) window.renderHistory();
         });
 
-        // --- GLOBAL FUNCTIONS (Window Binding) ---
+        // --- GLOBAL FUNCTIONS ---
         
         window.fetchEntries = function(notify) {
-            // Since it's realtime, this button just gives feedback
             if(notify) showToast("Synced with Cloud", "green");
         };
 
@@ -358,7 +410,6 @@
                     person: currentPerson,
                     name: currentCategory
                 });
-                // Reset
                 currentAmount = '0'; currentPerson = null; updateDisplay(); resetPersonUI();
                 showToast("Saved", "green");
             } catch (e) { showToast("Error", "red"); console.error(e); }
@@ -385,11 +436,149 @@
             setSyncState(true);
             try {
                 await deleteDoc(doc(db, "expenses", editingEntryId));
+                // Also delete associated image entry if exists
+                try { await deleteDoc(doc(db, "images", editingEntryId)); } catch(err){}
                 window.closeDeleteModal();
                 showToast("Deleted", "red");
             } catch (e) { showToast("Error", "red"); }
             finally { setSyncState(false); }
         };
+
+        // --- DIARY & IMAGE LOGIC ---
+
+        // Toggle Diary Mode
+        window.toggleDiaryMode = function() {
+            window.isDiaryMode = !window.isDiaryMode;
+            const historyTitle = document.getElementById('history-title');
+            const modeIndicator = document.getElementById('mode-indicator');
+            const mobileTab = document.getElementById('tab-m-history');
+            const desktopTab = document.getElementById('tab-history');
+
+            if (window.isDiaryMode) {
+                historyTitle.innerText = "Diary Memories";
+                historyTitle.classList.add('text-pink-500');
+                modeIndicator.innerText = "Diary Mode";
+                modeIndicator.classList.add('text-pink-500');
+                mobileTab.classList.add('diary-active');
+                desktopTab.classList.add('diary-active');
+                showToast("Diary Mode Enabled", "pink");
+            } else {
+                historyTitle.innerText = "Recent Activity";
+                historyTitle.classList.remove('text-pink-500');
+                modeIndicator.innerText = "Live Sync";
+                modeIndicator.classList.remove('text-pink-500');
+                mobileTab.classList.remove('diary-active');
+                desktopTab.classList.remove('diary-active');
+                showToast("Back to History", "green");
+            }
+            window.renderHistory();
+        }
+
+        // Trigger Image Upload
+        window.triggerImageUpload = function(id, event) {
+            event.stopPropagation();
+            uploadingForId = id;
+            document.getElementById('diary-image-input').click();
+        }
+
+        // Handle File Selection & Compression
+        window.handleImageFile = async function(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                showToast("Compressing...", "blue");
+                
+                try {
+                    const compressedBase64 = await compressImage(file);
+                    // Save to Images Collection
+                    setSyncState(true);
+                    await setDoc(doc(db, "images", uploadingForId), {
+                        image: compressedBase64,
+                        updatedAt: serverTimestamp()
+                    }, { merge: true });
+                    
+                    showToast("Photo Added", "green");
+                } catch (e) {
+                    console.error(e);
+                    showToast("Upload Failed", "red");
+                } finally {
+                    setSyncState(false);
+                    input.value = ''; // Reset
+                }
+            }
+        }
+
+        // Canvas Compression Utility
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800; // Limit width
+                        const scaleSize = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scaleSize;
+                        
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        // Convert to base64 with 0.7 quality jpeg
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                        resolve(dataUrl);
+                    }
+                    img.onerror = (err) => reject(err);
+                }
+                reader.onerror = (err) => reject(err);
+            });
+        }
+
+        // Open Caption Modal
+        window.openCaptionModal = function(id, event) {
+            event.stopPropagation();
+            uploadingForId = id;
+            const currentCaption = window.diaryData[id]?.caption || "";
+            document.getElementById('caption-input').value = currentCaption;
+            document.getElementById('caption-modal').classList.remove('hidden');
+        }
+
+        window.closeCaptionModal = () => document.getElementById('caption-modal').classList.add('hidden');
+
+        window.saveCaption = async function() {
+            const text = document.getElementById('caption-input').value;
+            setSyncState(true);
+            try {
+                await setDoc(doc(db, "images", uploadingForId), {
+                    caption: text,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                closeCaptionModal();
+                showToast("Note Saved", "green");
+            } catch(e) { showToast("Error", "red"); }
+            finally { setSyncState(false); }
+        }
+
+        // Image Viewer Logic
+        window.openImageViewer = function(src, event) {
+            event.stopPropagation();
+            const viewer = document.getElementById('image-viewer');
+            document.getElementById('full-image').src = src;
+            viewer.classList.remove('hidden');
+            viewer.classList.add('image-modal-enter');
+            setTimeout(() => viewer.classList.add('image-modal-enter-active'), 10);
+        }
+        
+        window.closeImageViewer = function() {
+            const viewer = document.getElementById('image-viewer');
+            viewer.classList.remove('image-modal-enter-active');
+            viewer.classList.add('image-modal-exit-active');
+            setTimeout(() => {
+                viewer.classList.add('hidden');
+                viewer.classList.remove('image-modal-exit-active');
+            }, 200);
+        }
 
         // --- UI & NAVIGATION ---
 
@@ -411,18 +600,75 @@
             const list = document.getElementById('history-list');
             const mini = document.getElementById('mini-history');
             list.innerHTML = ''; mini.innerHTML = '';
+            
             window.entries.forEach((e, idx) => {
                 const d = e.dateTime;
                 const card = document.createElement('div');
-                card.className = "p-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press";
-                card.onclick = () => window.openEditModal(e.id);
-                card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm">${e.name}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</div></div>`;
+                const diaryEntry = window.diaryData[e.id];
+                
+                // --- DIARY MODE CARD ---
+                if (window.isDiaryMode) {
+                    card.className = "p-3 bg-white rounded-2xl border border-pink-100 shadow-sm flex flex-col gap-3 transition-all";
+                    
+                    // Header: Icon + Date + Person
+                    let headerHtml = `<div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-3.5 h-3.5")}</div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</span>
+                    </div>`;
+
+                    // Content: Caption (Middle)
+                    const captionText = diaryEntry?.caption ? `<p class="text-sm text-gray-700 italic">"${diaryEntry.caption}"</p>` : `<p class="text-xs text-gray-300 italic">No caption yet...</p>`;
+                    
+                    // Footer: Image Thumbnail OR Controls (Right)
+                    let mediaHtml = '';
+                    if (diaryEntry?.image) {
+                        // Show Thumbnail
+                        mediaHtml = `<div class="mt-2 relative group cursor-pointer" onclick="openImageViewer('${diaryEntry.image}', event)">
+                            <img src="${diaryEntry.image}" class="w-full h-32 object-cover rounded-xl border border-gray-100">
+                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl flex items-center justify-center">
+                                <span class="opacity-0 group-hover:opacity-100 text-white font-bold text-xs bg-black/50 px-2 py-1 rounded-lg">View</span>
+                            </div>
+                            <button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600 hover:text-pink-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+                            </button>
+                        </div>`;
+                    } else {
+                        // Show Add Buttons
+                        mediaHtml = `<div class="flex gap-2 mt-1">
+                            <button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:border-pink-300 hover:text-pink-500 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                <span class="text-xs font-bold">Add Photo</span>
+                            </button>
+                            <button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:border-pink-300 hover:text-pink-500 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
+                            </button>
+                        </div>`;
+                    }
+
+                    card.innerHTML = headerHtml + captionText + mediaHtml;
+                } 
+                // --- STANDARD MODE CARD ---
+                else {
+                    card.className = "p-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press";
+                    card.onclick = () => window.openEditModal(e.id);
+                    
+                    // Check if diary entry exists for icon indicator
+                    const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption);
+                    const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
+
+                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center">${e.name} ${diaryIcon}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</div></div>`;
+                }
+
                 list.appendChild(card);
+
+                // Mini History (Header) - Only show first 2
                 if (idx < 2) {
                     const b = document.createElement('div');
                     b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer";
                     b.onclick = () => window.openEditModal(e.id);
-                    // ADDED: Icon before the amount
                     b.innerHTML = `${getCatIcon(e.category, "w-3 h-3 text-gray-400")} <span class="text-[9px] font-bold">฿${e.amount}</span><span class="text-[7px] font-bold text-gray-300">${e.person}</span>`;
                     mini.appendChild(b);
                 }
@@ -466,6 +712,21 @@
             const icon = document.getElementById('sync-icon');
             if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500');
             else icon.classList.remove('animate-spin-custom', 'text-purple-500');
+        }
+
+        // --- NAVIGATION LOGIC ---
+
+        // Mobile History Double Tap Handler
+        window.handleHistoryTabClick = (isMobile) => {
+            const now = Date.now();
+            if (now - lastHistoryTap < 300) {
+                // Double Tap Detected
+                toggleDiaryMode();
+            } else {
+                // Single Tap
+                switchView('history');
+            }
+            lastHistoryTap = now;
         }
 
         window.switchView = (view) => {
@@ -517,7 +778,7 @@
             resetPersonUI(); updateDisplay();
         }
 
-        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = c === 'green' ? '#10B981' : '#EF4444'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
+        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899'}[c]; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
 
         // Initialization
         window.onload = () => {
@@ -525,11 +786,18 @@
             if(window.innerWidth < 768) window.switchView('input');
             else { window.switchView('history'); }
             
-            // PWA Logic
+            // PWA Logic - Modified to handle environment restrictions gracefully
             if ('serviceWorker' in navigator) {
-                const swCode = "self.addEventListener('fetch', function(event) {});";
-                const blob = new Blob([swCode], {type: 'text/javascript'});
-                navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(console.error);
+                try {
+                    const swCode = "self.addEventListener('fetch', function(event) {});";
+                    const blob = new Blob([swCode], {type: 'text/javascript'});
+                    const swUrl = URL.createObjectURL(blob);
+                    navigator.serviceWorker.register(swUrl).catch(e => {
+                        console.warn("Service Worker registration failed (likely due to environment restrictions):", e.message);
+                    });
+                } catch(e) {
+                    console.warn("Service Worker setup failed:", e);
+                }
             }
         };
 
