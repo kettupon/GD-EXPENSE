@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM + Diary</title>
+    <title>GET n DOM</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -43,7 +43,6 @@
             color: #DB2777 !important;
         }
 
-        .chart-bar-bg { background-color: #E5E7EB; height: 1.25rem; border-radius: 9999px; overflow: hidden; }
         .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
         .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
 
@@ -53,7 +52,6 @@
         /* Image Viewer Transition */
         .image-modal-enter { opacity: 0; transform: scale(0.9); }
         .image-modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
-        .image-modal-exit { opacity: 1; transform: scale(1); }
         .image-modal-exit-active { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
 
         /* --- MOBILE SPECIFIC LAYOUT --- */
@@ -131,7 +129,7 @@
                             <span class="text-lg font-bold text-gray-900">฿<span id="chart-dom-total">0</span></span>
                         </div>
                     </div>
-                    <div class="chart-bar-bg relative">
+                    <div class="w-full bg-gray-200 h-5 rounded-full overflow-hidden relative">
                         <div id="chart-bar-get" class="chart-bar-get absolute top-0 left-0 h-full" style="width: 0%;"></div>
                         <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full" style="width: 0%;"></div>
                     </div>
@@ -141,12 +139,9 @@
                     <!-- Categories -->
                 </div>
 
-                <!-- PWA Install Button -->
                 <div id="install-banner" class="hidden animate-bounce mt-4">
                     <button onclick="triggerPWAInstall()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-4 rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 btn-press">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
                         Add to Home Screen
                     </button>
                 </div>
@@ -169,9 +164,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="fetchEntries(true)" id="sync-btn" class="p-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" id="sync-icon" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" id="sync-icon" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                         </button>
                     </div>
                 </div>
@@ -269,7 +262,6 @@
     <div id="caption-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Add Diary Note</h3>
-            
             <div class="mb-4">
                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-2">Who are you?</label>
                 <div class="grid grid-cols-2 gap-3">
@@ -277,12 +269,22 @@
                     <button id="cap-btn-DOM" onclick="selectCaptionPerson('DOM')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">DOM</button>
                 </div>
             </div>
-
             <textarea id="caption-input" rows="3" class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400" placeholder="Write a memory..."></textarea>
-            
             <div class="flex gap-3 mt-4">
                 <button onclick="closeCaptionModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
                 <button onclick="saveCaption()" class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Post Comment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diary Options Modal (Long Press) -->
+    <div id="diary-options-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[115] hidden p-6 backdrop-blur-md">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
+            <h3 class="text-lg font-bold text-gray-900 mb-4">Photo Options</h3>
+            <div class="flex flex-col gap-3">
+                <button onclick="executeReupload()" class="w-full py-4 bg-gray-100 text-gray-800 rounded-2xl font-bold text-sm btn-press">Replace Photo</button>
+                <button onclick="executeDeleteImage()" class="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm btn-press">Delete Photo</button>
+                <button onclick="closeDiaryOptions()" class="w-full py-4 bg-white text-gray-400 rounded-2xl font-bold text-sm border border-gray-100 mt-2">Cancel</button>
             </div>
         </div>
     </div>
@@ -308,19 +310,16 @@
 
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[130] uppercase tracking-wider"></div>
 
-    <!-- Invisible Input for Image Upload -->
     <input type="file" id="diary-image-input" hidden accept="image/*" onchange="handleImageFile(this)">
 
     <!-- MAIN LOGIC (FIREBASE) -->
     <script type="module">
-        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, onSnapshot, query, 
             orderBy, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc, arrayUnion 
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCA1razTnJuJdrDrJ4_jaxQoOih-FnghF8",
             authDomain: "expensegetndom.firebaseapp.com",
@@ -332,15 +331,13 @@
             measurementId: "G-4ENMN4ECT3"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const expensesCol = collection(db, "expenses");
-        const imagesCol = collection(db, "images"); // NEW: Images collection
+        const imagesCol = collection(db, "images");
 
-        // State
-        window.entries = []; // Make global
-        window.diaryData = {}; // Map of expenseId -> { image, comments: [] }
+        window.entries = []; 
+        window.diaryData = {}; 
         window.isDiaryMode = false;
         
         let currentAmount = '0';
@@ -349,14 +346,12 @@
         let editingEntryId = null;
         let editingPerson = null;
         let lastExpenseClick = 0;
-        let lastHistoryTap = 0; // For double tap detection
+        let lastHistoryTap = 0; 
         let deferredPrompt = null;
         
-        // Upload & Caption State
         let uploadingForId = null;
         let captionPerson = null;
 
-        // --- ICONS ---
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
             'Grocery': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
@@ -371,9 +366,6 @@
 
         function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
 
-        // --- REAL-TIME LISTENERS ---
-        
-        // 1. Expenses Listener
         const q = query(expensesCol, orderBy("dateTime", "desc"));
         onSnapshot(q, (snapshot) => {
             window.entries = snapshot.docs.map(doc => {
@@ -387,24 +379,16 @@
             window.renderHistory();
             window.renderDashboard();
             setSyncState(false);
-        }, (error) => console.error("Error listening to changes: ", error));
+        }, (error) => console.error(error));
 
-        // 2. Images/Diary Listener
         onSnapshot(imagesCol, (snapshot) => {
             const newData = {};
-            snapshot.docs.forEach(doc => {
-                newData[doc.id] = doc.data(); // doc.id is same as expenseId
-            });
+            snapshot.docs.forEach(doc => { newData[doc.id] = doc.data(); });
             window.diaryData = newData;
-            // Only re-render if we are in diary mode to update thumbnails
             if (window.isDiaryMode) window.renderHistory();
         });
 
-        // --- GLOBAL FUNCTIONS ---
-        
-        window.fetchEntries = function(notify) {
-            if(notify) showToast("Synced with Cloud", "green");
-        };
+        window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
 
         window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
@@ -421,7 +405,7 @@
                 });
                 currentAmount = '0'; currentPerson = null; updateDisplay(); resetPersonUI();
                 showToast("Saved", "green");
-            } catch (e) { showToast("Error", "red"); console.error(e); }
+            } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
 
@@ -445,7 +429,6 @@
             setSyncState(true);
             try {
                 await deleteDoc(doc(db, "expenses", editingEntryId));
-                // Also delete associated image entry if exists
                 try { await deleteDoc(doc(db, "images", editingEntryId)); } catch(err){}
                 window.closeDeleteModal();
                 showToast("Deleted", "red");
@@ -453,9 +436,6 @@
             finally { setSyncState(false); }
         };
 
-        // --- DIARY & IMAGE LOGIC ---
-
-        // Toggle Diary Mode
         window.toggleDiaryMode = function() {
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
@@ -483,40 +463,29 @@
             window.renderHistory();
         }
 
-        // Trigger Image Upload
         window.triggerImageUpload = function(id, event) {
-            event.stopPropagation();
+            if (event) event.stopPropagation();
             uploadingForId = id;
             document.getElementById('diary-image-input').click();
         }
 
-        // Handle File Selection & Compression
         window.handleImageFile = async function(input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0];
-                showToast("Compressing...", "blue");
-                
+                showToast("Processing...", "blue");
                 try {
                     const compressedBase64 = await compressImage(file);
-                    // Save to Images Collection
                     setSyncState(true);
                     await setDoc(doc(db, "images", uploadingForId), {
                         image: compressedBase64,
                         updatedAt: serverTimestamp()
                     }, { merge: true });
-                    
-                    showToast("Photo Added", "green");
-                } catch (e) {
-                    console.error(e);
-                    showToast("Upload Failed", "red");
-                } finally {
-                    setSyncState(false);
-                    input.value = ''; // Reset
-                }
+                    showToast("Photo Saved", "green");
+                } catch (e) { showToast("Failed", "red"); }
+                finally { setSyncState(false); input.value = ''; }
             }
         }
 
-        // Canvas Compression Utility
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -526,31 +495,25 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; // Limit width
+                        const MAX_WIDTH = 800;
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
-                        
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        // Convert to base64 with 0.7 quality jpeg
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                        resolve(dataUrl);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
                     }
-                    img.onerror = (err) => reject(err);
+                    img.onerror = reject;
                 }
-                reader.onerror = (err) => reject(err);
+                reader.onerror = reject;
             });
         }
 
-        // Open Caption Modal
         window.openCaptionModal = function(id, event) {
             event.stopPropagation();
             uploadingForId = id;
             document.getElementById('caption-input').value = "";
             captionPerson = null;
-            // Reset Buttons
             document.getElementById('cap-btn-GET').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('cap-btn-DOM').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('caption-modal').classList.remove('hidden');
@@ -560,52 +523,70 @@
 
         window.selectCaptionPerson = (p) => {
             captionPerson = p;
-            document.getElementById('cap-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white btn-press shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
-            document.getElementById('cap-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white btn-press shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
+            document.getElementById('cap-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+            document.getElementById('cap-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
         }
 
         window.saveCaption = async function() {
             const text = document.getElementById('caption-input').value.trim();
-            if (!text) { showToast("Write something", "red"); return; }
-            if (!captionPerson) { showToast("Select Person", "red"); return; }
-
+            if (!text || !captionPerson) { showToast("Missing Info", "red"); return; }
             setSyncState(true);
             try {
                 await setDoc(doc(db, "images", uploadingForId), {
-                    comments: arrayUnion({
-                        text: text,
-                        author: captionPerson,
-                        timestamp: Date.now()
-                    }),
+                    comments: arrayUnion({ text: text, author: captionPerson, timestamp: Date.now() }),
                     updatedAt: serverTimestamp()
                 }, { merge: true });
                 closeCaptionModal();
                 showToast("Posted", "green");
-            } catch(e) { console.error(e); showToast("Error", "red"); }
+            } catch(e) { showToast("Error", "red"); }
             finally { setSyncState(false); }
         }
 
-        // Image Viewer Logic
+        window.openDiaryOptions = (id) => {
+            uploadingForId = id;
+            document.getElementById('diary-options-modal').classList.remove('hidden');
+        }
+
+        window.closeDiaryOptions = () => document.getElementById('diary-options-modal').classList.add('hidden');
+
+        window.executeReupload = () => {
+            closeDiaryOptions();
+            window.triggerImageUpload(uploadingForId);
+        }
+
+        window.executeDeleteImage = async () => {
+            setSyncState(true);
+            try {
+                const docRef = doc(db, "images", uploadingForId);
+                const snap = await getDoc(docRef);
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (!data.comments || data.comments.length === 0) {
+                        await deleteDoc(docRef);
+                    } else {
+                        await updateDoc(docRef, { image: null });
+                    }
+                }
+                showToast("Photo Removed", "red");
+            } catch(e) { showToast("Error", "red"); }
+            finally { setSyncState(false); closeDiaryOptions(); }
+        }
+
         window.openImageViewer = function(src, event) {
             event.stopPropagation();
-            const viewer = document.getElementById('image-viewer');
             document.getElementById('full-image').src = src;
-            viewer.classList.remove('hidden');
-            viewer.classList.add('image-modal-enter');
-            setTimeout(() => viewer.classList.add('image-modal-enter-active'), 10);
+            const v = document.getElementById('image-viewer');
+            v.classList.remove('hidden');
+            v.classList.add('image-modal-enter');
+            setTimeout(() => v.classList.add('image-modal-enter-active'), 10);
         }
         
         window.closeImageViewer = function() {
-            const viewer = document.getElementById('image-viewer');
-            viewer.classList.remove('image-modal-enter-active');
-            viewer.classList.add('image-modal-exit-active');
-            setTimeout(() => {
-                viewer.classList.add('hidden');
-                viewer.classList.remove('image-modal-exit-active');
-            }, 200);
+            const v = document.getElementById('image-viewer');
+            v.classList.remove('image-modal-enter-active');
+            v.classList.add('image-modal-exit-active');
+            setTimeout(() => { v.classList.add('hidden'); v.classList.remove('image-modal-exit-active'); }, 200);
         }
-
-        // --- UI & NAVIGATION ---
 
         window.pressNum = (n) => { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
         window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
@@ -614,7 +595,16 @@
         window.resetPersonUI = () => { document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('bg-green-500', 'bg-blue-500', 'text-white')); }
         window.selectEditPerson = (p) => { editingPerson = p; document.getElementById('edit-btn-GET').className = p==='GET'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; document.getElementById('edit-btn-DOM').className = p==='DOM'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; }
         
-        function updateDisplay() { document.getElementById('display-amount').innerText = currentAmount; document.getElementById('display-category').innerText = currentCategory || "Select Category"; const dp = document.getElementById('display-person'); if (currentPerson) { dp.innerText = currentPerson; dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${currentPerson === 'GET' ? 'bg-green-500' : 'bg-blue-500'}`; dp.classList.remove('hidden'); } else dp.classList.add('hidden'); }
+        function updateDisplay() { 
+            document.getElementById('display-amount').innerText = currentAmount; 
+            document.getElementById('display-category').innerText = currentCategory || "Select Category"; 
+            const dp = document.getElementById('display-person'); 
+            if (currentPerson) { 
+                dp.innerText = currentPerson; 
+                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${currentPerson === 'GET' ? 'bg-green-500' : 'bg-blue-500'}`; 
+                dp.classList.remove('hidden'); 
+            } else dp.classList.add('hidden'); 
+        }
         
         window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; selectEditPerson(e.person); document.getElementById('edit-modal').classList.remove('hidden'); }
         window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
@@ -631,85 +621,73 @@
                 const card = document.createElement('div');
                 const diaryEntry = window.diaryData[e.id];
                 
-                // --- DIARY MODE CARD ---
                 if (window.isDiaryMode) {
                     card.className = "p-3 bg-white rounded-2xl border border-pink-100 shadow-sm flex flex-col gap-3 transition-all";
+                    card.oncontextmenu = (ev) => ev.preventDefault();
                     
-                    // Header: Icon + Date + Person
+                    // Hold Tap detection
+                    let pressTimer;
+                    const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id), 600); };
+                    const cancelPress = () => clearTimeout(pressTimer);
+                    card.onmousedown = startPress; card.onmouseup = cancelPress; card.onmouseleave = cancelPress;
+                    card.ontouchstart = startPress; card.ontouchend = cancelPress; card.ontouchmove = cancelPress;
+
                     let headerHtml = `<div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-3.5 h-3.5")}</div>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div>
+                            <div class="flex flex-col min-w-0">
+                                <span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${e.name}</span>
+                                <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            </div>
                         </div>
                         <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</span>
                     </div>`;
 
-                    // Content: Comments (Chat Style)
                     let commentsHtml = '';
-                    
-                    // Legacy Caption Support
                     if (diaryEntry?.caption) {
-                        commentsHtml += `<div class="text-center text-xs text-gray-500 italic mb-2 py-1 border-b border-gray-100">"${diaryEntry.caption}"</div>`;
+                        commentsHtml += `<div class="text-center text-xs text-gray-500 italic mb-1 py-1 border-b border-gray-100">"${diaryEntry.caption}"</div>`;
                     }
-
-                    // Chat Bubbles
                     if (diaryEntry?.comments && Array.isArray(diaryEntry.comments)) {
-                        commentsHtml += `<div class="flex flex-col gap-2 w-full mt-1 mb-2">`;
+                        commentsHtml += `<div class="flex flex-col gap-2 w-full mt-1 mb-1">`;
                         diaryEntry.comments.forEach(c => {
                             const isGet = c.author === 'GET';
-                            commentsHtml += `<div class="${isGet ? 'self-start bg-green-50 text-green-800 rounded-br-xl' : 'self-end bg-blue-50 text-blue-800 rounded-bl-xl'} px-3 py-2 rounded-t-xl text-xs max-w-[85%] relative group">
-                                <span class="font-bold text-[8px] block mb-0.5 opacity-50 uppercase tracking-wider">${c.author}</span>
-                                ${c.text}
+                            commentsHtml += `<div class="${isGet ? 'self-start bg-green-50 text-green-800 rounded-br-xl' : 'self-end bg-blue-50 text-blue-800 rounded-bl-xl'} px-3 py-2 rounded-t-xl text-xs max-w-[85%]">
+                                <span class="font-bold text-[8px] block mb-0.5 opacity-50 uppercase">${c.author}</span>${c.text}
                             </div>`;
                         });
                         commentsHtml += `</div>`;
                     } else if (!diaryEntry?.caption) {
-                        commentsHtml = `<p class="text-xs text-gray-300 italic text-center py-2">No notes yet...</p>`;
+                        commentsHtml = `<p class="text-[10px] text-gray-300 italic text-center py-1">No notes yet...</p>`;
                     }
                     
-                    // Footer: Image Thumbnail OR Controls (Right)
                     let mediaHtml = '';
                     if (diaryEntry?.image) {
-                        // Show Thumbnail
                         mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${diaryEntry.image}', event)">
                             <img src="${diaryEntry.image}" class="w-full h-32 object-cover rounded-xl border border-gray-100">
-                            <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-xl flex items-center justify-center">
-                                <span class="opacity-0 group-hover:opacity-100 text-white font-bold text-xs bg-black/50 px-2 py-1 rounded-lg">View</span>
-                            </div>
-                            <button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600 hover:text-pink-500">
+                            <div class="absolute inset-0 bg-black/0 rounded-xl flex items-center justify-center"><span class="opacity-0 group-hover:opacity-100 text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-lg">View</span></div>
+                            <button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                             </button>
                         </div>`;
                     } else {
-                        // Show Add Buttons
                         mediaHtml = `<div class="flex gap-2 mt-1">
-                            <button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:border-pink-300 hover:text-pink-500 transition-colors">
+                            <button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:text-pink-500 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                <span class="text-xs font-bold">Add Photo</span>
                             </button>
-                            <button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:border-pink-300 hover:text-pink-500 transition-colors">
+                            <button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-pink-500 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                             </button>
                         </div>`;
                     }
-
                     card.innerHTML = headerHtml + commentsHtml + mediaHtml;
-                } 
-                // --- STANDARD MODE CARD ---
-                else {
+                } else {
                     card.className = "p-3.5 bg-white rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press";
                     card.onclick = () => window.openEditModal(e.id);
-                    
-                    // Check if diary entry exists for icon indicator
-                    const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments && diaryEntry.comments.length > 0));
+                    const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0));
                     const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
-
                     card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center">${e.name} ${diaryIcon}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</div></div>`;
                 }
-
                 list.appendChild(card);
-
-                // Mini History (Header) - Only show first 2
                 if (idx < 2) {
                     const b = document.createElement('div');
                     b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer";
@@ -725,11 +703,7 @@
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
-            if (end) {
-                const endDate = new Date(end);
-                endDate.setHours(23,59,59);
-                filtered = filtered.filter(e => e.dateTime <= endDate);
-            }
+            if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
             let g = 0, d = 0, total = 0; const cats = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
@@ -740,8 +714,7 @@
             document.getElementById('chart-dom-total').innerText = d.toLocaleString();
             document.getElementById('m-get-sum').innerText = g.toLocaleString();
             document.getElementById('m-dom-sum').innerText = d.toLocaleString();
-            const gW = total > 0 ? (g / total) * 100 : 0;
-            document.getElementById('chart-bar-get').style.width = gW + '%';
+            document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%';
             document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
             const breakdown = document.getElementById('category-breakdown');
             breakdown.innerHTML = '<h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Category Totals</h4>';
@@ -759,18 +732,10 @@
             else icon.classList.remove('animate-spin-custom', 'text-purple-500');
         }
 
-        // --- NAVIGATION LOGIC ---
-
-        // Mobile History Double Tap Handler
-        window.handleHistoryTabClick = (isMobile) => {
+        window.handleHistoryTabClick = () => {
             const now = Date.now();
-            if (now - lastHistoryTap < 300) {
-                // Double Tap Detected
-                toggleDiaryMode();
-            } else {
-                // Single Tap
-                switchView('history');
-            }
+            if (now - lastHistoryTap < 300) { toggleDiaryMode(); } 
+            else { switchView('history'); }
             lastHistoryTap = now;
         }
 
@@ -780,33 +745,19 @@
             const sideSec = document.getElementById('side-section');
             const inputSec = document.getElementById('input-section');
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
-
             if (window.innerWidth < 768) {
                 if (view === 'input') {
-                    sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); 
-                    inputSec.classList.remove('mobile-hidden');
+                    sideSec.classList.add('mobile-hidden'); inputSec.classList.remove('mobile-hidden');
                     document.getElementById('tab-m-input').classList.add('tab-active');
                 } else {
                     inputSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view');
-                    if (view === 'history') {
-                        histCont.classList.remove('hidden'); dashCont.classList.add('hidden');
-                        document.getElementById('tab-m-history').classList.add('tab-active');
-                    } else {
-                        dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
-                        document.getElementById('tab-m-dashboard').classList.add('tab-active');
-                        window.renderDashboard();
-                    }
+                    if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } 
+                    else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); }
                 }
             } else {
-                inputSec.classList.remove('mobile-hidden'); sideSec.classList.remove('mobile-hidden', 'mobile-view');
-                if (view === 'history') {
-                    histCont.classList.remove('hidden'); dashCont.classList.add('hidden');
-                    document.getElementById('tab-history').classList.add('tab-active');
-                } else {
-                    dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
-                    document.getElementById('tab-dashboard').classList.add('tab-active');
-                    window.renderDashboard();
-                }
+                inputSec.classList.remove('mobile-hidden');
+                if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } 
+                else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); }
             }
         }
 
@@ -825,31 +776,21 @@
 
         function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899'}[c]; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
 
-        // Initialization
         window.onload = () => {
             document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6"));
-            if(window.innerWidth < 768) window.switchView('input');
-            else { window.switchView('history'); }
-            
-            // PWA Logic - Modified to handle environment restrictions gracefully
+            if(window.innerWidth < 768) window.switchView('input'); else { window.switchView('history'); }
             if ('serviceWorker' in navigator) {
                 try {
                     const swCode = "self.addEventListener('fetch', function(event) {});";
                     const blob = new Blob([swCode], {type: 'text/javascript'});
-                    const swUrl = URL.createObjectURL(blob);
-                    navigator.serviceWorker.register(swUrl).catch(e => {
-                        console.warn("Service Worker registration failed (likely due to environment restrictions):", e.message);
-                    });
-                } catch(e) {
-                    console.warn("Service Worker setup failed:", e);
-                }
+                    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message));
+                } catch(e) { console.warn(e); }
             }
         };
 
         window.addEventListener('resize', () => { if(window.innerWidth < 768) window.switchView('input'); });
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-banner').classList.remove('hidden'); });
         window.triggerPWAInstall = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden'); deferredPrompt = null; }
-
     </script>
 </body>
 </html>
