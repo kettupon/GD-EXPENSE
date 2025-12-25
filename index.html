@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>GET n DOM</title>
+    <title>Expense GET n DOM + Diary</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -52,7 +52,7 @@
         /* Image Viewer Transition */
         .image-modal-enter { opacity: 0; transform: scale(0.9); }
         .image-modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
-        .image-modal-exit-active { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
+        .image-modal-exit { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
 
         /* --- MOBILE SPECIFIC LAYOUT --- */
         @media (max-width: 768px) {
@@ -110,7 +110,6 @@
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
-                    <!-- Dashboard View Selector -->
                     <select id="dashboard-scope" onchange="renderDashboard()" class="text-xs font-bold bg-gray-100 border-none rounded-lg py-2 px-3 outline-none text-gray-600">
                         <option value="shared">Shared (Pool)</option>
                         <option value="GET">GET Personal</option>
@@ -298,8 +297,20 @@
         </div>
     </div>
 
+    <!-- Password Modal -->
+    <div id="password-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[120] hidden p-6 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+            <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Enter Password</h3>
+            <input type="password" id="password-input" class="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm text-gray-700 placeholder-gray-400 mb-4" placeholder="Required for this action">
+            <div class="flex gap-3">
+                <button onclick="closePasswordModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
+                <button onclick="verifyPassword()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Confirm</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Full Screen Image Viewer -->
-    <div id="image-viewer" class="fixed inset-0 bg-black z-[120] hidden flex flex-col justify-center items-center touch-none">
+    <div id="image-viewer" class="fixed inset-0 bg-black z-[125] hidden flex flex-col justify-center items-center touch-none">
         <button onclick="closeImageViewer()" class="absolute top-4 right-4 text-white p-2 z-50 bg-black/50 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
@@ -326,7 +337,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, onSnapshot, query, 
-            orderBy, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc, arrayUnion 
+            orderBy, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc, arrayUnion, deleteField
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -352,7 +363,7 @@
         let currentAmount = '0';
         let currentCategory = null;
         let currentPerson = null;
-        let isIndividualMode = false; // New State for Individual Mode
+        let isIndividualMode = false; 
         
         let editingEntryId = null;
         let editingPerson = null;
@@ -362,12 +373,13 @@
         
         let uploadingForId = null;
         let captionPerson = null;
+        let pendingAction = null;
 
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
             'Grocery': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
             'Trip': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>`,
-            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"></path></svg>`
+            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>`
         };
 
         function getCatIcon(category, size = "w-5 h-5") {
@@ -381,16 +393,12 @@
         onSnapshot(q, (snapshot) => {
             window.entries = snapshot.docs.map(doc => {
                 const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                    dateTime: data.dateTime?.toDate() || new Date()
-                };
+                return { id: doc.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
             });
             window.renderHistory();
             window.renderDashboard();
             setSyncState(false);
-        }, (error) => console.error(error));
+        });
 
         onSnapshot(imagesCol, (snapshot) => {
             const newData = {};
@@ -398,8 +406,6 @@
             window.diaryData = newData;
             if (window.isDiaryMode) window.renderHistory();
         });
-
-        window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
 
         window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
@@ -413,10 +419,10 @@
                     amount: parseFloat(currentAmount),
                     person: currentPerson,
                     name: currentCategory,
-                    isIndividual: isIndividualMode // Save individual flag
+                    isIndividual: isIndividualMode 
                 });
                 currentAmount = '0'; currentPerson = null; isIndividualMode = false; updateDisplay(); resetPersonUI();
-                showToast(isIndividualMode ? "Individual Saved" : "Shared Saved", "green");
+                showToast("Saved", "green");
             } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
@@ -452,24 +458,17 @@
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
             const modeIndicator = document.getElementById('mode-indicator');
-            const mobileTab = document.getElementById('tab-m-history');
-            const desktopTab = document.getElementById('tab-history');
-
             if (window.isDiaryMode) {
                 historyTitle.innerText = "Diary Memories";
                 historyTitle.classList.add('text-pink-500');
                 modeIndicator.innerText = "Diary Mode";
                 modeIndicator.classList.add('text-pink-500');
-                mobileTab.classList.add('diary-active');
-                desktopTab.classList.add('diary-active');
                 showToast("Diary Mode Enabled", "pink");
             } else {
                 historyTitle.innerText = "Recent Activity";
                 historyTitle.classList.remove('text-pink-500');
                 modeIndicator.innerText = "Live Sync";
                 modeIndicator.classList.remove('text-pink-500');
-                mobileTab.classList.remove('diary-active');
-                desktopTab.classList.remove('diary-active');
                 showToast("Back to History", "green");
             }
             window.renderHistory();
@@ -514,9 +513,9 @@
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve(canvas.toDataURL('image/jpeg', 0.7));
-                    }
+                    };
                     img.onerror = reject;
-                }
+                };
                 reader.onerror = reject;
             });
         }
@@ -561,27 +560,48 @@
 
         window.closeDiaryOptions = () => document.getElementById('diary-options-modal').classList.add('hidden');
 
-        window.executeReupload = () => {
-            closeDiaryOptions();
-            window.triggerImageUpload(uploadingForId);
+        window.executeReupload = () => { closeDiaryOptions(); openPasswordModal('replace'); }
+        window.executeDeleteImage = () => { closeDiaryOptions(); openPasswordModal('delete'); }
+
+        window.openPasswordModal = (action) => {
+            pendingAction = action;
+            document.getElementById('password-input').value = '';
+            document.getElementById('password-modal').classList.remove('hidden');
+        }
+        window.closePasswordModal = () => { document.getElementById('password-modal').classList.add('hidden'); pendingAction = null; }
+
+        window.verifyPassword = async () => {
+            const pw = document.getElementById('password-input').value;
+            const action = pendingAction; // Capture action before closing
+            let isValid = (action === 'replace' && pw === 'yakplian') || (action === 'delete' && pw === 'yaklob');
+            if (isValid) {
+                closePasswordModal();
+                if (action === 'replace') window.triggerImageUpload(uploadingForId);
+                else if (action === 'delete') await performDeleteImage();
+            } else { showToast("Wrong Password", "red"); }
         }
 
-        window.executeDeleteImage = async () => {
+        async function performDeleteImage() {
             setSyncState(true);
             try {
                 const docRef = doc(db, "images", uploadingForId);
                 const snap = await getDoc(docRef);
                 if (snap.exists()) {
                     const data = snap.data();
-                    if (!data.comments || data.comments.length === 0) {
+                    const hasComments = data.comments && data.comments.length > 0;
+                    const hasCaption = !!data.caption;
+                    if (!hasComments && !hasCaption) {
                         await deleteDoc(docRef);
                     } else {
-                        await updateDoc(docRef, { image: null });
+                        await updateDoc(docRef, { image: deleteField() });
                     }
+                    showToast("Photo Removed", "red");
                 }
-                showToast("Photo Removed", "red");
-            } catch(e) { showToast("Error", "red"); }
-            finally { setSyncState(false); closeDiaryOptions(); }
+            } catch(e) { 
+                console.error(e);
+                showToast("Deletion Failed", "red"); 
+            }
+            finally { setSyncState(false); }
         }
 
         window.openImageViewer = function(src, event) {
@@ -604,35 +624,17 @@
         window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
         window.selectCategory = (cat) => { currentCategory = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); updateDisplay(); }
         
-        // --- MODIFIED PERSON SELECTION LOGIC ---
         window.selectPerson = (p) => { 
-            // If clicking the ALREADY selected person, toggle mode
-            if (currentPerson === p) {
-                isIndividualMode = !isIndividualMode;
-            } else {
-                currentPerson = p; 
-                isIndividualMode = false; // Reset to shared when switching person
-            }
-            
+            if (currentPerson === p) isIndividualMode = !isIndividualMode;
+            else { currentPerson = p; isIndividualMode = false; }
             resetPersonUI(); 
             const btn = document.getElementById(`btn-${p}`);
-            
-            // Apply colors based on Mode
-            if (p === 'GET') {
-                btn.className = isIndividualMode 
-                    ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner"
-                    : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all";
-            } else {
-                btn.className = isIndividualMode
-                    ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner"
-                    : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all";
-            }
-            
+            if (p === 'GET') btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all";
+            else btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all";
             updateDisplay(); 
         }
 
         window.resetPersonUI = () => { 
-            // Reset both to default inactive state
             document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all";
             document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all";
         }
@@ -642,29 +644,17 @@
         function updateDisplay() { 
             document.getElementById('display-amount').innerText = currentAmount; 
             document.getElementById('display-category').innerText = currentCategory || "Select Category"; 
-            
             const dp = document.getElementById('display-person'); 
             const dt = document.getElementById('display-type');
-            
             if (currentPerson) { 
                 dp.innerText = currentPerson; 
-                
-                // Color Logic for Badge
-                let bgClass = '';
-                if (currentPerson === 'GET') bgClass = isIndividualMode ? 'bg-green-800' : 'bg-green-500';
-                else bgClass = isIndividualMode ? 'bg-blue-800' : 'bg-blue-500';
-                
+                let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500');
                 dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass}`; 
                 dp.classList.remove('hidden'); 
-                
                 dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED";
                 dt.className = isIndividualMode ? "text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-2" : "hidden";
                 dt.classList.remove('hidden');
-                
-            } else {
-                dp.classList.add('hidden'); 
-                dt.classList.add('hidden');
-            }
+            } else { dp.classList.add('hidden'); dt.classList.add('hidden'); }
         }
         
         window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; selectEditPerson(e.person); document.getElementById('edit-modal').classList.remove('hidden'); }
@@ -681,17 +671,12 @@
                 const d = e.dateTime;
                 const card = document.createElement('div');
                 const diaryEntry = window.diaryData[e.id];
-                
-                // --- VISUAL BADGE FOR INDIVIDUAL ---
                 const isPrivate = e.isIndividual === true;
-                let badgeClass = '';
-                if (e.person === 'GET') badgeClass = isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600';
-                else badgeClass = isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600';
+                let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
                 
                 if (window.isDiaryMode) {
                     card.className = "p-3 bg-white rounded-2xl border border-pink-100 shadow-sm flex flex-col gap-3 transition-all";
                     card.oncontextmenu = (ev) => ev.preventDefault();
-                    
                     let pressTimer;
                     const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id), 600); };
                     const cancelPress = () => clearTimeout(pressTimer);
@@ -710,9 +695,7 @@
                     </div>`;
 
                     let commentsHtml = '';
-                    if (diaryEntry?.caption) {
-                        commentsHtml += `<div class="text-center text-xs text-gray-500 italic mb-1 py-1 border-b border-gray-100">"${diaryEntry.caption}"</div>`;
-                    }
+                    if (diaryEntry?.caption) commentsHtml += `<div class="text-center text-xs text-gray-500 italic mb-1 py-1 border-b border-gray-100">"${diaryEntry.caption}"</div>`;
                     if (diaryEntry?.comments && Array.isArray(diaryEntry.comments)) {
                         commentsHtml += `<div class="flex flex-col gap-2 w-full mt-1 mb-1">`;
                         diaryEntry.comments.forEach(c => {
@@ -722,9 +705,7 @@
                             </div>`;
                         });
                         commentsHtml += `</div>`;
-                    } else if (!diaryEntry?.caption) {
-                        commentsHtml = `<p class="text-[10px] text-gray-300 italic text-center py-1">No notes yet...</p>`;
-                    }
+                    } else if (!diaryEntry?.caption) commentsHtml = `<p class="text-[10px] text-gray-300 italic text-center py-1">No notes yet...</p>`;
                     
                     let mediaHtml = '';
                     if (diaryEntry?.image) {
@@ -768,20 +749,11 @@
             let filtered = window.entries;
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
-            const scope = document.getElementById('dashboard-scope').value; // 'shared', 'GET', 'DOM'
-
-            // Filter Date
+            const scope = document.getElementById('dashboard-scope').value;
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
             if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
-            
-            // Filter Scope (Shared vs Individual)
-            if (scope === 'shared') {
-                filtered = filtered.filter(e => e.isIndividual !== true);
-            } else {
-                // Individual Scope: Show only Private expenses for that person
-                filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-            }
-
+            if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
+            else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
             let g = 0, d = 0, total = 0; const cats = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
@@ -812,47 +784,34 @@
 
         window.handleHistoryTabClick = () => {
             const now = Date.now();
-            if (now - lastHistoryTap < 300) { toggleDiaryMode(); } 
-            else { switchView('history'); }
+            if (now - lastHistoryTap < 300) toggleDiaryMode();
+            else switchView('history');
             lastHistoryTap = now;
         }
 
-        // --- LAYOUT FIX ---
         window.switchView = (view) => {
             const histCont = document.getElementById('history-container');
             const dashCont = document.getElementById('dashboard-container');
             const sideSec = document.getElementById('side-section');
             const inputSec = document.getElementById('input-section');
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
-            
             if (window.innerWidth < 768) {
                 if (view === 'input') {
-                    // Force display:flex on input section for mobile
                     sideSec.classList.add('mobile-hidden'); 
                     sideSec.classList.remove('mobile-view');
                     inputSec.classList.remove('mobile-hidden');
-                    inputSec.style.display = 'flex'; // Explicitly restore flex
+                    inputSec.style.display = 'flex';
                     document.getElementById('tab-m-input').classList.add('tab-active');
                 } else {
                     inputSec.classList.add('mobile-hidden'); 
-                    inputSec.style.display = ''; // Clear explicit style so class handles it
+                    inputSec.style.display = '';
                     sideSec.classList.remove('mobile-hidden'); 
                     sideSec.classList.add('mobile-view');
-                    
-                    if (view === 'history') { 
-                        histCont.classList.remove('hidden'); 
-                        dashCont.classList.add('hidden'); 
-                        document.getElementById('tab-m-history').classList.add('tab-active'); 
-                    } else { 
-                        dashCont.classList.remove('hidden'); 
-                        histCont.classList.add('hidden'); 
-                        document.getElementById('tab-m-dashboard').classList.add('tab-active'); 
-                        window.renderDashboard(); 
-                    }
+                    if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } 
+                    else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); }
                 }
             } else {
                 inputSec.classList.remove('mobile-hidden');
-                inputSec.style.display = '';
                 if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } 
                 else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); }
             }
@@ -861,7 +820,7 @@
         window.handleExpenseTabClick = () => {
             const now = Date.now();
             if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } 
-            else { window.switchView('input'); }
+            else switchView('input');
             lastExpenseClick = now;
         }
 
@@ -871,11 +830,17 @@
             resetPersonUI(); updateDisplay();
         }
 
-        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899'}[c]; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
+        function showToast(m, c) { 
+            const t = document.getElementById('toast'); 
+            t.innerText = m; 
+            t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899'}[c] || '#6366f1'; 
+            t.classList.remove('translate-y-[-100px]', 'opacity-0'); 
+            setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); 
+        }
 
         window.onload = () => {
             document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6"));
-            if(window.innerWidth < 768) window.switchView('input'); else { window.switchView('history'); }
+            if(window.innerWidth < 768) switchView('input'); else switchView('history');
             if ('serviceWorker' in navigator) {
                 try {
                     const swCode = "self.addEventListener('fetch', function(event) {});";
@@ -885,7 +850,7 @@
             }
         };
 
-        window.addEventListener('resize', () => { if(window.innerWidth < 768) window.switchView('input'); });
+        window.addEventListener('resize', () => { if(window.innerWidth < 768) switchView('input'); });
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; document.getElementById('install-banner').classList.remove('hidden'); });
         window.triggerPWAInstall = async () => { if (!deferredPrompt) return; deferredPrompt.prompt(); const { outcome } = await deferredPrompt.userChoice; if (outcome === 'accepted') document.getElementById('install-banner').classList.add('hidden'); deferredPrompt = null; }
     </script>
