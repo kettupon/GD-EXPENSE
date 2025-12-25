@@ -108,7 +108,15 @@
 
             <!-- Dashboard View -->
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
-                <h3 class="text-xl font-bold text-gray-800 tracking-tight">Spending Dashboard</h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
+                    <!-- Dashboard View Selector -->
+                    <select id="dashboard-scope" onchange="renderDashboard()" class="text-xs font-bold bg-gray-100 border-none rounded-lg py-2 px-3 outline-none text-gray-600">
+                        <option value="shared">Shared (Pool)</option>
+                        <option value="GET">GET Personal</option>
+                        <option value="DOM">DOM Personal</option>
+                    </select>
+                </div>
                 
                 <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Filter Period</label>
@@ -176,6 +184,7 @@
                 <div class="flex-1 flex flex-col justify-end items-end px-6 pb-2">
                     <div class="flex items-center gap-2 mb-0.5">
                         <span id="display-person" class="hidden px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white shadow-sm"></span>
+                        <span id="display-type" class="hidden text-[8px] font-bold text-gray-400 uppercase tracking-widest">SHARED</span>
                         <span id="display-category" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Category</span>
                     </div>
                     <div class="flex items-baseline gap-1">
@@ -223,8 +232,8 @@
                     </div>
 
                     <div class="flex flex-col gap-2 w-24 md:w-32 h-full">
-                        <button onclick="selectPerson('GET')" id="btn-GET" class="person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl">GET</button>
-                        <button onclick="selectPerson('DOM')" id="btn-DOM" class="person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl">DOM</button>
+                        <button onclick="selectPerson('GET')" id="btn-GET" class="person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all">GET</button>
+                        <button onclick="selectPerson('DOM')" id="btn-DOM" class="person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all">DOM</button>
                         <button onclick="submitEntry()" id="ok-btn" class="btn-press flex-1 rounded-2xl bg-gray-900 text-white font-bold text-2xl shadow-lg flex items-center justify-center">OK</button>
                     </div>
                 </div>
@@ -343,6 +352,8 @@
         let currentAmount = '0';
         let currentCategory = null;
         let currentPerson = null;
+        let isIndividualMode = false; // New State for Individual Mode
+        
         let editingEntryId = null;
         let editingPerson = null;
         let lastExpenseClick = 0;
@@ -356,7 +367,7 @@
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
             'Grocery': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
             'Trip': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>`,
-            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>`
+            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"></path></svg>`
         };
 
         function getCatIcon(category, size = "w-5 h-5") {
@@ -401,10 +412,11 @@
                     category: currentCategory,
                     amount: parseFloat(currentAmount),
                     person: currentPerson,
-                    name: currentCategory
+                    name: currentCategory,
+                    isIndividual: isIndividualMode // Save individual flag
                 });
-                currentAmount = '0'; currentPerson = null; updateDisplay(); resetPersonUI();
-                showToast("Saved", "green");
+                currentAmount = '0'; currentPerson = null; isIndividualMode = false; updateDisplay(); resetPersonUI();
+                showToast(isIndividualMode ? "Individual Saved" : "Shared Saved", "green");
             } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
@@ -591,19 +603,68 @@
         window.pressNum = (n) => { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
         window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
         window.selectCategory = (cat) => { currentCategory = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); updateDisplay(); }
-        window.selectPerson = (p) => { currentPerson = p; resetPersonUI(); document.getElementById(`btn-${p}`).classList.add(p === 'GET' ? 'bg-green-500' : 'bg-blue-500', 'text-white'); updateDisplay(); }
-        window.resetPersonUI = () => { document.querySelectorAll('.person-btn').forEach(b => b.classList.remove('bg-green-500', 'bg-blue-500', 'text-white')); }
+        
+        // --- MODIFIED PERSON SELECTION LOGIC ---
+        window.selectPerson = (p) => { 
+            // If clicking the ALREADY selected person, toggle mode
+            if (currentPerson === p) {
+                isIndividualMode = !isIndividualMode;
+            } else {
+                currentPerson = p; 
+                isIndividualMode = false; // Reset to shared when switching person
+            }
+            
+            resetPersonUI(); 
+            const btn = document.getElementById(`btn-${p}`);
+            
+            // Apply colors based on Mode
+            if (p === 'GET') {
+                btn.className = isIndividualMode 
+                    ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner"
+                    : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all";
+            } else {
+                btn.className = isIndividualMode
+                    ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner"
+                    : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all";
+            }
+            
+            updateDisplay(); 
+        }
+
+        window.resetPersonUI = () => { 
+            // Reset both to default inactive state
+            document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all";
+            document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all";
+        }
+        
         window.selectEditPerson = (p) => { editingPerson = p; document.getElementById('edit-btn-GET').className = p==='GET'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; document.getElementById('edit-btn-DOM').className = p==='DOM'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; }
         
         function updateDisplay() { 
             document.getElementById('display-amount').innerText = currentAmount; 
             document.getElementById('display-category').innerText = currentCategory || "Select Category"; 
+            
             const dp = document.getElementById('display-person'); 
+            const dt = document.getElementById('display-type');
+            
             if (currentPerson) { 
                 dp.innerText = currentPerson; 
-                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${currentPerson === 'GET' ? 'bg-green-500' : 'bg-blue-500'}`; 
+                
+                // Color Logic for Badge
+                let bgClass = '';
+                if (currentPerson === 'GET') bgClass = isIndividualMode ? 'bg-green-800' : 'bg-green-500';
+                else bgClass = isIndividualMode ? 'bg-blue-800' : 'bg-blue-500';
+                
+                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass}`; 
                 dp.classList.remove('hidden'); 
-            } else dp.classList.add('hidden'); 
+                
+                dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED";
+                dt.className = isIndividualMode ? "text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-2" : "hidden";
+                dt.classList.remove('hidden');
+                
+            } else {
+                dp.classList.add('hidden'); 
+                dt.classList.add('hidden');
+            }
         }
         
         window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; selectEditPerson(e.person); document.getElementById('edit-modal').classList.remove('hidden'); }
@@ -621,11 +682,16 @@
                 const card = document.createElement('div');
                 const diaryEntry = window.diaryData[e.id];
                 
+                // --- VISUAL BADGE FOR INDIVIDUAL ---
+                const isPrivate = e.isIndividual === true;
+                let badgeClass = '';
+                if (e.person === 'GET') badgeClass = isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600';
+                else badgeClass = isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600';
+                
                 if (window.isDiaryMode) {
                     card.className = "p-3 bg-white rounded-2xl border border-pink-100 shadow-sm flex flex-col gap-3 transition-all";
                     card.oncontextmenu = (ev) => ev.preventDefault();
                     
-                    // Hold Tap detection
                     let pressTimer;
                     const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id), 600); };
                     const cancelPress = () => clearTimeout(pressTimer);
@@ -640,7 +706,7 @@
                                 <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
                         </div>
-                        <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</span>
+                        <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span>
                     </div>`;
 
                     let commentsHtml = '';
@@ -685,7 +751,7 @@
                     card.onclick = () => window.openEditModal(e.id);
                     const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0));
                     const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
-                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center">${e.name} ${diaryIcon}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${e.person === 'GET' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-600'}">${e.person}</div></div>`;
+                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center">${e.name} ${diaryIcon}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
                 list.appendChild(card);
                 if (idx < 2) {
@@ -702,8 +768,20 @@
             let filtered = window.entries;
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
+            const scope = document.getElementById('dashboard-scope').value; // 'shared', 'GET', 'DOM'
+
+            // Filter Date
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
             if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
+            
+            // Filter Scope (Shared vs Individual)
+            if (scope === 'shared') {
+                filtered = filtered.filter(e => e.isIndividual !== true);
+            } else {
+                // Individual Scope: Show only Private expenses for that person
+                filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            }
+
             let g = 0, d = 0, total = 0; const cats = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
@@ -739,23 +817,42 @@
             lastHistoryTap = now;
         }
 
+        // --- LAYOUT FIX ---
         window.switchView = (view) => {
             const histCont = document.getElementById('history-container');
             const dashCont = document.getElementById('dashboard-container');
             const sideSec = document.getElementById('side-section');
             const inputSec = document.getElementById('input-section');
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
+            
             if (window.innerWidth < 768) {
                 if (view === 'input') {
-                    sideSec.classList.add('mobile-hidden'); inputSec.classList.remove('mobile-hidden');
+                    // Force display:flex on input section for mobile
+                    sideSec.classList.add('mobile-hidden'); 
+                    sideSec.classList.remove('mobile-view');
+                    inputSec.classList.remove('mobile-hidden');
+                    inputSec.style.display = 'flex'; // Explicitly restore flex
                     document.getElementById('tab-m-input').classList.add('tab-active');
                 } else {
-                    inputSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view');
-                    if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } 
-                    else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); }
+                    inputSec.classList.add('mobile-hidden'); 
+                    inputSec.style.display = ''; // Clear explicit style so class handles it
+                    sideSec.classList.remove('mobile-hidden'); 
+                    sideSec.classList.add('mobile-view');
+                    
+                    if (view === 'history') { 
+                        histCont.classList.remove('hidden'); 
+                        dashCont.classList.add('hidden'); 
+                        document.getElementById('tab-m-history').classList.add('tab-active'); 
+                    } else { 
+                        dashCont.classList.remove('hidden'); 
+                        histCont.classList.add('hidden'); 
+                        document.getElementById('tab-m-dashboard').classList.add('tab-active'); 
+                        window.renderDashboard(); 
+                    }
                 }
             } else {
                 inputSec.classList.remove('mobile-hidden');
+                inputSec.style.display = '';
                 if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } 
                 else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); }
             }
@@ -769,7 +866,7 @@
         }
 
         window.resetExpensePage = () => {
-            currentAmount = '0'; currentCategory = null; currentPerson = null;
+            currentAmount = '0'; currentCategory = null; currentPerson = null; isIndividualMode = false;
             document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100'));
             resetPersonUI(); updateDisplay();
         }
