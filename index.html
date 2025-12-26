@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM + Diary</title>
+    <title>GET n DOM</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -41,6 +41,11 @@
         .diary-active {
             border-bottom: 2px solid #EC4899 !important; /* Pink for Diary */
             color: #DB2777 !important;
+        }
+        
+        .calendar-active {
+            border-bottom: 2px solid #8B5CF6 !important; /* Violet for Calendar */
+            color: #7C3AED !important;
         }
 
         .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
@@ -79,7 +84,7 @@
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50">
             <button onclick="handleExpenseTabClick()" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
             <button onclick="handleHistoryTabClick(true)" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
-            <button onclick="switchView('dashboard')" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Dashboard</button>
+            <button onclick="handleDashboardTabClick(true)" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Dashboard</button>
         </div>
 
         <!-- Sidebar / Secondary View -->
@@ -88,7 +93,7 @@
             <div class="bg-white border-b border-gray-200 hidden md:block flex-none">
                 <div class="flex">
                     <button id="tab-history" onclick="switchView('history')" ondblclick="toggleDiaryMode()" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors tab-active">Activity</button>
-                    <button id="tab-dashboard" onclick="switchView('dashboard')" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors">Dashboard</button>
+                    <button id="tab-dashboard" onclick="switchView('dashboard')" ondblclick="toggleDashboardMode()" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors">Dashboard</button>
                 </div>
             </div>
             
@@ -109,7 +114,7 @@
             <!-- Dashboard View -->
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
                 <div class="flex items-center justify-between">
-                    <h3 class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
+                    <h3 id="dashboard-title" class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
                     <select id="dashboard-scope" onchange="renderDashboard()" class="text-xs font-bold bg-gray-100 border-none rounded-lg py-2 px-3 outline-none text-gray-600">
                         <option value="shared">Shared (Pool)</option>
                         <option value="GET">GET Personal</option>
@@ -117,41 +122,71 @@
                     </select>
                 </div>
                 
-                <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Filter Period</label>
-                    <div class="flex gap-2">
-                        <input type="date" id="start-date" onchange="renderDashboard()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
-                        <input type="date" id="end-date" onchange="renderDashboard()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
-                    </div>
-                </div>
-
-                <!-- Daily Bar Chart Section -->
-                <div id="daily-chart-wrapper" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                    <h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Daily Trend</h4>
-                    <div id="daily-chart-container" class="w-full">
-                        <!-- Chart injected here -->
-                    </div>
-                </div>
-
-                <div class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="flex justify-between items-end">
-                        <div class="flex flex-col">
-                            <span class="text-[10px] font-bold text-green-500 uppercase">GET Total</span>
-                            <span class="text-lg font-bold text-gray-900">฿<span id="chart-get-total">0</span></span>
-                        </div>
-                        <div class="flex flex-col text-right">
-                            <span class="text-[10px] font-bold text-blue-500 uppercase">DOM Total</span>
-                            <span class="text-lg font-bold text-gray-900">฿<span id="chart-dom-total">0</span></span>
+                <!-- Standard Dashboard View -->
+                <div id="dashboard-standard-view" class="space-y-6">
+                    <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Filter Period</label>
+                        <div class="flex gap-2">
+                            <input type="date" id="start-date" onchange="renderDashboard()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
+                            <input type="date" id="end-date" onchange="renderDashboard()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
                         </div>
                     </div>
-                    <div class="w-full bg-gray-200 h-5 rounded-full overflow-hidden relative">
-                        <div id="chart-bar-get" class="chart-bar-get absolute top-0 left-0 h-full" style="width: 0%;"></div>
-                        <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full" style="width: 0%;"></div>
+
+                    <!-- Daily Bar Chart Section -->
+                    <div id="daily-chart-wrapper" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                        <h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Daily Trend</h4>
+                        <div id="daily-chart-container" class="w-full">
+                            <!-- Chart injected here -->
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <div class="flex justify-between items-end">
+                            <div class="flex flex-col">
+                                <span class="text-[10px] font-bold text-green-500 uppercase">GET Total</span>
+                                <span class="text-lg font-bold text-gray-900">฿<span id="chart-get-total">0</span></span>
+                            </div>
+                            <div class="flex flex-col text-right">
+                                <span class="text-[10px] font-bold text-blue-500 uppercase">DOM Total</span>
+                                <span class="text-lg font-bold text-gray-900">฿<span id="chart-dom-total">0</span></span>
+                            </div>
+                        </div>
+                        <div class="w-full bg-gray-200 h-5 rounded-full overflow-hidden relative">
+                            <div id="chart-bar-get" class="chart-bar-get absolute top-0 left-0 h-full" style="width: 0%;"></div>
+                            <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div id="category-breakdown" class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+                        <!-- Categories -->
                     </div>
                 </div>
 
-                <div id="category-breakdown" class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <!-- Categories -->
+                <!-- Calendar View (Hidden by default) -->
+                <div id="dashboard-calendar-view" class="hidden flex-col gap-4">
+                    <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-violet-100">
+                        <button onclick="changeCalendarMonth(-1)" class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg">◀</button>
+                        <span id="calendar-month-label" class="text-sm font-bold text-gray-700 uppercase tracking-widest"></span>
+                        <button onclick="changeCalendarMonth(1)" class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg">▶</button>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl shadow-sm border border-violet-100">
+                        <div class="grid grid-cols-7 gap-1 mb-2 text-center">
+                            <div class="text-[10px] font-bold text-gray-400">Su</div>
+                            <div class="text-[10px] font-bold text-gray-400">Mo</div>
+                            <div class="text-[10px] font-bold text-gray-400">Tu</div>
+                            <div class="text-[10px] font-bold text-gray-400">We</div>
+                            <div class="text-[10px] font-bold text-gray-400">Th</div>
+                            <div class="text-[10px] font-bold text-gray-400">Fr</div>
+                            <div class="text-[10px] font-bold text-gray-400">Sa</div>
+                        </div>
+                        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5">
+                            <!-- Calendar Days Injected Here -->
+                        </div>
+                    </div>
+                    <div class="p-4 bg-white rounded-2xl shadow-sm border border-violet-100 text-center">
+                        <span class="text-[10px] text-gray-400 uppercase font-bold">Total this month</span>
+                        <div class="text-2xl font-bold text-violet-600 mt-1">฿<span id="calendar-month-total">0</span></div>
+                    </div>
                 </div>
 
                 <div id="install-banner" class="hidden animate-bounce mt-4">
@@ -367,6 +402,7 @@
         window.entries = []; 
         window.diaryData = {}; 
         window.isDiaryMode = false;
+        window.isCalendarMode = false; // New state for Calendar View
         
         let currentAmount = '0';
         let currentCategory = null;
@@ -377,11 +413,14 @@
         let editingPerson = null;
         let lastExpenseClick = 0;
         let lastHistoryTap = 0; 
+        let lastDashboardTap = 0;
         let deferredPrompt = null;
         
         let uploadingForId = null;
         let captionPerson = null;
         let pendingAction = null;
+        
+        let calendarDate = new Date(); // To track current month in calendar
 
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
@@ -466,17 +505,24 @@
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
             const modeIndicator = document.getElementById('mode-indicator');
+            const mobileTab = document.getElementById('tab-m-history');
+            const desktopTab = document.getElementById('tab-history');
+
             if (window.isDiaryMode) {
                 historyTitle.innerText = "Diary Memories";
                 historyTitle.classList.add('text-pink-500');
                 modeIndicator.innerText = "Diary Mode";
                 modeIndicator.classList.add('text-pink-500');
+                mobileTab.classList.add('diary-active');
+                desktopTab.classList.add('diary-active');
                 showToast("Diary Mode Enabled", "pink");
             } else {
                 historyTitle.innerText = "Recent Activity";
                 historyTitle.classList.remove('text-pink-500');
                 modeIndicator.innerText = "Live Sync";
                 modeIndicator.classList.remove('text-pink-500');
+                mobileTab.classList.remove('diary-active');
+                desktopTab.classList.remove('diary-active');
                 showToast("Back to History", "green");
             }
             window.renderHistory();
@@ -580,7 +626,7 @@
 
         window.verifyPassword = async () => {
             const pw = document.getElementById('password-input').value;
-            const action = pendingAction; // Capture action before closing
+            const action = pendingAction; 
             let isValid = (action === 'replace' && pw === 'yakplian') || (action === 'delete' && pw === 'yaklob');
             if (isValid) {
                 closePasswordModal();
@@ -754,6 +800,16 @@
         }
 
         window.renderDashboard = () => {
+            if (window.isCalendarMode) {
+                document.getElementById('dashboard-standard-view').classList.add('hidden');
+                document.getElementById('dashboard-calendar-view').classList.remove('hidden');
+                window.renderCalendar();
+                return;
+            } else {
+                document.getElementById('dashboard-standard-view').classList.remove('hidden');
+                document.getElementById('dashboard-calendar-view').classList.add('hidden');
+            }
+
             let filtered = window.entries;
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
@@ -844,6 +900,101 @@
             chartContainer.innerHTML = chartHtml;
         }
 
+        // --- NEW CALENDAR LOGIC ---
+        window.changeCalendarMonth = (delta) => {
+            calendarDate.setMonth(calendarDate.getMonth() + delta);
+            renderCalendar();
+        };
+
+        window.renderCalendar = () => {
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            document.getElementById('calendar-month-label').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const grid = document.getElementById('calendar-grid');
+            grid.innerHTML = '';
+
+            // Aggregate data for the month
+            const monthData = {};
+            let monthTotal = 0;
+            let maxDaily = 0;
+
+            window.entries.forEach(e => {
+                if (e.dateTime.getMonth() === month && e.dateTime.getFullYear() === year && e.isIndividual !== true) { // Default to Shared only or update based on scope? Let's use shared for now as default calendar. Or filter based on current scope.
+                    const d = e.dateTime.getDate();
+                    if (!monthData[d]) monthData[d] = { GET: 0, DOM: 0, total: 0 };
+                    const amt = parseFloat(e.amount);
+                    monthData[d].total += amt;
+                    monthData[d][e.person] += amt;
+                    monthTotal += amt;
+                    if (monthData[d].total > maxDaily) maxDaily = monthData[d].total;
+                }
+            });
+            document.getElementById('calendar-month-total').innerText = monthTotal.toLocaleString();
+
+            // Empty slots
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += '<div></div>';
+            }
+
+            // Days
+            const scope = document.getElementById('dashboard-scope').value;
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const data = monthData[day] || { GET: 0, DOM: 0, total: 0 };
+                const barHeight = maxDaily > 0 ? (data.total / maxDaily) * 100 : 0;
+                
+                // Color Logic
+                const getH = (data.GET / data.total) * 100 || 0;
+                const domH = (data.DOM / data.total) * 100 || 0;
+
+                const dayHtml = `
+                    <div class="aspect-square bg-gray-50 rounded-lg flex flex-col justify-between p-1 relative overflow-hidden border border-transparent hover:border-violet-200 transition-colors">
+                        <span class="text-[9px] font-bold text-gray-400 z-10">${day}</span>
+                        ${data.total > 0 ? `
+                            <div class="flex flex-col-reverse w-full h-1/2 rounded-sm overflow-hidden opacity-80">
+                                <div class="bg-green-400 w-full transition-all" style="height: ${getH}%"></div>
+                                <div class="bg-blue-400 w-full transition-all" style="height: ${domH}%"></div>
+                            </div>
+                            <span class="text-[7px] font-bold text-gray-600 text-center -mt-1 z-10">฿${Math.round(data.total).toLocaleString()}</span>
+                        ` : ''}
+                    </div>
+                `;
+                grid.innerHTML += dayHtml;
+            }
+        };
+
+        window.toggleDashboardMode = () => {
+            window.isCalendarMode = !window.isCalendarMode;
+            const mobileTab = document.getElementById('tab-m-dashboard');
+            const desktopTab = document.getElementById('tab-dashboard');
+            const title = document.getElementById('dashboard-title');
+
+            if (window.isCalendarMode) {
+                title.innerText = "Calendar View";
+                mobileTab.classList.add('calendar-active');
+                desktopTab.classList.add('calendar-active');
+                showToast("Calendar View", "purple");
+            } else {
+                title.innerText = "Dashboard";
+                mobileTab.classList.remove('calendar-active');
+                desktopTab.classList.remove('calendar-active');
+                showToast("Dashboard View", "green");
+            }
+            renderDashboard();
+        };
+
+        window.handleDashboardTabClick = () => {
+            const now = Date.now();
+            if (now - lastDashboardTap < 300) toggleDashboardMode();
+            else switchView('dashboard');
+            lastDashboardTap = now;
+        }
+
+        // --- END CALENDAR LOGIC ---
+
         function setSyncState(loading) {
             const icon = document.getElementById('sync-icon');
             if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500');
@@ -901,7 +1052,7 @@
         function showToast(m, c) { 
             const t = document.getElementById('toast'); 
             t.innerText = m; 
-            t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899'}[c] || '#6366f1'; 
+            t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899', 'purple':'#8B5CF6'}[c] || '#6366f1'; 
             t.classList.remove('translate-y-[-100px]', 'opacity-0'); 
             setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); 
         }
