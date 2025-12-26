@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>GET n DOM</title>
+    <title>Expense GET n DOM + Diary</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -453,6 +453,11 @@
             window.diaryData = newData;
             if (window.isDiaryMode) window.renderHistory();
         });
+
+        // Fixed: Added missing fetchEntries function
+        window.fetchEntries = function(notify) { 
+            if(notify) showToast("Synced with Cloud", "green"); 
+        };
 
         window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
