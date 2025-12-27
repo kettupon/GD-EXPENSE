@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM + Diary</title>
+    <title>GET n DOM</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -288,7 +288,17 @@
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
             <div class="space-y-4">
-                <div><label class="text-[9px] font-bold text-gray-400 uppercase">Description</label><input type="text" id="edit-name" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none"></div>
+                <div>
+                    <label class="text-[9px] font-bold text-gray-400 uppercase">Description</label>
+                    <div class="relative mt-1">
+                        <input type="text" id="edit-name" class="w-full p-3 bg-gray-50 rounded-xl outline-none pr-10">
+                        <button onclick="document.getElementById('edit-name').value = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div><label class="text-[9px] font-bold text-gray-400 uppercase">Amount (฿)</label><input type="number" id="edit-amount" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none"></div>
                     <div><label class="text-[9px] font-bold text-gray-400 uppercase">Category</label><select id="edit-category" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none"><option value="Food">Food</option><option value="Grocery">Grocery</option><option value="Trip">Trip</option><option value="Etc.">Etc.</option></select></div>
@@ -1212,8 +1222,32 @@
         }
 
         window.onload = () => {
+            // Set Default Dashboard Filter to Current Month
+            const now = new Date();
+            const y = now.getFullYear();
+            const m = now.getMonth();
+            // Use UTC to ensure date string format matches local components correctly without timezone shifts
+            const firstDay = new Date(Date.UTC(y, m, 1));
+            const lastDay = new Date(Date.UTC(y, m + 1, 0));
+            
+            const startInput = document.getElementById('start-date');
+            const endInput = document.getElementById('end-date');
+            
+            if (startInput && endInput) {
+                startInput.value = firstDay.toISOString().split('T')[0];
+                endInput.value = lastDay.toISOString().split('T')[0];
+            }
+
             document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6"));
-            if(window.innerWidth < 768) switchView('input'); else switchView('history');
+            
+            if(window.innerWidth < 768) switchView('input'); 
+            else switchView('history');
+            
+            // Re-render dashboard to apply the default date filter if data is already loaded
+            if (window.entries && window.entries.length > 0) {
+                window.renderDashboard();
+            }
+
             if ('serviceWorker' in navigator) {
                 try {
                     const swCode = "self.addEventListener('fetch', function(event) {});";
