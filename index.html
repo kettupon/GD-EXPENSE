@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM + Diary</title>
+    <title>GET n DOM</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -411,6 +411,8 @@
         
         let editingEntryId = null;
         let editingPerson = null;
+        let editingIsIndividual = false; // New state for Edit Modal
+        
         let lastExpenseClick = 0;
         let lastHistoryTap = 0; 
         let lastDashboardTap = 0;
@@ -474,7 +476,7 @@
                     isIndividual: isIndividualMode 
                 });
                 currentAmount = '0'; currentPerson = null; isIndividualMode = false; updateDisplay(); resetPersonUI();
-                showToast("Saved", "green");
+                showToast(isIndividualMode ? "Individual Saved" : "Shared Saved", "green");
             } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
@@ -487,7 +489,8 @@
                     name: document.getElementById('edit-name').value,
                     amount: parseFloat(document.getElementById('edit-amount').value),
                     category: document.getElementById('edit-category').value,
-                    person: editingPerson
+                    person: editingPerson,
+                    isIndividual: editingIsIndividual // Save the edited individual state
                 });
                 window.closeEditModal();
                 showToast("Updated", "green");
@@ -698,7 +701,36 @@
             document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all";
         }
         
-        window.selectEditPerson = (p) => { editingPerson = p; document.getElementById('edit-btn-GET').className = p==='GET'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; document.getElementById('edit-btn-DOM').className = p==='DOM'?"py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white":"py-2.5 rounded-xl font-bold text-xs border-2"; }
+        // --- UPDATED EDIT MODAL LOGIC ---
+        window.selectEditPerson = (p) => { 
+            if (editingPerson === p) {
+                editingIsIndividual = !editingIsIndividual;
+            } else {
+                editingPerson = p;
+                editingIsIndividual = false;
+            }
+            updateEditPersonUI();
+        }
+
+        window.updateEditPersonUI = () => {
+            const btnGet = document.getElementById('edit-btn-GET');
+            const btnDom = document.getElementById('edit-btn-DOM');
+            const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all";
+            
+            // Reset
+            btnGet.className = baseClass;
+            btnDom.className = baseClass;
+
+            if (editingPerson === 'GET') {
+                btnGet.className = editingIsIndividual 
+                    ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent`
+                    : `${baseClass} bg-green-500 text-white border-transparent`;
+            } else if (editingPerson === 'DOM') {
+                btnDom.className = editingIsIndividual
+                    ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent`
+                    : `${baseClass} bg-blue-500 text-white border-transparent`;
+            }
+        }
         
         function updateDisplay() { 
             document.getElementById('display-amount').innerText = currentAmount; 
@@ -716,7 +748,21 @@
             } else { dp.classList.add('hidden'); dt.classList.add('hidden'); }
         }
         
-        window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; selectEditPerson(e.person); document.getElementById('edit-modal').classList.remove('hidden'); }
+        window.openEditModal = (id) => { 
+            const e = window.entries.find(x => x.id == id); 
+            editingEntryId = id; 
+            document.getElementById('edit-name').value = e.name; 
+            document.getElementById('edit-amount').value = e.amount; 
+            document.getElementById('edit-category').value = e.category; 
+            
+            // Init Edit State
+            editingPerson = e.person;
+            editingIsIndividual = e.isIndividual || false;
+            
+            updateEditPersonUI(); // Apply styles
+            document.getElementById('edit-modal').classList.remove('hidden'); 
+        }
+        
         window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
         window.confirmDelete = () => { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('delete-confirm-modal').classList.remove('hidden'); }
         window.closeDeleteModal = () => { document.getElementById('delete-confirm-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.remove('hidden'); }
