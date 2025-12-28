@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>GET n DOM</title>
+    <title>Expense GET n DOM + Diary</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -100,7 +100,14 @@
             <!-- History View -->
             <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm transition-colors" id="history-header">
-                    <span id="history-title" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
+                    <div class="flex flex-col">
+                        <span id="history-title" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
+                        <div id="story-toggle-container" class="hidden flex items-center mt-1">
+                            <button onclick="toggleStoryFilter()" id="btn-story-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors">
+                                Stories: OFF
+                            </button>
+                        </div>
+                    </div>
                     <div class="flex items-center gap-2">
                          <div id="live-indicator" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
                         <span id="mode-indicator" class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
@@ -125,10 +132,16 @@
                 <!-- Standard Dashboard View -->
                 <div id="dashboard-standard-view" class="space-y-6">
                     <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Filter Period</label>
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter Period</label>
+                            <div class="flex gap-3">
+                                <button id="btn-filter-yesterday" onclick="setFilter('yesterday')" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Yesterday</button>
+                                <button id="btn-filter-today" onclick="setFilter('today')" class="text-[10px] font-bold text-purple-600 uppercase tracking-widest hover:text-purple-800 transition-colors">Today</button>
+                            </div>
+                        </div>
                         <div class="flex gap-2">
-                            <input type="date" id="start-date" onchange="renderDashboard()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
-                            <input type="date" id="end-date" onchange="renderDashboard()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
+                            <input type="date" id="start-date" onchange="handleManualDateChange()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
+                            <input type="date" id="end-date" onchange="handleManualDateChange()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
                         </div>
                     </div>
 
@@ -319,6 +332,31 @@
         </div>
     </div>
 
+    <!-- Story Modal -->
+    <div id="story-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[125] hidden p-6 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Create Story</h3>
+            <div class="mb-4">
+                <label class="text-[9px] font-bold text-gray-400 uppercase block mb-2">Author</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="story-btn-GET" onclick="selectStoryPerson('GET')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">GET</button>
+                    <button id="story-btn-DOM" onclick="selectStoryPerson('DOM')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">DOM</button>
+                </div>
+            </div>
+            <textarea id="story-input" rows="4" class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400 mb-3" placeholder="What's happening?"></textarea>
+            <div class="mb-4">
+                <button onclick="triggerImageUpload(null, null, true)" class="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:text-pink-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span id="story-img-label" class="text-xs font-bold">Add Photo</span>
+                </button>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeStoryModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
+                <button onclick="saveStory()" class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Post</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Caption Modal -->
     <div id="caption-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
@@ -341,10 +379,10 @@
     <!-- Diary Options Modal (Long Press) -->
     <div id="diary-options-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[115] hidden p-6 backdrop-blur-md">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
-            <h3 class="text-lg font-bold text-gray-900 mb-4">Photo Options</h3>
+            <h3 id="diary-options-title" class="text-lg font-bold text-gray-900 mb-4">Photo Options</h3>
             <div class="flex flex-col gap-3">
-                <button onclick="executeReupload()" class="w-full py-4 bg-gray-100 text-gray-800 rounded-2xl font-bold text-sm btn-press">Replace Photo</button>
-                <button onclick="executeDeleteImage()" class="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm btn-press">Delete Photo</button>
+                <button id="btn-replace-photo" onclick="executeReupload()" class="w-full py-4 bg-gray-100 text-gray-800 rounded-2xl font-bold text-sm btn-press">Replace Photo</button>
+                <button id="btn-delete-item" onclick="executeDeleteImage()" class="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm btn-press">Delete Item</button>
                 <button onclick="closeDiaryOptions()" class="w-full py-4 bg-white text-gray-400 rounded-2xl font-bold text-sm border border-gray-100 mt-2">Cancel</button>
             </div>
         </div>
@@ -432,7 +470,8 @@
         window.entries = []; 
         window.diaryData = {}; 
         window.isDiaryMode = false;
-        window.isCalendarMode = false; // New state for Calendar View
+        window.isCalendarMode = false; 
+        window.showStories = false; // Toggle state for viewing stories
         
         let currentAmount = '0';
         let currentCategory = null;
@@ -441,7 +480,7 @@
         
         let editingEntryId = null;
         let editingPerson = null;
-        let editingIsIndividual = false; // New state for Edit Modal
+        let editingIsIndividual = false; 
         
         let lastExpenseClick = 0;
         let lastHistoryTap = 0; 
@@ -452,13 +491,21 @@
         let captionPerson = null;
         let pendingAction = null;
         
-        let calendarDate = new Date(); // To track current month in calendar
+        // Story Vars
+        let storyPerson = null;
+        let storyImageBase64 = null;
+        let storyThumbnailBase64 = null;
+        let isCreatingStory = false;
+        
+        let calendarDate = new Date(); 
+        let activeDateFilter = null; 
 
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
             'Grocery': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path><path d="M3 6h18"></path><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`,
             'Trip': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path></svg>`,
-            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>`
+            'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>`,
+            'Story': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`
         };
 
         function getCatIcon(category, size = "w-5 h-5") {
@@ -466,7 +513,7 @@
             return rawIcon.replace('width="24" height="24"', `class="${size}"`);
         }
 
-        function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600'}[c] || 'bg-gray-50'; }
+        function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600', 'Story':'bg-pink-50 text-pink-500'}[c] || 'bg-gray-50'; }
 
         const q = query(expensesCol, orderBy("dateTime", "desc"));
         onSnapshot(q, (snapshot) => {
@@ -486,10 +533,7 @@
             if (window.isDiaryMode) window.renderHistory();
         });
 
-        // Fixed: Added missing fetchEntries function
-        window.fetchEntries = function(notify) { 
-            if(notify) showToast("Synced with Cloud", "green"); 
-        };
+        window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
 
         window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
@@ -520,7 +564,7 @@
                     amount: parseFloat(document.getElementById('edit-amount').value),
                     category: document.getElementById('edit-category').value,
                     person: editingPerson,
-                    isIndividual: editingIsIndividual // Save the edited individual state
+                    isIndividual: editingIsIndividual 
                 });
                 window.closeEditModal();
                 showToast("Updated", "green");
@@ -539,93 +583,152 @@
             finally { setSyncState(false); }
         };
 
-        // --- CATEGORY DETAIL LOGIC ---
-        window.showCategoryDetails = (category) => {
-            const start = document.getElementById('start-date').value;
-            const end = document.getElementById('end-date').value;
-            const scope = document.getElementById('dashboard-scope').value;
-            
-            let filtered = window.entries.filter(e => e.category === category);
-
-            // Apply same filters as dashboard
-            if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
-            if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
-            
-            if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
-            else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-
-            // Sort by date desc
-            filtered.sort((a, b) => b.dateTime - a.dateTime);
-
-            const list = document.getElementById('cat-modal-list');
-            list.innerHTML = '';
-            
-            document.getElementById('cat-modal-title').innerText = category;
-            document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
-            
-            let total = 0;
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">No transactions found for this period.</div>';
-            } else {
-                filtered.forEach(e => {
-                    total += parseFloat(e.amount);
-                    const d = e.dateTime;
-                    const isPrivate = e.isIndividual === true;
-                    let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
-
-                    const item = document.createElement('div');
-                    item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
-                    item.innerHTML = `
-                        <div class="flex flex-col min-w-0 pr-2">
-                            <span class="text-xs font-bold text-gray-700 truncate">${e.name}</span>
-                            <span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <div class="text-right flex-shrink-0">
-                            <div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div>
-                            <span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
-            }
-            document.getElementById('cat-modal-total').innerText = '฿' + total.toLocaleString();
-            document.getElementById('category-modal').classList.remove('hidden');
-        };
-
-        window.closeCategoryModal = () => document.getElementById('category-modal').classList.add('hidden');
-
         window.toggleDiaryMode = function() {
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
             const modeIndicator = document.getElementById('mode-indicator');
-            const mobileTab = document.getElementById('tab-m-history');
-            const desktopTab = document.getElementById('tab-history');
-
+            const storyToggle = document.getElementById('story-toggle-container');
+            
             if (window.isDiaryMode) {
                 historyTitle.innerText = "Diary Memories";
                 historyTitle.classList.add('text-pink-500');
                 modeIndicator.innerText = "Diary Mode";
                 modeIndicator.classList.add('text-pink-500');
-                mobileTab.classList.add('diary-active');
-                desktopTab.classList.add('diary-active');
+                storyToggle.classList.remove('hidden');
                 showToast("Diary Mode Enabled", "pink");
             } else {
                 historyTitle.innerText = "Recent Activity";
                 historyTitle.classList.remove('text-pink-500');
                 modeIndicator.innerText = "Live Sync";
                 modeIndicator.classList.remove('text-pink-500');
-                mobileTab.classList.remove('diary-active');
-                desktopTab.classList.remove('diary-active');
+                storyToggle.classList.add('hidden');
                 showToast("Back to History", "green");
             }
             window.renderHistory();
         }
 
-        window.triggerImageUpload = function(id, event) {
+        // --- STORY LOGIC ---
+        window.toggleStoryFilter = () => {
+            window.showStories = !window.showStories;
+            const btn = document.getElementById('btn-story-toggle');
+            if (window.showStories) {
+                btn.innerText = "Stories: ON";
+                btn.classList.add('bg-pink-100', 'text-pink-500');
+                btn.classList.remove('bg-gray-100', 'text-gray-400');
+                showToast("Stories Visible", "pink");
+            } else {
+                btn.innerText = "Stories: OFF";
+                btn.classList.remove('bg-pink-100', 'text-pink-500');
+                btn.classList.add('bg-gray-100', 'text-gray-400');
+                showToast("Transactions Only", "green");
+            }
+            renderHistory();
+        }
+
+        window.openStoryModal = () => {
+            // Reset states when opening modal
+            isCreatingStory = true;
+            uploadingForId = null;
+            
+            storyPerson = null;
+            storyImageBase64 = null;
+            storyThumbnailBase64 = null;
+            document.getElementById('story-input').value = "";
+            document.getElementById('story-img-label').innerText = "Add Photo";
+            document.getElementById('story-btn-GET').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
+            document.getElementById('story-btn-DOM').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
+            document.getElementById('story-modal').classList.remove('hidden');
+        }
+
+        window.closeStoryModal = () => {
+            document.getElementById('story-modal').classList.add('hidden');
+            isCreatingStory = false;
+        }
+
+        window.selectStoryPerson = (p) => {
+            storyPerson = p;
+            document.getElementById('story-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+            document.getElementById('story-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+        }
+
+        window.saveStory = async function() {
+            const text = document.getElementById('story-input').value.trim();
+            if (!storyPerson) { showToast("Who is this?", "red"); return; }
+            if (!text && !storyImageBase64) { showToast("Empty Story", "red"); return; }
+
+            setSyncState(true);
+            try {
+                // Add Metadata entry to expenses (marked as Story)
+                const docRef = await addDoc(expensesCol, {
+                    dateTime: serverTimestamp(),
+                    category: 'Story',
+                    amount: 0,
+                    person: storyPerson,
+                    name: 'Diary Story',
+                    isStory: true
+                });
+
+                // Add content to images collection (linked by ID)
+                await setDoc(doc(db, "images", docRef.id), {
+                    image: storyImageBase64,
+                    thumbnail: storyThumbnailBase64,
+                    comments: text ? [{ text: text, author: storyPerson, timestamp: Date.now() }] : [],
+                    updatedAt: serverTimestamp()
+                });
+
+                closeStoryModal();
+                showToast("Story Posted!", "pink");
+            } catch(e) { console.error(e); showToast("Error Posting", "red"); }
+            finally { setSyncState(false); }
+        }
+
+        // --- IMAGE HANDLING FIX ---
+        window.triggerImageUpload = function(id, event, isStoryAction = false) {
             if (event) event.stopPropagation();
-            uploadingForId = id;
-            document.getElementById('diary-image-input').click();
+            
+            // Explicitly set context
+            if (isStoryAction) {
+                isCreatingStory = true;
+                uploadingForId = null; 
+            } else {
+                uploadingForId = id;
+                isCreatingStory = false;
+            }
+            
+            const fileInput = document.getElementById('diary-image-input');
+            fileInput.value = '';
+            fileInput.click();
+        }
+
+        // Updated Helper for "Full" Image Compression (High Quality but < 1MB)
+        async function processFullImage(file) {
+            const MAX_SIZE = 950 * 1024; // ~950KB safety limit
+            
+            // 1. Try reading raw file first
+            let base64 = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsDataURL(file);
+            });
+
+            // If raw fits, return it
+            if (base64.length < MAX_SIZE) return base64;
+
+            // 2. If too big, compress iteratively
+            let width = 1600; 
+            let quality = 0.9;
+            
+            while (base64.length > MAX_SIZE && width > 300) {
+                base64 = await compressImage(file, width, quality);
+                width -= 200;
+                quality -= 0.1;
+            }
+            return base64;
+        }
+
+        // Helper for Thumbnail
+        async function processThumbnail(file) {
+            return await compressImage(file, 300, 0.6);
         }
 
         window.handleImageFile = async function(input) {
@@ -633,19 +736,40 @@
                 const file = input.files[0];
                 showToast("Processing...", "blue");
                 try {
-                    const compressedBase64 = await compressImage(file);
-                    setSyncState(true);
-                    await setDoc(doc(db, "images", uploadingForId), {
-                        image: compressedBase64,
-                        updatedAt: serverTimestamp()
-                    }, { merge: true });
-                    showToast("Photo Saved", "green");
-                } catch (e) { showToast("Failed", "red"); }
-                finally { setSyncState(false); input.value = ''; }
+                    // Generate both versions
+                    const [fullBase64, thumbBase64] = await Promise.all([
+                        processFullImage(file),
+                        processThumbnail(file)
+                    ]);
+                    
+                    if (isCreatingStory && !document.getElementById('story-modal').classList.contains('hidden')) {
+                        // Store in state for story submission
+                        storyImageBase64 = fullBase64;
+                        storyThumbnailBase64 = thumbBase64;
+                        document.getElementById('story-img-label').innerText = "Photo Ready!";
+                        showToast("Photo Attached", "green");
+                    } else if (uploadingForId) {
+                        // Direct upload for transaction
+                        setSyncState(true);
+                        await setDoc(doc(db, "images", uploadingForId), {
+                            image: fullBase64,
+                            thumbnail: thumbBase64,
+                            updatedAt: serverTimestamp()
+                        }, { merge: true });
+                        showToast("Photo Saved", "green");
+                        setSyncState(false);
+                    } else {
+                        showToast("Upload Error", "red");
+                    }
+                } catch (e) { 
+                    console.error(e);
+                    showToast("Failed: " + e.message, "red"); 
+                }
+                finally { input.value = ''; }
             }
         }
 
-        function compressImage(file) {
+        function compressImage(file, maxWidth, quality) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.readAsDataURL(file);
@@ -654,13 +778,19 @@
                     img.src = event.target.result;
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleSize;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxWidth) {
+                            height *= maxWidth / width;
+                            width = maxWidth;
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
                         const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
                     };
                     img.onerror = reject;
                 };
@@ -668,6 +798,7 @@
             });
         }
 
+        // --- CAPTION/COMMENT LOGIC ---
         window.openCaptionModal = function(id, event) {
             event.stopPropagation();
             uploadingForId = id;
@@ -701,15 +832,37 @@
             finally { setSyncState(false); }
         }
 
-        window.openDiaryOptions = (id) => {
+        window.openDiaryOptions = (id, isStory = false) => {
             uploadingForId = id;
+            const title = document.getElementById('diary-options-title');
+            const replaceBtn = document.getElementById('btn-replace-photo');
+            const deleteBtnText = document.getElementById('btn-delete-item');
+            
+            if (isStory) {
+                title.innerText = "Story Options";
+                replaceBtn.classList.add('hidden');
+                deleteBtnText.innerText = "Delete Story";
+                pendingAction = 'delete-story';
+            } else {
+                title.innerText = "Photo Options";
+                replaceBtn.classList.remove('hidden');
+                deleteBtnText.innerText = "Delete Photo";
+                pendingAction = null; // will be set by executeReupload/executeDeleteImage
+            }
+            
             document.getElementById('diary-options-modal').classList.remove('hidden');
         }
 
-        window.closeDiaryOptions = () => document.getElementById('diary-options-modal').classList.add('hidden');
+        window.closeDiaryOptions = () => {
+            document.getElementById('diary-options-modal').classList.add('hidden');
+        }
 
         window.executeReupload = () => { closeDiaryOptions(); openPasswordModal('replace'); }
-        window.executeDeleteImage = () => { closeDiaryOptions(); openPasswordModal('delete'); }
+        window.executeDeleteImage = () => { 
+            const action = (pendingAction === 'delete-story') ? 'delete-story' : 'delete';
+            closeDiaryOptions(); 
+            openPasswordModal(action); 
+        }
 
         window.openPasswordModal = (action) => {
             pendingAction = action;
@@ -721,11 +874,12 @@
         window.verifyPassword = async () => {
             const pw = document.getElementById('password-input').value;
             const action = pendingAction; 
-            let isValid = (action === 'replace' && pw === 'yakplian') || (action === 'delete' && pw === 'yaklob');
+            let isValid = (action === 'replace' && pw === 'yakplian') || (action === 'delete' && pw === 'yaklob') || (action === 'delete-story' && pw === 'yaklob');
             if (isValid) {
                 closePasswordModal();
                 if (action === 'replace') window.triggerImageUpload(uploadingForId);
                 else if (action === 'delete') await performDeleteImage();
+                else if (action === 'delete-story') await performDeleteStory();
             } else { showToast("Wrong Password", "red"); }
         }
 
@@ -741,16 +895,73 @@
                     if (!hasComments && !hasCaption) {
                         await deleteDoc(docRef);
                     } else {
-                        await updateDoc(docRef, { image: deleteField() });
+                        await updateDoc(docRef, { image: deleteField(), thumbnail: deleteField() });
                     }
                     showToast("Photo Removed", "red");
                 }
-            } catch(e) { 
-                console.error(e);
-                showToast("Deletion Failed", "red"); 
-            }
+            } catch(e) { showToast("Deletion Failed", "red"); }
             finally { setSyncState(false); }
         }
+
+        async function performDeleteStory() {
+            setSyncState(true);
+            try {
+                await deleteDoc(doc(db, "expenses", uploadingForId));
+                await deleteDoc(doc(db, "images", uploadingForId));
+                showToast("Story Deleted", "red");
+            } catch(e) { showToast("Deletion Failed", "red"); }
+            finally { setSyncState(false); }
+        }
+
+        // --- CATEGORY DETAIL LOGIC ---
+        window.showCategoryDetails = (category) => {
+            const start = document.getElementById('start-date').value;
+            const end = document.getElementById('end-date').value;
+            const scope = document.getElementById('dashboard-scope').value;
+            
+            let filtered = window.entries.filter(e => e.category === category);
+
+            if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
+            if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
+            
+            if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
+            else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+
+            filtered.sort((a, b) => b.dateTime - a.dateTime);
+
+            const list = document.getElementById('cat-modal-list');
+            list.innerHTML = '';
+            document.getElementById('cat-modal-title').innerText = category;
+            document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
+            let total = 0;
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">No transactions found for this period.</div>';
+            } else {
+                filtered.forEach(e => {
+                    total += parseFloat(e.amount);
+                    const d = e.dateTime;
+                    const isPrivate = e.isIndividual === true;
+                    let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
+                    const item = document.createElement('div');
+                    item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
+                    item.innerHTML = `
+                        <div class="flex flex-col min-w-0 pr-2">
+                            <span class="text-xs font-bold text-gray-700 truncate">${e.name}</span>
+                            <span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                        </div>
+                        <div class="text-right flex-shrink-0">
+                            <div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div>
+                            <span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span>
+                        </div>`;
+                    list.appendChild(item);
+                });
+            }
+            document.getElementById('cat-modal-total').innerText = '฿' + total.toLocaleString();
+            document.getElementById('category-modal').classList.remove('hidden');
+        };
+
+        window.closeCategoryModal = () => document.getElementById('category-modal').classList.add('hidden');
 
         window.openImageViewer = function(src, event) {
             event.stopPropagation();
@@ -787,14 +998,8 @@
             document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all";
         }
         
-        // --- UPDATED EDIT MODAL LOGIC ---
         window.selectEditPerson = (p) => { 
-            if (editingPerson === p) {
-                editingIsIndividual = !editingIsIndividual;
-            } else {
-                editingPerson = p;
-                editingIsIndividual = false;
-            }
+            if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; }
             updateEditPersonUI();
         }
 
@@ -802,20 +1007,9 @@
             const btnGet = document.getElementById('edit-btn-GET');
             const btnDom = document.getElementById('edit-btn-DOM');
             const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all";
-            
-            // Reset
-            btnGet.className = baseClass;
-            btnDom.className = baseClass;
-
-            if (editingPerson === 'GET') {
-                btnGet.className = editingIsIndividual 
-                    ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent`
-                    : `${baseClass} bg-green-500 text-white border-transparent`;
-            } else if (editingPerson === 'DOM') {
-                btnDom.className = editingIsIndividual
-                    ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent`
-                    : `${baseClass} bg-blue-500 text-white border-transparent`;
-            }
+            btnGet.className = baseClass; btnDom.className = baseClass;
+            if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-500 text-white border-transparent`; } 
+            else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-500 text-white border-transparent`; }
         }
         
         function updateDisplay() { 
@@ -840,12 +1034,9 @@
             document.getElementById('edit-name').value = e.name; 
             document.getElementById('edit-amount').value = e.amount; 
             document.getElementById('edit-category').value = e.category; 
-            
-            // Init Edit State
             editingPerson = e.person;
             editingIsIndividual = e.isIndividual || false;
-            
-            updateEditPersonUI(); // Apply styles
+            updateEditPersonUI();
             document.getElementById('edit-modal').classList.remove('hidden'); 
         }
         
@@ -858,32 +1049,41 @@
             const mini = document.getElementById('mini-history');
             list.innerHTML = ''; mini.innerHTML = '';
             
+            if (window.isDiaryMode) {
+                const addStoryBtn = document.createElement('div');
+                addStoryBtn.className = "mb-4";
+                addStoryBtn.innerHTML = `
+                    <button onclick="openStoryModal()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 btn-press transform transition-transform">
+                        <span class="text-xl font-bold">+</span>
+                        <span class="text-xs font-bold uppercase tracking-widest">Add Story</span>
+                    </button>`;
+                list.appendChild(addStoryBtn);
+            }
+
             window.entries.forEach((e, idx) => {
+                if (e.isStory && !window.showStories) return;
                 const d = e.dateTime;
                 const card = document.createElement('div');
                 const diaryEntry = window.diaryData[e.id];
                 const isPrivate = e.isIndividual === true;
+                const isStory = e.isStory === true;
                 let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
-                
-                // --- Background Color Logic ---
+                if (isStory) badgeClass = 'bg-pink-100 text-pink-600';
+
                 const dateStr = d.toDateString();
                 const prevDateStr = idx > 0 ? window.entries[idx-1].dateTime.toDateString() : null;
                 const nextDateStr = idx < window.entries.length - 1 ? window.entries[idx+1].dateTime.toDateString() : null;
-
-                const isLatestOfDay = dateStr !== prevDateStr; // Visual Top (Last tx of day)
-                const isEarliestOfDay = dateStr !== nextDateStr; // Visual Bottom (First tx of day)
-
+                const isLatestOfDay = dateStr !== prevDateStr; 
+                const isEarliestOfDay = dateStr !== nextDateStr;
                 let cardBg = "bg-white";
                 if (isLatestOfDay) cardBg = "bg-gray-100"; 
                 if (isEarliestOfDay) cardBg = "bg-green-50"; 
-                // Note: If single entry, it is both latest and earliest. Earliest check overwrites to Green.
 
                 if (window.isDiaryMode) {
-                    // In Diary Mode, preserve border pink but change background
-                    card.className = `p-3 ${cardBg} rounded-2xl border border-pink-100 shadow-sm flex flex-col gap-3 transition-all`;
+                    card.className = `p-3 ${isStory ? 'bg-pink-50 border-pink-200' : cardBg} rounded-2xl border ${isStory ? 'border-2' : 'border-pink-100'} shadow-sm flex flex-col gap-3 transition-all`;
                     card.oncontextmenu = (ev) => ev.preventDefault();
                     let pressTimer;
-                    const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id), 600); };
+                    const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id, isStory), 600); };
                     const cancelPress = () => clearTimeout(pressTimer);
                     card.onmousedown = startPress; card.onmouseup = cancelPress; card.onmouseleave = cancelPress;
                     card.ontouchstart = startPress; card.ontouchend = cancelPress; card.ontouchmove = cancelPress;
@@ -892,7 +1092,7 @@
                         <div class="flex items-center gap-2 overflow-hidden">
                             <div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div>
                             <div class="flex flex-col min-w-0">
-                                <span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${e.name}</span>
+                                <span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${isStory ? 'Diary Story' : e.name}</span>
                                 <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
                         </div>
@@ -910,12 +1110,14 @@
                             </div>`;
                         });
                         commentsHtml += `</div>`;
-                    } else if (!diaryEntry?.caption) commentsHtml = `<p class="text-[10px] text-gray-300 italic text-center py-1">No notes yet...</p>`;
+                    } else if (!diaryEntry?.caption && !isStory) commentsHtml = `<p class="text-[10px] text-gray-300 italic text-center py-1">No notes yet...</p>`;
                     
                     let mediaHtml = '';
-                    if (diaryEntry?.image) {
-                        mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${diaryEntry.image}', event)">
-                            <img src="${diaryEntry.image}" class="w-full h-32 object-cover rounded-xl border border-gray-100">
+                    if (diaryEntry?.thumbnail || diaryEntry?.image) {
+                        const imgSrc = diaryEntry.thumbnail || diaryEntry.image;
+                        const fullSrc = diaryEntry.image || diaryEntry.thumbnail;
+                        mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${fullSrc}', event)">
+                            <img src="${imgSrc}" class="w-full h-40 object-cover rounded-xl border border-gray-100 shadow-sm">
                             <div class="absolute inset-0 bg-black/0 rounded-xl flex items-center justify-center"><span class="opacity-0 group-hover:opacity-100 text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-lg">View</span></div>
                             <button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
@@ -933,6 +1135,7 @@
                     }
                     card.innerHTML = headerHtml + commentsHtml + mediaHtml;
                 } else {
+                    if (isStory) return;
                     card.className = `p-3.5 ${cardBg} rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press`;
                     card.onclick = () => window.openEditModal(e.id);
                     const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0));
@@ -940,7 +1143,7 @@
                     card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center">${e.name} ${diaryIcon}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
                 list.appendChild(card);
-                if (idx < 2) {
+                if (idx < 2 && !isStory) {
                     const b = document.createElement('div');
                     b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer";
                     b.onclick = () => window.openEditModal(e.id);
@@ -954,41 +1157,31 @@
             if (window.isCalendarMode) {
                 document.getElementById('dashboard-standard-view').classList.add('hidden');
                 document.getElementById('dashboard-calendar-view').classList.remove('hidden');
-                window.renderCalendar();
-                return;
+                window.renderCalendar(); return;
             } else {
                 document.getElementById('dashboard-standard-view').classList.remove('hidden');
                 document.getElementById('dashboard-calendar-view').classList.add('hidden');
             }
 
-            let filtered = window.entries;
+            let filtered = window.entries.filter(e => !e.isStory); 
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
             const scope = document.getElementById('dashboard-scope').value;
-            
-            // Filter by Date
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
             if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
-            
-            // Filter by Scope
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
             
-            let g = 0, d = 0, total = 0; const cats = {};
-            const dailyTotals = {};
-
+            let g = 0, d = 0, total = 0; const cats = {}; const dailyTotals = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
                 if (e.person === 'GET') g += amt; else d += amt;
                 cats[e.category] = (cats[e.category] || 0) + amt;
-
-                // Daily Stats
                 const dateKey = e.dateTime.toISOString().split('T')[0];
                 if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime };
                 dailyTotals[dateKey][e.person] += amt;
             });
 
-            // Update Summary
             document.getElementById('chart-get-total').innerText = g.toLocaleString();
             document.getElementById('chart-dom-total').innerText = d.toLocaleString();
             document.getElementById('m-get-sum').innerText = g.toLocaleString();
@@ -996,125 +1189,83 @@
             document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%';
             document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
             
-            // Render Categories
             const breakdown = document.getElementById('category-breakdown');
             breakdown.innerHTML = '<h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap for Details)</span></h4>';
             Object.keys(cats).forEach(cat => {
                 const p = (cats[cat] / total) * 100;
                 const r = document.createElement('div');
                 r.className = "cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all select-none group";
-                
-                // Double tap logic for category
                 let lastCatTap = 0;
                 r.addEventListener('click', (e) => {
-                    const now = Date.now();
-                    if (now - lastCatTap < 300) {
-                        e.preventDefault();
-                        showCategoryDetails(cat);
-                    }
-                    lastCatTap = now;
+                    const now = Date.now(); if (now - lastCatTap < 300) { e.preventDefault(); showCategoryDetails(cat); } lastCatTap = now;
                 });
-
                 r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${cat}</span><span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`;
                 breakdown.appendChild(r);
             });
 
-            // Render Daily Chart
             const chartContainer = document.getElementById('daily-chart-container');
             const sortedDates = Object.keys(dailyTotals).sort();
             const maxDailyTotal = sortedDates.reduce((max, date) => Math.max(max, dailyTotals[date].GET + dailyTotals[date].DOM), 0);
             
             let chartHtml = '';
-            if (sortedDates.length === 0) {
-                chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>';
-            } else {
+            if (sortedDates.length === 0) { chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>'; } 
+            else {
                 chartHtml = '<div class="flex items-end gap-3 h-64 overflow-x-auto pb-2 pt-6 px-2 no-scrollbar w-full">';
                 sortedDates.forEach(date => {
-                    const data = dailyTotals[date];
-                    const dayTotal = data.GET + data.DOM;
-                    // Colors change based on scope/mode
+                    const data = dailyTotals[date]; const dayTotal = data.GET + data.DOM;
                     const getBarColor = scope === 'GET' ? 'bg-green-700' : 'bg-green-400';
                     const domBarColor = scope === 'DOM' ? 'bg-blue-700' : 'bg-blue-400';
-                    
-                    // Height relative to max day
                     const barHeightPct = maxDailyTotal > 0 ? (dayTotal / maxDailyTotal) * 100 : 0;
-                    
                     chartHtml += `
                         <div class="flex flex-col items-center gap-1 min-w-[45px] h-full justify-end group relative">
-                            <div class="absolute -top-8 bg-gray-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">
-                                ฿${dayTotal.toLocaleString()}
-                            </div>
+                            <div class="absolute -top-8 bg-gray-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">฿${dayTotal.toLocaleString()}</div>
                             <div class="w-3 sm:w-5 bg-gray-100 rounded-t-sm rounded-b-sm flex flex-col-reverse overflow-hidden relative transition-all" style="height: ${Math.max(barHeightPct, 1)}%">
                                 <div class="${getBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.GET / dayTotal) * 100 : 0)}%"></div>
                                 <div class="${domBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.DOM / dayTotal) * 100 : 0)}%"></div>
                             </div>
                             <span class="text-[8px] sm:text-[9px] text-gray-400 font-bold whitespace-nowrap mt-1">${data.dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                            
-                            <!-- Detailed Breakdown Below -->
                             <div class="flex flex-col items-center gap-0.5 mt-1 border-t border-gray-100 pt-1 w-full">
                                 <span class="text-[7px] text-green-600 font-medium">${data.GET.toLocaleString()}</span>
                                 <span class="text-[7px] text-blue-600 font-medium">${data.DOM.toLocaleString()}</span>
                                 <span class="text-[8px] text-gray-800 font-bold">${dayTotal.toLocaleString()}</span>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                 });
                 chartHtml += '</div>';
             }
             chartContainer.innerHTML = chartHtml;
         }
 
-        // --- NEW CALENDAR LOGIC ---
-        window.changeCalendarMonth = (delta) => {
-            calendarDate.setMonth(calendarDate.getMonth() + delta);
-            renderCalendar();
-        };
-
         window.renderCalendar = () => {
-            const year = calendarDate.getFullYear();
-            const month = calendarDate.getMonth();
+            const year = calendarDate.getFullYear(); const month = calendarDate.getMonth();
             document.getElementById('calendar-month-label').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const grid = document.getElementById('calendar-grid');
             grid.innerHTML = '';
-
-            // Aggregate data for the month
-            const monthData = {};
-            let monthTotal = 0;
-            let maxDaily = 0;
+            const monthData = {}; let monthTotal = 0; let maxDaily = 0;
 
             window.entries.forEach(e => {
-                if (e.dateTime.getMonth() === month && e.dateTime.getFullYear() === year && e.isIndividual !== true) { // Default to Shared only or update based on scope? Let's use shared for now as default calendar. Or filter based on current scope.
+                if (e.isStory) return;
+                const scope = document.getElementById('dashboard-scope').value;
+                let include = false;
+                if (scope === 'shared' && e.isIndividual !== true) include = true;
+                else if (scope !== 'shared' && e.isIndividual === true && e.person === scope) include = true;
+                if (e.dateTime.getMonth() === month && e.dateTime.getFullYear() === year && include) {
                     const d = e.dateTime.getDate();
                     if (!monthData[d]) monthData[d] = { GET: 0, DOM: 0, total: 0 };
                     const amt = parseFloat(e.amount);
-                    monthData[d].total += amt;
-                    monthData[d][e.person] += amt;
-                    monthTotal += amt;
-                    if (monthData[d].total > maxDaily) maxDaily = monthData[d].total;
+                    monthData[d].total += amt; monthData[d][e.person] += amt;
+                    monthTotal += amt; if (monthData[d].total > maxDaily) maxDaily = monthData[d].total;
                 }
             });
             document.getElementById('calendar-month-total').innerText = monthTotal.toLocaleString();
-
-            // Empty slots
-            for (let i = 0; i < firstDay; i++) {
-                grid.innerHTML += '<div></div>';
-            }
-
-            // Days
-            const scope = document.getElementById('dashboard-scope').value;
-            
+            for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div></div>';
             for (let day = 1; day <= daysInMonth; day++) {
                 const data = monthData[day] || { GET: 0, DOM: 0, total: 0 };
-                const barHeight = maxDaily > 0 ? (data.total / maxDaily) * 100 : 0;
-                
-                // Color Logic
                 const getH = (data.GET / data.total) * 100 || 0;
                 const domH = (data.DOM / data.total) * 100 || 0;
-
-                const dayHtml = `
+                grid.innerHTML += `
                     <div class="aspect-square bg-gray-50 rounded-lg flex flex-col justify-between p-1 relative overflow-hidden border border-transparent hover:border-violet-200 transition-colors">
                         <span class="text-[9px] font-bold text-gray-400 z-10">${day}</span>
                         ${data.total > 0 ? `
@@ -1124,29 +1275,45 @@
                             </div>
                             <span class="text-[7px] font-bold text-gray-600 text-center -mt-1 z-10">฿${Math.round(data.total).toLocaleString()}</span>
                         ` : ''}
-                    </div>
-                `;
-                grid.innerHTML += dayHtml;
+                    </div>`;
             }
         };
 
+        window.resetToMonthFilter = () => {
+            const now = new Date(); const y = now.getFullYear(); const m = now.getMonth();
+            const firstDay = new Date(Date.UTC(y, m, 1)); const lastDay = new Date(Date.UTC(y, m + 1, 0));
+            document.getElementById('start-date').value = firstDay.toISOString().split('T')[0];
+            document.getElementById('end-date').value = lastDay.toISOString().split('T')[0];
+        };
+
+        window.updateFilterButtons = () => {
+            const btnToday = document.getElementById('btn-filter-today');
+            const btnYesterday = document.getElementById('btn-filter-yesterday');
+            const baseClass = "text-[10px] font-bold uppercase tracking-widest transition-colors";
+            if (activeDateFilter === 'today') { btnToday.className = `${baseClass} text-purple-600`; btnYesterday.className = `${baseClass} text-gray-400 hover:text-purple-600`; }
+            else if (activeDateFilter === 'yesterday') { btnToday.className = `${baseClass} text-gray-400 hover:text-purple-600`; btnYesterday.className = `${baseClass} text-purple-600`; }
+            else { btnToday.className = `${baseClass} text-gray-400 hover:text-purple-600`; btnYesterday.className = `${baseClass} text-gray-400 hover:text-purple-600`; }
+        };
+
+        window.setFilter = (type) => {
+            if (activeDateFilter === type) { activeDateFilter = null; resetToMonthFilter(); showToast("Default Period (Month)", "purple"); }
+            else {
+                activeDateFilter = type; const startInput = document.getElementById('start-date'); const endInput = document.getElementById('end-date'); const now = new Date();
+                if (type === 'today') { const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; startInput.value = todayStr; endInput.value = todayStr; showToast("Showing Today", "purple"); }
+                else if (type === 'yesterday') { const yest = new Date(now); yest.setDate(now.getDate() - 1); const yestStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`; startInput.value = yestStr; endInput.value = yestStr; showToast("Showing Yesterday", "purple"); }
+            }
+            updateFilterButtons(); renderDashboard();
+        }
+
+        window.handleManualDateChange = () => { activeDateFilter = null; updateFilterButtons(); renderDashboard(); }
+        window.changeCalendarMonth = (delta) => { calendarDate.setMonth(calendarDate.getMonth() + delta); renderCalendar(); };
         window.toggleDashboardMode = () => {
             window.isCalendarMode = !window.isCalendarMode;
             const mobileTab = document.getElementById('tab-m-dashboard');
             const desktopTab = document.getElementById('tab-dashboard');
             const title = document.getElementById('dashboard-title');
-
-            if (window.isCalendarMode) {
-                title.innerText = "Calendar View";
-                mobileTab.classList.add('calendar-active');
-                desktopTab.classList.add('calendar-active');
-                showToast("Calendar View", "purple");
-            } else {
-                title.innerText = "Dashboard";
-                mobileTab.classList.remove('calendar-active');
-                desktopTab.classList.remove('calendar-active');
-                showToast("Dashboard View", "green");
-            }
+            if (window.isCalendarMode) { title.innerText = "Calendar View"; mobileTab.classList.add('calendar-active'); desktopTab.classList.add('calendar-active'); showToast("Calendar View", "purple"); }
+            else { title.innerText = "Dashboard"; mobileTab.classList.remove('calendar-active'); desktopTab.classList.remove('calendar-active'); showToast("Dashboard View", "green"); }
             renderDashboard();
         };
 
@@ -1156,8 +1323,6 @@
             else switchView('dashboard');
             lastDashboardTap = now;
         }
-
-        // --- END CALENDAR LOGIC ---
 
         function setSyncState(loading) {
             const icon = document.getElementById('sync-icon');
@@ -1179,17 +1344,9 @@
             const inputSec = document.getElementById('input-section');
             document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
             if (window.innerWidth < 768) {
-                if (view === 'input') {
-                    sideSec.classList.add('mobile-hidden'); 
-                    sideSec.classList.remove('mobile-view');
-                    inputSec.classList.remove('mobile-hidden');
-                    inputSec.style.display = 'flex';
-                    document.getElementById('tab-m-input').classList.add('tab-active');
-                } else {
-                    inputSec.classList.add('mobile-hidden'); 
-                    inputSec.style.display = '';
-                    sideSec.classList.remove('mobile-hidden'); 
-                    sideSec.classList.add('mobile-view');
+                if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); }
+                else {
+                    inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view');
                     if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } 
                     else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); }
                 }
@@ -1222,32 +1379,9 @@
         }
 
         window.onload = () => {
-            // Set Default Dashboard Filter to Current Month
-            const now = new Date();
-            const y = now.getFullYear();
-            const m = now.getMonth();
-            // Use UTC to ensure date string format matches local components correctly without timezone shifts
-            const firstDay = new Date(Date.UTC(y, m, 1));
-            const lastDay = new Date(Date.UTC(y, m + 1, 0));
-            
-            const startInput = document.getElementById('start-date');
-            const endInput = document.getElementById('end-date');
-            
-            if (startInput && endInput) {
-                startInput.value = firstDay.toISOString().split('T')[0];
-                endInput.value = lastDay.toISOString().split('T')[0];
-            }
-
+            window.resetToMonthFilter();
             document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6"));
-            
-            if(window.innerWidth < 768) switchView('input'); 
-            else switchView('history');
-            
-            // Re-render dashboard to apply the default date filter if data is already loaded
-            if (window.entries && window.entries.length > 0) {
-                window.renderDashboard();
-            }
-
+            if(window.innerWidth < 768) switchView('input'); else switchView('history');
             if ('serviceWorker' in navigator) {
                 try {
                     const swCode = "self.addEventListener('fetch', function(event) {});";
