@@ -625,6 +625,7 @@
                     return { id: doc.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
                 });
                 updateMonthOverview(); // Update headers and calendar
+                renderDashboard(); // Re-render dashboard to ensure it has data even if lazy load is short
             });
         }
 
@@ -1434,17 +1435,19 @@
                 
                 // --- NEW STYLING LOGIC ---
                 let cardBg = "bg-white";
+                let textCol = "text-gray-400";
                 const isToday = d.toDateString() === new Date().toDateString();
 
                 if (isToday) {
-                    // Base color for Today items
-                    cardBg = "bg-orange-50 border-orange-100";
+                    cardBg = "bg-orange-300 border-orange-300"; // Pastel orange
+                    textCol = "text-white"; // White text for pastel bg
+                    
                     // First transaction of the day (chronologically first = bottom of list visually)
                     if (isEarliestOfDay) {
-                        cardBg = "bg-orange-200 border-orange-300";
+                        cardBg = "bg-orange-500 border-orange-500"; // Darker orange
+                        textCol = "text-white";
                     }
                 } else {
-                    // Existing logic for other days
                     if (isLatestOfDay) cardBg = "bg-gray-100"; 
                     if (isEarliestOfDay) cardBg = "bg-green-50"; 
                 }
@@ -1464,7 +1467,7 @@
                             <div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div>
                             <div class="flex flex-col min-w-0">
                                 <span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${isStory ? 'Diary Story' : e.name}</span>
-                                <span class="text-[8px] font-bold text-gray-400 uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                                <span class="text-[8px] font-bold ${textCol} uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                             </div>
                         </div>
                         <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span>
@@ -1481,7 +1484,7 @@
                             </div>`;
                         });
                         commentsHtml += `</div>`;
-                    } else if (!diaryEntry?.caption && !isStory) commentsHtml = `<p class="text-[10px] text-gray-300 italic text-center py-1">No notes yet...</p>`;
+                    } else if (!diaryEntry?.caption && !isStory) commentsHtml = `<p class="text-[10px] ${textCol === 'text-white' ? 'text-white/70' : 'text-gray-300'} italic text-center py-1">No notes yet...</p>`;
                     
                     let mediaHtml = '';
                     if (diaryEntry?.thumbnail || diaryEntry?.image) {
@@ -1496,10 +1499,10 @@
                         </div>`;
                     } else {
                         mediaHtml = `<div class="flex gap-2 mt-1">
-                            <button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:text-pink-500 transition-colors">
+                            <button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center gap-2 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             </button>
-                            <button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:text-pink-500 transition-colors">
+                            <button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
                             </button>
                         </div>`;
@@ -1511,7 +1514,13 @@
                     card.onclick = () => window.openEditModal(e.id);
                     const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0));
                     const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
-                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center">${e.name} ${diaryIcon}</div><div class="text-[9px] text-gray-300 font-bold uppercase">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px]">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
+                    
+                    // Conditional styling for text color on orange backgrounds
+                    const timeClass = `text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}`;
+                    const nameClass = `font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}`;
+                    const amtClass = `font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}`;
+
+                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="${nameClass}">${e.name} ${diaryIcon}</div><div class="${timeClass}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="${amtClass}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
                 list.appendChild(card);
                 if (idx < 2 && !isStory) {
@@ -1549,13 +1558,29 @@
                 document.getElementById('dashboard-calendar-view').classList.add('hidden');
             }
 
-            let filtered = window.entries.filter(e => !e.isStory); 
+            // USE MONTH ENTRIES IF AVAILABLE TO FIX LAZY LOAD ISSUE
+            // Determine if the filter is set to "Current Month" (default state when date inputs are empty or match this month)
+            // Actually, simpler logic: merge monthEntries into entries for the purpose of the dashboard calculation
+            // to ensure we have at least the full current month data available.
+            
+            // Create a superset of data by combining lazy-loaded entries and full month entries
+            const allAvailableData = [...window.entries];
+            // Add any from monthEntries that aren't already in entries (by ID)
+            const entryIds = new Set(window.entries.map(e => e.id));
+            window.monthEntries.forEach(me => {
+                if (!entryIds.has(me.id)) {
+                    allAvailableData.push(me);
+                }
+            });
+
+            let filtered = allAvailableData.filter(e => !e.isStory); 
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
             const scope = currentDashboardScope;
             
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
             if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
+            
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
             
