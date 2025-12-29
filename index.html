@@ -139,13 +139,14 @@
 
             <!-- Dashboard View -->
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col gap-3">
                     <h3 id="dashboard-title" class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
-                    <select id="dashboard-scope" onchange="renderDashboard()" class="text-xs font-bold bg-gray-100 border-none rounded-lg py-2 px-3 outline-none text-gray-600">
-                        <option value="shared">Shared (Pool)</option>
-                        <option value="GET">GET Personal</option>
-                        <option value="DOM">DOM Personal</option>
-                    </select>
+                    <!-- Quick Toggle Buttons -->
+                    <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
+                        <button onclick="setDashboardScope('shared')" id="scope-btn-shared" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
+                        <button onclick="setDashboardScope('GET')" id="scope-btn-GET" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">GET</button>
+                        <button onclick="setDashboardScope('DOM')" id="scope-btn-DOM" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">DOM</button>
+                    </div>
                 </div>
                 
                 <!-- Standard Dashboard View -->
@@ -546,6 +547,7 @@
         let currentPerson = null;
         let isIndividualMode = false; 
         let isOverviewIncludingPersonal = false; // Default: Shared Only
+        let currentDashboardScope = 'shared'; // New State for Dashboard Scope
         
         let editingEntryId = null;
         let editingPerson = null;
@@ -589,6 +591,23 @@
         }
 
         function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600', 'Story':'bg-pink-50 text-pink-500'}[c] || 'bg-gray-50'; }
+
+        // --- DASHBOARD SCOPE LOGIC ---
+        window.setDashboardScope = (scope) => {
+            currentDashboardScope = scope;
+            // Update UI
+            ['shared', 'GET', 'DOM'].forEach(s => {
+                const btn = document.getElementById(`scope-btn-${s}`);
+                if(s === scope) {
+                    btn.classList.add('bg-white', 'text-gray-800', 'shadow-sm');
+                    btn.classList.remove('text-gray-500', 'hover:bg-gray-200');
+                } else {
+                    btn.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
+                    btn.classList.add('text-gray-500', 'hover:bg-gray-200');
+                }
+            });
+            renderDashboard();
+        }
 
         // --- NEW: MONTH OVERVIEW LISTENER ---
         // Keeps track of ALL current month transactions for the Balance header and Calendar
@@ -1250,7 +1269,7 @@
         window.showCategoryDetails = (category) => {
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
-            const scope = document.getElementById('dashboard-scope').value;
+            const scope = currentDashboardScope;
             
             let filtered = window.entries.filter(e => e.category === category);
 
@@ -1412,9 +1431,24 @@
                 const nextDateStr = idx < window.entries.length - 1 ? window.entries[idx+1].dateTime.toDateString() : null;
                 const isLatestOfDay = dateStr !== prevDateStr; 
                 const isEarliestOfDay = dateStr !== nextDateStr;
+                
+                // --- NEW STYLING LOGIC ---
                 let cardBg = "bg-white";
-                if (isLatestOfDay) cardBg = "bg-gray-100"; 
-                if (isEarliestOfDay) cardBg = "bg-green-50"; 
+                const isToday = d.toDateString() === new Date().toDateString();
+
+                if (isToday) {
+                    // Base color for Today items
+                    cardBg = "bg-orange-50 border-orange-100";
+                    // First transaction of the day (chronologically first = bottom of list visually)
+                    if (isEarliestOfDay) {
+                        cardBg = "bg-orange-200 border-orange-300";
+                    }
+                } else {
+                    // Existing logic for other days
+                    if (isLatestOfDay) cardBg = "bg-gray-100"; 
+                    if (isEarliestOfDay) cardBg = "bg-green-50"; 
+                }
+                // -------------------------
 
                 if (window.isDiaryMode) {
                     card.className = `p-3 ${isStory ? 'bg-pink-50 border-pink-200' : cardBg} rounded-2xl border ${isStory ? 'border-2' : 'border-pink-100'} shadow-sm flex flex-col gap-3 transition-all`;
@@ -1518,7 +1552,8 @@
             let filtered = window.entries.filter(e => !e.isStory); 
             const start = document.getElementById('start-date').value;
             const end = document.getElementById('end-date').value;
-            const scope = document.getElementById('dashboard-scope').value;
+            const scope = currentDashboardScope;
+            
             if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
             if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
@@ -1603,7 +1638,7 @@
 
             sourceData.forEach(e => {
                 if (e.isStory) return;
-                const scope = document.getElementById('dashboard-scope').value;
+                const scope = currentDashboardScope;
                 let include = false;
                 if (scope === 'shared' && e.isIndividual !== true) include = true;
                 else if (scope !== 'shared' && e.isIndividual === true && e.person === scope) include = true;
