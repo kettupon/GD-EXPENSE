@@ -155,8 +155,9 @@
                         <div class="flex justify-between items-center mb-3">
                             <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter Period</label>
                             <div class="flex gap-3">
+                                <button id="btn-filter-month" onclick="setFilter('month')" class="text-[10px] font-bold text-purple-600 uppercase tracking-widest hover:text-purple-800 transition-colors">Month</button>
                                 <button id="btn-filter-yesterday" onclick="setFilter('yesterday')" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Yesterday</button>
-                                <button id="btn-filter-today" onclick="setFilter('today')" class="text-[10px] font-bold text-purple-600 uppercase tracking-widest hover:text-purple-800 transition-colors">Today</button>
+                                <button id="btn-filter-today" onclick="setFilter('today')" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Today</button>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -569,7 +570,7 @@
         let isCreatingStory = false;
         
         let calendarDate = new Date(); 
-        let activeDateFilter = null; 
+        let activeDateFilter = 'month'; // Default to month for button state
 
         // Pagination Vars
         let currentLimit = 15;
@@ -1272,10 +1273,27 @@
             const end = document.getElementById('end-date').value;
             const scope = currentDashboardScope;
             
-            let filtered = window.entries.filter(e => e.category === category);
+            // --- FIX START: Use combined dataset for Details view ---
+            const allAvailableData = [...window.entries];
+            const entryIds = new Set(window.entries.map(e => e.id));
+            window.monthEntries.forEach(me => {
+                if (!entryIds.has(me.id)) allAvailableData.push(me);
+            });
+            
+            let filtered = allAvailableData.filter(e => e.category === category);
+            // --- FIX END ---
 
-            if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
-            if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
+            // FIX: Use explicit local date construction for filtering
+            if (start) {
+                const [sy, sm, sd] = start.split('-').map(Number);
+                const startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+                filtered = filtered.filter(e => e.dateTime >= startDate);
+            }
+            if (end) {
+                const [ey, em, ed] = end.split('-').map(Number);
+                const endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+                filtered = filtered.filter(e => e.dateTime <= endDate);
+            }
             
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
@@ -1559,10 +1577,6 @@
             }
 
             // USE MONTH ENTRIES IF AVAILABLE TO FIX LAZY LOAD ISSUE
-            // Determine if the filter is set to "Current Month" (default state when date inputs are empty or match this month)
-            // Actually, simpler logic: merge monthEntries into entries for the purpose of the dashboard calculation
-            // to ensure we have at least the full current month data available.
-            
             // Create a superset of data by combining lazy-loaded entries and full month entries
             const allAvailableData = [...window.entries];
             // Add any from monthEntries that aren't already in entries (by ID)
@@ -1578,8 +1592,17 @@
             const end = document.getElementById('end-date').value;
             const scope = currentDashboardScope;
             
-            if (start) filtered = filtered.filter(e => e.dateTime >= new Date(start));
-            if (end) { const endDate = new Date(end); endDate.setHours(23,59,59); filtered = filtered.filter(e => e.dateTime <= endDate); }
+            // FIX: Use explicit local date construction for filtering
+            if (start) {
+                const [sy, sm, sd] = start.split('-').map(Number);
+                const startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+                filtered = filtered.filter(e => e.dateTime >= startDate);
+            }
+            if (end) {
+                const [ey, em, ed] = end.split('-').map(Number);
+                const endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+                filtered = filtered.filter(e => e.dateTime <= endDate);
+            }
             
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
@@ -1589,8 +1612,15 @@
                 const amt = parseFloat(e.amount); total += amt;
                 if (e.person === 'GET') g += amt; else d += amt;
                 cats[e.category] = (cats[e.category] || 0) + amt;
-                const dateKey = e.dateTime.toISOString().split('T')[0];
-                if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime };
+                
+                // FIX: Use local date for grouping key instead of UTC ISO string
+                // const dateKey = e.dateTime.toISOString().split('T')[0]; // OLD (Buggy for timezone)
+                const year = e.dateTime.getFullYear();
+                const month = String(e.dateTime.getMonth() + 1).padStart(2, '0');
+                const day = String(e.dateTime.getDate()).padStart(2, '0');
+                const dateKey = `${year}-${month}-${day}`;
+
+                if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime }; // dateObj kept for sorting/display
                 dailyTotals[dateKey][e.person] += amt;
             });
 
@@ -1703,22 +1733,53 @@
         };
 
         window.updateFilterButtons = () => {
+            const btnMonth = document.getElementById('btn-filter-month');
             const btnToday = document.getElementById('btn-filter-today');
             const btnYesterday = document.getElementById('btn-filter-yesterday');
+            
             const baseClass = "text-[10px] font-bold uppercase tracking-widest transition-colors";
-            if (activeDateFilter === 'today') { btnToday.className = `${baseClass} text-purple-600`; btnYesterday.className = `${baseClass} text-gray-400 hover:text-purple-600`; }
-            else if (activeDateFilter === 'yesterday') { btnToday.className = `${baseClass} text-gray-400 hover:text-purple-600`; btnYesterday.className = `${baseClass} text-purple-600`; }
-            else { btnToday.className = `${baseClass} text-gray-400 hover:text-purple-600`; btnYesterday.className = `${baseClass} text-gray-400 hover:text-purple-600`; }
+            const activeClass = `${baseClass} text-purple-600`;
+            const inactiveClass = `${baseClass} text-gray-400 hover:text-purple-600`;
+            
+            btnMonth.className = inactiveClass;
+            btnToday.className = inactiveClass;
+            btnYesterday.className = inactiveClass;
+
+            if (activeDateFilter === 'today') {
+                btnToday.className = activeClass;
+            } else if (activeDateFilter === 'yesterday') {
+                btnYesterday.className = activeClass;
+            } else if (activeDateFilter === 'month') {
+                btnMonth.className = activeClass;
+            }
         };
 
         window.setFilter = (type) => {
-            if (activeDateFilter === type) { activeDateFilter = null; resetToMonthFilter(); showToast("Default Period (Month)", "purple"); }
-            else {
-                activeDateFilter = type; const startInput = document.getElementById('start-date'); const endInput = document.getElementById('end-date'); const now = new Date();
-                if (type === 'today') { const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; startInput.value = todayStr; endInput.value = todayStr; showToast("Showing Today", "purple"); }
-                else if (type === 'yesterday') { const yest = new Date(now); yest.setDate(now.getDate() - 1); const yestStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`; startInput.value = yestStr; endInput.value = yestStr; showToast("Showing Yesterday", "purple"); }
+            const startInput = document.getElementById('start-date'); 
+            const endInput = document.getElementById('end-date'); 
+            const now = new Date();
+            
+            activeDateFilter = type;
+            
+            if (type === 'month') {
+                resetToMonthFilter();
+                showToast("Showing Current Month", "purple");
+            } else if (type === 'today') { 
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; 
+                startInput.value = todayStr; 
+                endInput.value = todayStr; 
+                showToast("Showing Today", "purple"); 
+            } else if (type === 'yesterday') { 
+                const yest = new Date(now); 
+                yest.setDate(now.getDate() - 1); 
+                const yestStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`; 
+                startInput.value = yestStr; 
+                endInput.value = yestStr; 
+                showToast("Showing Yesterday", "purple"); 
             }
-            updateFilterButtons(); renderDashboard();
+            
+            updateFilterButtons(); 
+            renderDashboard();
         }
 
         window.handleManualDateChange = () => { activeDateFilter = null; updateFilterButtons(); renderDashboard(); }
