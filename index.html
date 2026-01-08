@@ -347,8 +347,21 @@
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
-                    <div><label class="text-[9px] font-bold text-gray-400 uppercase">Amount (฿)</label><input type="number" id="edit-amount" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none"></div>
-                    <div><label class="text-[9px] font-bold text-gray-400 uppercase">Category</label><select id="edit-category" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none"><option value="Food">Food</option><option value="Grocery">Grocery</option><option value="Trip">Trip</option><option value="Etc.">Etc.</option></select></div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-400 uppercase">Amount (฿)</label>
+                        <!-- Updated Input for iOS -->
+                        <input type="text" inputmode="decimal" id="edit-amount" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[9px] font-bold text-gray-400 uppercase">Category</label>
+                        <select id="edit-category" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
+                            <option value="Food">Food</option>
+                            <option value="Grocery">Grocery</option>
+                            <option value="Trip">Trip</option>
+                            <option value="Etc.">Etc.</option>
+                            <option value="Story">Story</option>
+                        </select>
+                    </div>
                 </div>
                 <div>
                     <label class="text-[9px] font-bold text-gray-400 uppercase">Person</label>
@@ -537,7 +550,7 @@
         const trashCol = collection(db, "trash");
 
         window.entries = []; 
-        window.monthEntries = []; // Store current month entries for overview
+        window.dashboardEntries = []; // CHANGED: Renamed from monthEntries to dashboardEntries for clarity
         window.diaryData = {}; 
         window.isDiaryMode = false;
         window.isCalendarMode = false; 
@@ -575,7 +588,7 @@
         // Pagination Vars
         let currentLimit = 15;
         let unsubscribe = null;
-        let monthUnsubscribe = null;
+        let dashboardUnsubscribe = null; // CHANGED: Renamed from monthUnsubscribe
         let isLoadingMore = false;
 
         const CATEGORY_ICONS = {
@@ -610,36 +623,59 @@
             renderDashboard();
         }
 
-        // --- NEW: MONTH OVERVIEW LISTENER ---
-        // Keeps track of ALL current month transactions for the Balance header and Calendar
-        function setupMonthListener() {
-            if (monthUnsubscribe) monthUnsubscribe();
+        // --- NEW: DEDICATED DASHBOARD LISTENER ---
+        // Fetches data specifically for the selected date range, independent of scroll list
+        function setupDashboardListener() {
+            if (dashboardUnsubscribe) dashboardUnsubscribe();
             
-            const now = new Date();
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            // Get dates from inputs (which are set by filters or calendar)
+            const startInput = document.getElementById('start-date').value;
+            const endInput = document.getElementById('end-date').value;
             
-            const q = query(expensesCol, where("dateTime", ">=", startOfMonth));
+            let startDate, endDate;
+
+            if (startInput && endInput) {
+                const [sy, sm, sd] = startInput.split('-').map(Number);
+                startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+                
+                const [ey, em, ed] = endInput.split('-').map(Number);
+                endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+            } else {
+                // Fallback to current month if inputs are empty
+                const now = new Date();
+                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            }
             
-            monthUnsubscribe = onSnapshot(q, (snapshot) => {
-                window.monthEntries = snapshot.docs.map(doc => {
+            // Query strictly based on date range
+            const q = query(expensesCol, where("dateTime", ">=", startDate), where("dateTime", "<=", endDate));
+            
+            dashboardUnsubscribe = onSnapshot(q, (snapshot) => {
+                window.dashboardEntries = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return { id: doc.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
                 });
-                updateMonthOverview(); // Update headers and calendar
-                renderDashboard(); // Re-render dashboard to ensure it has data even if lazy load is short
+                updateOverviewHeader(); 
+                renderDashboard();
+            }, (error) => {
+                console.error("Dashboard Sync Error:", error);
+                // Fallback for permission errors or offline
+                window.dashboardEntries = [];
+                renderDashboard();
             });
         }
 
         window.toggleOverviewMode = () => {
             isOverviewIncludingPersonal = !isOverviewIncludingPersonal;
-            updateMonthOverview();
+            updateOverviewHeader();
             showToast(isOverviewIncludingPersonal ? "Showing All Expenses" : "Showing Shared Only", "purple");
         }
 
-        function updateMonthOverview() {
+        function updateOverviewHeader() {
             let g = 0, d = 0;
             
-            window.monthEntries.forEach(e => {
+            // Use dashboardEntries to calculate totals for the VIEWED period
+            window.dashboardEntries.forEach(e => {
                 if (e.isStory) return;
                 
                 // FILTER: Only include shared expenses unless toggle is active
@@ -661,11 +697,6 @@
                 elLabel.innerText = isOverviewIncludingPersonal ? "(ALL)" : "(SHARED)";
                 elLabel.className = isOverviewIncludingPersonal ? "text-[9px] font-bold text-purple-500 self-center uppercase tracking-wider ml-1" : "text-[9px] font-bold text-gray-400 self-center uppercase tracking-wider ml-1";
             }
-
-            // Update Calendar if in mode
-            if (window.isCalendarMode) {
-                window.renderCalendar();
-            }
         }
 
         // --- LAZY LOADING SETUP (Activity List) ---
@@ -681,7 +712,9 @@
                 });
                 
                 window.renderHistory();
-                window.renderDashboard();
+                // Note: We don't call renderDashboard here anymore to avoid overwriting 
+                // correct dashboard data with incomplete list data
+                
                 setSyncState(false);
                 isLoadingMore = false;
                 
@@ -729,8 +762,7 @@
 
         // Initialize Listener
         setupRealtimeListener();
-        setupMonthListener(); // Start Month Listener
-
+        // Removed explicit setupMonthListener() call here, handled by resetToMonthFilter in onload
 
         onSnapshot(imagesCol, (snapshot) => {
             const newData = {};
@@ -761,13 +793,15 @@
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
 
+        // --- FIXED SAVE EDIT FUNCTION (NaN Bug) ---
         window.saveEdit = async function() {
             setSyncState(true);
             const docRef = doc(db, "expenses", editingEntryId);
             try {
                 await updateDoc(docRef, {
                     name: document.getElementById('edit-name').value,
-                    amount: parseFloat(document.getElementById('edit-amount').value),
+                    // Fix: Default to 0 if NaN/Empty to prevent data corruption
+                    amount: parseFloat(document.getElementById('edit-amount').value) || 0,
                     category: document.getElementById('edit-category').value,
                     person: editingPerson,
                     isIndividual: editingIsIndividual 
@@ -1379,8 +1413,8 @@
             const btnDom = document.getElementById('edit-btn-DOM');
             const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all";
             btnGet.className = baseClass; btnDom.className = baseClass;
-            if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-500 text-white border-transparent`; } 
-            else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-500 text-white border-transparent`; }
+            if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } 
+            else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; }
         }
         
         function updateDisplay() { 
@@ -1576,33 +1610,12 @@
                 document.getElementById('dashboard-calendar-view').classList.add('hidden');
             }
 
-            // USE MONTH ENTRIES IF AVAILABLE TO FIX LAZY LOAD ISSUE
-            // Create a superset of data by combining lazy-loaded entries and full month entries
-            const allAvailableData = [...window.entries];
-            // Add any from monthEntries that aren't already in entries (by ID)
-            const entryIds = new Set(window.entries.map(e => e.id));
-            window.monthEntries.forEach(me => {
-                if (!entryIds.has(me.id)) {
-                    allAvailableData.push(me);
-                }
-            });
-
-            let filtered = allAvailableData.filter(e => !e.isStory); 
-            const start = document.getElementById('start-date').value;
-            const end = document.getElementById('end-date').value;
-            const scope = currentDashboardScope;
+            // USE DEDICATED DASHBOARD ENTRIES (Fixes scroll issue)
+            let filtered = [...window.dashboardEntries].filter(e => !e.isStory); 
             
-            // FIX: Use explicit local date construction for filtering
-            if (start) {
-                const [sy, sm, sd] = start.split('-').map(Number);
-                const startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-                filtered = filtered.filter(e => e.dateTime >= startDate);
-            }
-            if (end) {
-                const [ey, em, ed] = end.split('-').map(Number);
-                const endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
-                filtered = filtered.filter(e => e.dateTime <= endDate);
-            }
+            // Note: Date filtering is already done by Firestore listener in setupDashboardListener
+            // We just need to filter by person scope here
+            const scope = currentDashboardScope;
             
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
@@ -1626,7 +1639,7 @@
 
             document.getElementById('chart-get-total').innerText = g.toLocaleString();
             document.getElementById('chart-dom-total').innerText = d.toLocaleString();
-            // Note: m-get-sum/m-dom-sum are now handled by updateMonthOverview via setupMonthListener
+            // Note: m-get-sum/m-dom-sum are now handled by updateOverviewHeader
             document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%';
             document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
             
@@ -1677,6 +1690,26 @@
             chartContainer.innerHTML = chartHtml;
         }
 
+        // --- FIXED CALENDAR BUG ---
+        window.changeCalendarMonth = (delta) => { 
+            // Prevent 31st overflow bug by setting date to 1st of month before shifting
+            calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + delta, 1);
+            
+            // Sync the input filters to this new month so dashboard data fetches correctly
+            const year = calendarDate.getFullYear();
+            const month = calendarDate.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            // Update inputs without triggering manual handler
+            document.getElementById('start-date').value = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+            document.getElementById('end-date').value = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+            
+            // Trigger fetch
+            setupDashboardListener();
+            renderCalendar(); 
+        };
+
         window.renderCalendar = () => {
             const year = calendarDate.getFullYear(); const month = calendarDate.getMonth();
             document.getElementById('calendar-month-label').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -1686,10 +1719,8 @@
             grid.innerHTML = '';
             const monthData = {}; let monthTotal = 0; let maxDaily = 0;
 
-            const now = new Date();
-            const isCurrentMonthView = (year === now.getFullYear() && month === now.getMonth());
-            // Use monthEntries if viewing current month to handle lazy-load gaps
-            const sourceData = isCurrentMonthView ? window.monthEntries : window.entries;
+            // Use dashboardEntries which contains full data for the viewed month
+            const sourceData = window.dashboardEntries;
 
             sourceData.forEach(e => {
                 if (e.isStory) return;
@@ -1728,8 +1759,11 @@
         window.resetToMonthFilter = () => {
             const now = new Date(); const y = now.getFullYear(); const m = now.getMonth();
             const firstDay = new Date(Date.UTC(y, m, 1)); const lastDay = new Date(Date.UTC(y, m + 1, 0));
-            document.getElementById('start-date').value = firstDay.toISOString().split('T')[0];
-            document.getElementById('end-date').value = lastDay.toISOString().split('T')[0];
+            // Fix: Use local time string construction to avoid timezone shifts
+            document.getElementById('start-date').value = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+            document.getElementById('end-date').value = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+            
+            setupDashboardListener(); // Fetch data for this month
         };
 
         window.updateFilterButtons = () => {
@@ -1762,8 +1796,10 @@
             activeDateFilter = type;
             
             if (type === 'month') {
-                resetToMonthFilter();
+                resetToMonthFilter(); // This calls setupDashboardListener inside it
                 showToast("Showing Current Month", "purple");
+                updateFilterButtons();
+                return; // Exit early as resetToMonthFilter handles everything
             } else if (type === 'today') { 
                 const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; 
                 startInput.value = todayStr; 
@@ -1779,11 +1815,15 @@
             }
             
             updateFilterButtons(); 
-            renderDashboard();
+            setupDashboardListener(); // Trigger fetch for Today/Yesterday
         }
 
-        window.handleManualDateChange = () => { activeDateFilter = null; updateFilterButtons(); renderDashboard(); }
-        window.changeCalendarMonth = (delta) => { calendarDate.setMonth(calendarDate.getMonth() + delta); renderCalendar(); };
+        window.handleManualDateChange = () => { 
+            activeDateFilter = null; 
+            updateFilterButtons(); 
+            setupDashboardListener(); // Trigger fetch on manual change
+        }
+
         window.toggleDashboardMode = () => {
             window.isCalendarMode = !window.isCalendarMode;
             const mobileTab = document.getElementById('tab-m-dashboard');
