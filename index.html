@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM v.2.1</title>
+    <title>Expense GET n DOM v.2.3</title>
     
-    <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
     <meta name="theme-color" content="#6D28D9">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -26,7 +24,6 @@
             -webkit-user-select: none;
             user-select: none;
         }
-
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
@@ -38,7 +35,6 @@
             color: #1F2937 !important;
             font-weight: 700;
         }
-
         .diary-active {
             border-bottom: 2px solid #EC4899 !important; /* Pink for Diary */
             color: #DB2777 !important;
@@ -48,25 +44,20 @@
             border-bottom: 2px solid #8B5CF6 !important; /* Violet for Calendar */
             color: #7C3AED !important;
         }
-
         .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
         .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
-
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .animate-spin-custom { animation: spin 1s linear infinite; }
-
         /* Image Viewer Transition */
         .image-modal-enter { opacity: 0; transform: scale(0.9); }
         .image-modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
         .image-modal-exit { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
-
         /* Prevent Auto Zoom on iOS Inputs */
         @media screen and (max-width: 768px) {
             input, select, textarea {
                 font-size: 16px !important;
             }
         }
-
         /* --- MOBILE SPECIFIC LAYOUT --- */
         @media (max-width: 768px) {
             .mobile-h-dvh { height: 100dvh; }
@@ -82,7 +73,6 @@
                 z-index: 20; 
             }
         }
-
         @media (min-width: 769px) {
             body { overflow: auto; }
             .desktop-card { height: 90vh; max-height: 900px; border-radius: 1.5rem; }
@@ -92,17 +82,13 @@
     </style>
 </head>
 <body class="bg-indigo-50 md:h-screen w-full flex items-center justify-center md:p-4 text-gray-800">
-
     <div class="bg-white w-full max-w-6xl h-full mobile-h-dvh desktop-card shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
         
-        <!-- Mobile Tabs (Fixed Top with Safe Area Support) -->
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50 pt-[env(safe-area-inset-top)]">
             <button onclick="handleExpenseTabClick()" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
             <button onclick="handleHistoryTabClick(true)" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
             <button onclick="handleDashboardTabClick(true)" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Dashboard</button>
         </div>
-
-        <!-- Sidebar / Secondary View -->
         <div id="side-section" class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col mobile-hidden md:flex min-h-0 overflow-hidden relative z-0">
             
             <div class="bg-white border-b border-gray-200 hidden md:block flex-none">
@@ -112,7 +98,6 @@
                 </div>
             </div>
             
-            <!-- History View -->
             <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
                 <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm transition-colors" id="history-header">
                     <div class="flex flex-col">
@@ -121,7 +106,6 @@
                             <button onclick="toggleStoryFilter()" id="btn-story-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors">
                                 Stories: OFF
                             </button>
-                            <!-- NEW: Media Gallery Toggle -->
                             <button onclick="toggleMediaGallery()" id="btn-media-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors flex items-center gap-1">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                 Media
@@ -134,46 +118,30 @@
                     </div>
                 </div>
                 
-                <!-- Standard List View -->
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
-                    <!-- History Items Injected Here -->
-                </div>
-
-                <!-- NEW: Media Gallery View (Hidden by default) -->
+                    </div>
                 <div id="media-gallery-view" class="hidden flex-1 overflow-y-auto p-1 no-scrollbar pb-24 md:pb-4 bg-white flex flex-col">
-                    <div id="media-grid" class="grid grid-cols-3 gap-0.5 flex-none">
-                        <!-- Images injected here -->
-                    </div>
-                    <!-- View More Button Container -->
+                    <div id="media-grid" class="grid grid-cols-3 gap-0.5 flex-none"></div>
                     <div id="media-load-more-container" class="p-4 flex justify-center hidden">
-                        <button onclick="loadMoreMedia()" class="px-6 py-2 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-sm">
-                            View More
-                        </button>
+                        <button onclick="loadMoreMedia()" class="px-6 py-2 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-sm">View More</button>
                     </div>
-                    <div id="media-empty" class="hidden text-center text-gray-400 text-xs py-10">
-                        No media found
-                    </div>
+                    <div id="media-empty" class="hidden text-center text-gray-400 text-xs py-10">No media found</div>
                 </div>
-
-                <!-- Loading Sentinel -->
                 <div id="loading-more-indicator" class="hidden py-4 text-center">
                     <div class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>
                 </div>
             </div>
-
-            <!-- Dashboard View -->
             <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
                 <div class="flex flex-col gap-3">
                     <h3 id="dashboard-title" class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
-                    <!-- Quick Toggle Buttons -->
                     <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
                         <button onclick="setDashboardScope('shared')" id="scope-btn-shared" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
                         <button onclick="setDashboardScope('GET')" id="scope-btn-GET" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">GET</button>
                         <button onclick="setDashboardScope('DOM')" id="scope-btn-DOM" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">DOM</button>
+                        <button onclick="setDashboardScope('ALL')" id="scope-btn-ALL" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200 text-purple-600">ALL</button>
                     </div>
                 </div>
                 
-                <!-- Standard Dashboard View -->
                 <div id="dashboard-standard-view" class="space-y-6">
                     <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-center mb-3">
@@ -189,15 +157,11 @@
                             <input type="date" id="end-date" onchange="handleManualDateChange()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
                         </div>
                     </div>
-
-                    <!-- Daily Bar Chart Section -->
                     <div id="daily-chart-wrapper" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                         <h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Daily Trend</h4>
                         <div id="daily-chart-container" class="w-full">
-                            <!-- Chart injected here -->
-                        </div>
+                            </div>
                     </div>
-
                     <div class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-end">
                             <div class="flex flex-col">
@@ -214,13 +178,9 @@
                             <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full" style="width: 0%;"></div>
                         </div>
                     </div>
-
                     <div id="category-breakdown" class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                        <!-- Categories -->
-                    </div>
+                        </div>
                 </div>
-
-                <!-- Calendar View (Hidden by default) -->
                 <div id="dashboard-calendar-view" class="hidden flex-col gap-4">
                     <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-violet-100">
                         <button onclick="changeCalendarMonth(-1)" class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg transition-colors">
@@ -242,14 +202,12 @@
                             <div class="text-[10px] font-bold text-gray-400">Sa</div>
                         </div>
                         <div id="calendar-grid" class="grid grid-cols-7 gap-1.5">
-                            <!-- Calendar Days Injected Here -->
-                        </div>
+                            </div>
                     </div>
                     <div class="p-4 bg-white rounded-2xl shadow-sm border border-violet-100 text-center">
                         <span class="text-[10px] text-gray-400 uppercase font-bold">Total this month</span>
                         <div class="text-2xl font-bold text-violet-600 mt-1 mb-3">฿<span id="calendar-month-total">0</span></div>
                         
-                        <!-- New Buttons with SVG Icons -->
                         <div class="flex gap-2 justify-center border-t border-gray-100 pt-3">
                             <button onclick="openRecycleBin()" class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-100 transition-colors">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
@@ -262,16 +220,11 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Install Banner Removed -->
             </div>
         </div>
-
-        <!-- Main Input Section -->
         <div id="input-section" class="w-full md:w-2/3 flex flex-col bg-white relative overflow-hidden h-full">
             <div class="display-zone flex flex-col bg-gray-50/80 border-b border-gray-200">
                 <div class="flex items-center justify-between px-4 py-2 bg-white/50">
-                    <!-- Modified Top Bar with Toggle -->
                     <div class="flex gap-4 cursor-pointer select-none" onclick="toggleOverviewMode()">
                         <div class="flex items-center gap-2">
                             <div class="w-2 h-2 rounded-full bg-green-500"></div>
@@ -289,7 +242,6 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="px-4 py-1 flex justify-end gap-2 overflow-hidden">
                     <div id="mini-history" class="flex gap-2"></div>
                 </div>
@@ -306,8 +258,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Keypad -->
             <div class="input-zone flex flex-col p-4 bg-white">
                 <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%] md:h-auto md:mb-6">
                     <button onclick="selectCategory('Food')" id="btn-Food" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent">
@@ -327,7 +277,6 @@
                         <span class="font-bold text-[9px] uppercase">Etc.</span>
                     </button>
                 </div>
-
                 <div class="flex-1 flex gap-3 min-h-0">
                     <div class="grid grid-cols-3 gap-2 flex-grow h-full">
                         <button onclick="pressNum('7')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">7</button>
@@ -343,7 +292,6 @@
                         <button onclick="pressNum('0')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">0</button>
                         <button onclick="pressNum('.')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">.</button>
                     </div>
-
                     <div class="flex flex-col gap-2 w-24 md:w-32 h-full">
                         <button onclick="selectPerson('GET')" id="btn-GET" class="person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all">GET</button>
                         <button onclick="selectPerson('DOM')" id="btn-DOM" class="person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all">DOM</button>
@@ -353,8 +301,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Modals -->
     <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
@@ -363,17 +309,12 @@
                     <label class="text-[9px] font-bold text-gray-400 uppercase">Description</label>
                     <div class="relative mt-1">
                         <input type="text" id="edit-name" class="w-full p-3 bg-gray-50 rounded-xl outline-none pr-10">
-                        <button onclick="document.getElementById('edit-name').value = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
+                        <button onclick="document.getElementById('edit-name').value = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[9px] font-bold text-gray-400 uppercase">Amount (฿)</label>
-                        <!-- Updated Input for iOS -->
                         <input type="text" inputmode="decimal" id="edit-amount" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
                     </div>
                     <div>
@@ -402,26 +343,21 @@
             </div>
         </div>
     </div>
-
-    <!-- Recycle Bin Modal -->
     <div id="recycle-bin-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[130] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md h-[70vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
                 <h3 class="text-lg font-bold text-gray-800 tracking-tight flex items-center gap-2">
-                    <span>🗑️</span> Recycle Bin
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Recycle Bin
                 </h3>
                 <button onclick="closeRecycleBin()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
             </div>
-            <div id="recycle-bin-list" class="flex-1 overflow-y-auto space-y-2 no-scrollbar">
-                <!-- Trash items injected here -->
-            </div>
-            <div class="mt-4 pt-2 text-center text-[10px] text-gray-400">
-                Items here are not permanently deleted yet.
-            </div>
+            <div id="recycle-bin-list" class="flex-1 overflow-y-auto space-y-2 no-scrollbar"></div>
+            <div class="mt-4 pt-2 text-center text-[10px] text-gray-400">Items here are not permanently deleted yet.</div>
         </div>
     </div>
-
-    <!-- Story Modal -->
     <div id="story-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[125] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Create Story</h3>
@@ -445,8 +381,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Caption Modal -->
     <div id="caption-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Add Diary Note</h3>
@@ -464,8 +398,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Diary Options Modal (Long Press) -->
     <div id="diary-options-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[115] hidden p-6 backdrop-blur-md">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
             <h3 id="diary-options-title" class="text-lg font-bold text-gray-900 mb-4">Photo Options</h3>
@@ -476,8 +408,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Category Details Modal -->
     <div id="category-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[118] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md h-[70vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
@@ -487,17 +417,13 @@
                 </div>
                 <button onclick="closeCategoryModal()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
             </div>
-            <div id="cat-modal-list" class="flex-1 overflow-y-auto space-y-2 no-scrollbar">
-                <!-- Items injected here -->
-            </div>
+            <div id="cat-modal-list" class="flex-1 overflow-y-auto space-y-2 no-scrollbar"></div>
             <div class="mt-4 pt-4 border-t border-gray-100 text-right">
                 <span class="text-xs text-gray-400 uppercase font-bold">Total:</span>
                 <span id="cat-modal-total" class="text-lg font-bold text-gray-900 ml-2">฿0</span>
             </div>
         </div>
     </div>
-
-    <!-- Password Modal -->
     <div id="password-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[120] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Enter Password</h3>
@@ -508,18 +434,19 @@
             </div>
         </div>
     </div>
-
-    <!-- Full Screen Image Viewer -->
     <div id="image-viewer" class="fixed inset-0 bg-black z-[125] hidden flex flex-col justify-center items-center touch-none">
         <button onclick="closeImageViewer()" class="absolute top-4 right-4 text-white p-2 z-50 bg-black/50 rounded-full">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
         </button>
         <img id="full-image" src="" class="max-w-full max-h-full object-contain p-2 transition-transform duration-200">
     </div>
-
     <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-md">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-sm text-center">
-            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">🗑️</div>
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </div>
             <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Transaction?</h3>
             <div class="flex gap-3 mt-6">
                 <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs btn-press">Cancel</button>
@@ -527,35 +454,15 @@
             </div>
         </div>
     </div>
-
-    <!-- iOS Install Instructions Modal -->
-    <div id="ios-install-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[150] hidden p-6 backdrop-blur-md">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center relative">
-            <button onclick="document.getElementById('ios-install-modal').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">✕</button>
-            <div class="text-3xl mb-4">📲</div>
-            <h3 class="text-lg font-bold text-gray-900 mb-2">Install on iOS</h3>
-            <p class="text-sm text-gray-500 mb-6 leading-relaxed">
-                1. Tap the <span class="font-bold text-blue-500">Share</span> button in your browser menu.<br>
-                2. Scroll down and select <span class="font-bold text-gray-800">"Add to Home Screen"</span>.
-            </p>
-            <div class="flex justify-center">
-                <div class="animate-bounce">👇</div>
-            </div>
-        </div>
-    </div>
-
     <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[130] uppercase tracking-wider"></div>
-
     <input type="file" id="diary-image-input" hidden accept="image/*" onchange="handleImageFile(this)">
-
-    <!-- MAIN LOGIC (FIREBASE) -->
+    
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { 
             getFirestore, collection, addDoc, onSnapshot, query, 
             orderBy, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc, arrayUnion, deleteField, limit, where, getDocs
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
         const firebaseConfig = {
             apiKey: "AIzaSyCA1razTnJuJdrDrJ4_jaxQoOih-FnghF8",
             authDomain: "expensegetndom.firebaseapp.com",
@@ -566,27 +473,26 @@
             appId: "1:550903272896:web:0a2d73dd023f8721b62425",
             measurementId: "G-4ENMN4ECT3"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const expensesCol = collection(db, "expenses");
         const imagesCol = collection(db, "images");
         const trashCol = collection(db, "trash");
-
+        
         window.entries = []; 
-        window.dashboardEntries = []; // CHANGED: Renamed from monthEntries to dashboardEntries for clarity
+        window.dashboardEntries = [];
         window.diaryData = {}; 
         window.isDiaryMode = false;
         window.isCalendarMode = false; 
         window.showStories = false; 
-        window.showMediaGallery = false; // New state for media gallery
+        window.showMediaGallery = false;
         
         let currentAmount = '0';
         let currentCategory = null;
         let currentPerson = null;
         let isIndividualMode = false; 
-        let isOverviewIncludingPersonal = false; // Default: Shared Only
-        let currentDashboardScope = 'shared'; // New State for Dashboard Scope
+        let isOverviewIncludingPersonal = false;
+        let currentDashboardScope = 'shared'; 
         
         let editingEntryId = null;
         let editingPerson = null;
@@ -601,22 +507,17 @@
         let captionPerson = null;
         let pendingAction = null;
         
-        // Story Vars
         let storyPerson = null;
         let storyImageBase64 = null;
         let storyThumbnailBase64 = null;
         let isCreatingStory = false;
         
         let calendarDate = new Date(); 
-        let activeDateFilter = 'month'; // Default to month for button state
-
-        // Pagination Vars
+        let activeDateFilter = 'month';
         let currentLimit = 15;
         let unsubscribe = null;
-        let dashboardUnsubscribe = null; // CHANGED: Renamed from monthUnsubscribe
+        let dashboardUnsubscribe = null;
         let isLoadingMore = false;
-        
-        // Media Gallery Vars
         let mediaGalleryLimit = 9;
 
         const CATEGORY_ICONS = {
@@ -626,42 +527,38 @@
             'Etc.': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"></path></svg>`,
             'Story': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`
         };
-
         function getCatIcon(category, size = "w-5 h-5") {
             const rawIcon = CATEGORY_ICONS[category] || `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>`;
             return rawIcon.replace('width="24" height="24"', `class="${size}"`);
         }
-
         function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600', 'Story':'bg-pink-50 text-pink-500'}[c] || 'bg-gray-50'; }
-
+        
         // --- DASHBOARD SCOPE LOGIC ---
         window.setDashboardScope = (scope) => {
             currentDashboardScope = scope;
             // Update UI
-            ['shared', 'GET', 'DOM'].forEach(s => {
+            ['shared', 'GET', 'DOM', 'ALL'].forEach(s => {
                 const btn = document.getElementById(`scope-btn-${s}`);
                 if(s === scope) {
                     btn.classList.add('bg-white', 'text-gray-800', 'shadow-sm');
                     btn.classList.remove('text-gray-500', 'hover:bg-gray-200');
+                    if(s === 'ALL') btn.classList.remove('text-purple-600'); // Reset purple text on active
                 } else {
                     btn.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
                     btn.classList.add('text-gray-500', 'hover:bg-gray-200');
+                    if(s === 'ALL') btn.classList.add('text-purple-600'); // Re-add purple text when inactive
                 }
             });
             renderDashboard();
         }
 
-        // --- NEW: DEDICATED DASHBOARD LISTENER ---
-        // Fetches data specifically for the selected date range, independent of scroll list
         function setupDashboardListener() {
             if (dashboardUnsubscribe) dashboardUnsubscribe();
             
-            // Get dates from inputs (which are set by filters or calendar)
             const startInput = document.getElementById('start-date').value;
             const endInput = document.getElementById('end-date').value;
             
             let startDate, endDate;
-
             if (startInput && endInput) {
                 const [sy, sm, sd] = startInput.split('-').map(Number);
                 startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
@@ -669,13 +566,11 @@
                 const [ey, em, ed] = endInput.split('-').map(Number);
                 endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
             } else {
-                // Fallback to current month if inputs are empty
                 const now = new Date();
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
                 endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
             }
             
-            // Query strictly based on date range
             const q = query(expensesCol, where("dateTime", ">=", startDate), where("dateTime", "<=", endDate));
             
             dashboardUnsubscribe = onSnapshot(q, (snapshot) => {
@@ -687,33 +582,24 @@
                 renderDashboard();
             }, (error) => {
                 console.error("Dashboard Sync Error:", error);
-                // Fallback for permission errors or offline
                 window.dashboardEntries = [];
                 renderDashboard();
             });
         }
-
         window.toggleOverviewMode = () => {
             isOverviewIncludingPersonal = !isOverviewIncludingPersonal;
             updateOverviewHeader();
             showToast(isOverviewIncludingPersonal ? "Showing All Expenses" : "Showing Shared Only", "purple");
         }
-
         function updateOverviewHeader() {
             let g = 0, d = 0;
-            
-            // Use dashboardEntries to calculate totals for the VIEWED period
             window.dashboardEntries.forEach(e => {
                 if (e.isStory) return;
-                
-                // FILTER: Only include shared expenses unless toggle is active
                 if (!isOverviewIncludingPersonal && e.isIndividual) return;
-
                 const amt = parseFloat(e.amount || 0);
                 if (e.person === 'GET') g += amt; else d += amt;
             });
             
-            // Update Top Bar
             const elGet = document.getElementById('m-get-sum');
             const elDom = document.getElementById('m-dom-sum');
             const elLabel = document.getElementById('overview-mode-label');
@@ -726,74 +612,44 @@
                 elLabel.className = isOverviewIncludingPersonal ? "text-[9px] font-bold text-purple-500 self-center uppercase tracking-wider ml-1" : "text-[9px] font-bold text-gray-400 self-center uppercase tracking-wider ml-1";
             }
         }
-
-        // --- LAZY LOADING SETUP (Activity List) ---
         function setupRealtimeListener() {
-            if (unsubscribe) unsubscribe(); // Unsubscribe previous listener
-            
+            if (unsubscribe) unsubscribe(); 
             const q = query(expensesCol, orderBy("dateTime", "desc"), limit(currentLimit));
-            
             unsubscribe = onSnapshot(q, (snapshot) => {
                 window.entries = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return { id: doc.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
                 });
-                
-                if (window.showMediaGallery) {
-                    window.renderMediaGallery();
-                } else {
-                    window.renderHistory();
-                }
-                
+                if (window.showMediaGallery) window.renderMediaGallery();
+                else window.renderHistory();
                 setSyncState(false);
                 isLoadingMore = false;
-                
-                // Hide loader if we have fewer docs than the limit (means we reached the end)
                 const loader = document.getElementById('loading-more-indicator');
                 if (snapshot.docs.length < currentLimit) {
                     if(loader) loader.classList.add('hidden');
                     if (window.historyObserver) window.historyObserver.disconnect();
                 } else {
-                    // Ensure loader is ready for next scroll
                     if(loader && !window.showMediaGallery) loader.classList.remove('hidden'); 
                     setupObserver();
                 }
             });
         }
-
         window.loadMore = function() {
             if (isLoadingMore) return;
             isLoadingMore = true;
             currentLimit += 15;
-            // console.log("Loading more... new limit:", currentLimit);
             setupRealtimeListener();
         }
-
         function setupObserver() {
             if (window.historyObserver) window.historyObserver.disconnect();
-            
-            const options = {
-                root: document.getElementById('history-list'),
-                rootMargin: '100px',
-                threshold: 0.1
-            };
-
+            const options = { root: document.getElementById('history-list'), rootMargin: '100px', threshold: 0.1 };
             window.historyObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        window.loadMore();
-                    }
-                });
+                entries.forEach(entry => { if (entry.isIntersecting) window.loadMore(); });
             }, options);
-
             const sentinel = document.getElementById('loading-more-indicator');
             if (sentinel) window.historyObserver.observe(sentinel);
         }
-
-        // Initialize Listener
         setupRealtimeListener();
-        // Removed explicit setupMonthListener() call here, handled by resetToMonthFilter in onload
-
         onSnapshot(imagesCol, (snapshot) => {
             const newData = {};
             snapshot.docs.forEach(doc => { newData[doc.id] = doc.data(); });
@@ -803,9 +659,7 @@
                 else window.renderHistory();
             }
         });
-
         window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
-
         window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
             const okBtn = document.getElementById('ok-btn');
@@ -825,15 +679,12 @@
             } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
-
-        // --- FIXED SAVE EDIT FUNCTION (NaN Bug) ---
         window.saveEdit = async function() {
             setSyncState(true);
             const docRef = doc(db, "expenses", editingEntryId);
             try {
                 await updateDoc(docRef, {
                     name: document.getElementById('edit-name').value,
-                    // Fix: Default to 0 if NaN/Empty to prevent data corruption
                     amount: parseFloat(document.getElementById('edit-amount').value) || 0,
                     category: document.getElementById('edit-category').value,
                     person: editingPerson,
@@ -844,64 +695,37 @@
             } catch (e) { showToast("Error", "red"); }
             finally { setSyncState(false); }
         };
-
-        // --- UPDATED DELETE TO TRASH ---
         window.executeDelete = async function() {
             setSyncState(true);
             try {
                 const entryId = editingEntryId;
                 const expenseRef = doc(db, "expenses", entryId);
                 const imageRef = doc(db, "images", entryId);
-                
-                // 1. Fetch data
                 const expSnap = await getDoc(expenseRef);
                 const imgSnap = await getDoc(imageRef);
-                
                 if (expSnap.exists()) {
-                    const data = expSnap.data();
-                    const trashData = {
-                        ...data,
-                        originalId: entryId,
-                        deletedAt: serverTimestamp(),
-                        imageData: imgSnap.exists() ? imgSnap.data() : null
-                    };
-                    
-                    // 2. Add to Trash
-                    await addDoc(trashCol, trashData);
-                    
-                    // 3. Delete Original
+                    await addDoc(trashCol, { ...expSnap.data(), originalId: entryId, deletedAt: serverTimestamp(), imageData: imgSnap.exists() ? imgSnap.data() : null });
                     await deleteDoc(expenseRef);
                     if (imgSnap.exists()) await deleteDoc(imageRef);
-                    
                     window.closeDeleteModal();
                     showToast("Moved to Trash", "red");
                 }
             } catch (e) { console.error(e); showToast("Error Deleting", "red"); }
             finally { setSyncState(false); }
         };
-
         window.toggleDiaryMode = function() {
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
             const modeIndicator = document.getElementById('mode-indicator');
             const storyToggle = document.getElementById('story-toggle-container');
-            
             if (window.isDiaryMode) {
-                historyTitle.innerText = "Diary Memories";
-                historyTitle.classList.add('text-pink-500');
-                modeIndicator.innerText = "Diary Mode";
-                modeIndicator.classList.add('text-pink-500');
-                storyToggle.classList.remove('hidden');
-                showToast("Diary Mode Enabled", "pink");
+                historyTitle.innerText = "Diary Memories"; historyTitle.classList.add('text-pink-500');
+                modeIndicator.innerText = "Diary Mode"; modeIndicator.classList.add('text-pink-500');
+                storyToggle.classList.remove('hidden'); showToast("Diary Mode Enabled", "pink");
             } else {
-                historyTitle.innerText = "Recent Activity";
-                historyTitle.classList.remove('text-pink-500');
-                modeIndicator.innerText = "Live Sync";
-                modeIndicator.classList.remove('text-pink-500');
-                storyToggle.classList.add('hidden');
-                showToast("Back to History", "green");
-                
-                // Ensure we exit gallery mode if we exit diary mode
+                historyTitle.innerText = "Recent Activity"; historyTitle.classList.remove('text-pink-500');
+                modeIndicator.innerText = "Live Sync"; modeIndicator.classList.remove('text-pink-500');
+                storyToggle.classList.add('hidden'); showToast("Back to History", "green");
                 if (window.showMediaGallery) {
                     window.showMediaGallery = false;
                     document.getElementById('btn-media-toggle').classList.remove('bg-purple-100', 'text-purple-500');
@@ -913,835 +737,266 @@
             }
             window.renderHistory();
         }
-
-        // --- STORY & MEDIA LOGIC ---
         window.toggleStoryFilter = () => {
             window.showStories = !window.showStories;
             const btn = document.getElementById('btn-story-toggle');
-            if (window.showStories) {
-                btn.innerText = "Stories: ON";
-                btn.classList.add('bg-pink-100', 'text-pink-500');
-                btn.classList.remove('bg-gray-100', 'text-gray-400');
-                showToast("Stories Visible", "pink");
-            } else {
-                btn.innerText = "Stories: OFF";
-                btn.classList.remove('bg-pink-100', 'text-pink-500');
-                btn.classList.add('bg-gray-100', 'text-gray-400');
-                showToast("Transactions Only", "green");
-            }
+            if (window.showStories) { btn.innerText = "Stories: ON"; btn.classList.add('bg-pink-100', 'text-pink-500'); btn.classList.remove('bg-gray-100', 'text-gray-400'); showToast("Stories Visible", "pink"); } 
+            else { btn.innerText = "Stories: OFF"; btn.classList.remove('bg-pink-100', 'text-pink-500'); btn.classList.add('bg-gray-100', 'text-gray-400'); showToast("Transactions Only", "green"); }
             if(!window.showMediaGallery) renderHistory();
         }
-        
-        // --- NEW: Toggle Media Gallery ---
         window.toggleMediaGallery = () => {
             window.showMediaGallery = !window.showMediaGallery;
             const btn = document.getElementById('btn-media-toggle');
             const list = document.getElementById('history-list');
             const gallery = document.getElementById('media-gallery-view');
             const loadMore = document.getElementById('loading-more-indicator');
-
             if (window.showMediaGallery) {
-                // UI Active
-                btn.classList.add('bg-purple-100', 'text-purple-500');
-                btn.classList.remove('bg-gray-100', 'text-gray-400');
-                // View Switch
-                list.classList.add('hidden');
-                if(loadMore) loadMore.classList.add('hidden'); // Hide loader in gallery mode
-                gallery.classList.remove('hidden');
-                
-                // Reset limit when opening
-                mediaGalleryLimit = 9;
-                renderMediaGallery();
-                showToast("Gallery View", "purple");
+                btn.classList.add('bg-purple-100', 'text-purple-500'); btn.classList.remove('bg-gray-100', 'text-gray-400');
+                list.classList.add('hidden'); if(loadMore) loadMore.classList.add('hidden');
+                gallery.classList.remove('hidden'); mediaGalleryLimit = 9; renderMediaGallery(); showToast("Gallery View", "purple");
             } else {
-                // UI Inactive
-                btn.classList.remove('bg-purple-100', 'text-purple-500');
-                btn.classList.add('bg-gray-100', 'text-gray-400');
-                // View Switch
-                gallery.classList.add('hidden');
-                list.classList.remove('hidden');
-                if(loadMore) loadMore.classList.remove('hidden');
-                renderHistory(); // Ensure list is up to date
-                showToast("List View", "green");
+                btn.classList.remove('bg-purple-100', 'text-purple-500'); btn.classList.add('bg-gray-100', 'text-gray-400');
+                gallery.classList.add('hidden'); list.classList.remove('hidden'); if(loadMore) loadMore.classList.remove('hidden');
+                renderHistory(); showToast("List View", "green");
             }
         }
-        
-        window.loadMoreMedia = () => {
-            mediaGalleryLimit += 9;
-            renderMediaGallery();
-        }
-        
-        // --- NEW: Render Media Gallery ---
+        window.loadMoreMedia = () => { mediaGalleryLimit += 9; renderMediaGallery(); }
         window.renderMediaGallery = () => {
              const grid = document.getElementById('media-grid');
              const empty = document.getElementById('media-empty');
              const loadMoreBtn = document.getElementById('media-load-more-container');
              grid.innerHTML = '';
-
-             // Get all media from diaryData (Client-side pagination)
-             // We rely on window.diaryData which contains ALL images currently
-             const allMedia = Object.entries(window.diaryData)
-                .map(([id, data]) => ({ id, ...data }))
-                .filter(m => m.image || m.thumbnail);
-
-             // Sort by updatedAt desc (fallback to 0 if missing)
-             allMedia.sort((a, b) => {
-                 const timeA = a.updatedAt?.seconds || 0;
-                 const timeB = b.updatedAt?.seconds || 0;
-                 return timeB - timeA;
-             });
-
-             const totalMedia = allMedia.length;
+             const allMedia = Object.entries(window.diaryData).map(([id, data]) => ({ id, ...data })).filter(m => m.image || m.thumbnail);
+             allMedia.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
              const visibleMedia = allMedia.slice(0, mediaGalleryLimit);
-
-             if (visibleMedia.length === 0) {
-                 empty.classList.remove('hidden');
-                 loadMoreBtn.classList.add('hidden');
-             } else {
+             if (visibleMedia.length === 0) { empty.classList.remove('hidden'); loadMoreBtn.classList.add('hidden'); } 
+             else {
                  empty.classList.add('hidden');
-                 
                  visibleMedia.forEach(media => {
                      const src = media.thumbnail || media.image;
                      const full = media.image || media.thumbnail;
-                     
-                     // Attempt to find if it's a story from loaded entries (Best effort for tag)
-                     // Note: This is imperfect for old items not in 'entries', but acceptable for now
                      const expense = window.entries.find(e => e.id === media.id);
-                     const isStory = expense?.isStory;
-
+                     const isStory = media.isStory === true || expense?.isStory === true;
                      const div = document.createElement('div');
                      div.className = "aspect-square relative group cursor-pointer overflow-hidden bg-gray-100";
                      div.onclick = (ev) => window.openImageViewer(full, ev);
-
-                     div.innerHTML = `
-                        <img src="${src}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy">
-                        ${isStory ? '<div class="absolute top-1 right-1 text-[8px] bg-pink-500 text-white px-1 rounded shadow-sm opacity-80">Story</div>' : ''}
-                     `;
+                     div.innerHTML = `<img src="${src}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy"> ${isStory ? '<div class="absolute top-1 right-1 text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded shadow-md z-10 tracking-wide">STORY</div>' : ''}`;
                      grid.appendChild(div);
                  });
-
-                 // Show/Hide Load More
-                 if (mediaGalleryLimit < totalMedia) {
-                     loadMoreBtn.classList.remove('hidden');
-                 } else {
-                     loadMoreBtn.classList.add('hidden');
-                 }
+                 if (mediaGalleryLimit < allMedia.length) loadMoreBtn.classList.remove('hidden'); else loadMoreBtn.classList.add('hidden');
              }
         }
-
         window.openStoryModal = () => {
-            // Reset states when opening modal
-            isCreatingStory = true;
-            uploadingForId = null;
-            
-            storyPerson = null;
-            storyImageBase64 = null;
-            storyThumbnailBase64 = null;
-            document.getElementById('story-input').value = "";
-            document.getElementById('story-img-label').innerText = "Add Photo";
+            isCreatingStory = true; uploadingForId = null; storyPerson = null; storyImageBase64 = null; storyThumbnailBase64 = null;
+            document.getElementById('story-input').value = ""; document.getElementById('story-img-label').innerText = "Add Photo";
             document.getElementById('story-btn-GET').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('story-btn-DOM').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('story-modal').classList.remove('hidden');
         }
-
-        window.closeStoryModal = () => {
-            document.getElementById('story-modal').classList.add('hidden');
-            isCreatingStory = false;
-        }
-
+        window.closeStoryModal = () => { document.getElementById('story-modal').classList.add('hidden'); isCreatingStory = false; }
         window.selectStoryPerson = (p) => {
             storyPerson = p;
             document.getElementById('story-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
             document.getElementById('story-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
         }
-
         window.saveStory = async function() {
             const text = document.getElementById('story-input').value.trim();
             if (!storyPerson) { showToast("Who is this?", "red"); return; }
             if (!text && !storyImageBase64) { showToast("Empty Story", "red"); return; }
-
             setSyncState(true);
             try {
-                // Add Metadata entry to expenses (marked as Story)
-                const docRef = await addDoc(expensesCol, {
-                    dateTime: serverTimestamp(),
-                    category: 'Story',
-                    amount: 0,
-                    person: storyPerson,
-                    name: 'Diary Story',
-                    isStory: true
-                });
-
-                // Add content to images collection (linked by ID)
-                await setDoc(doc(db, "images", docRef.id), {
-                    image: storyImageBase64,
-                    thumbnail: storyThumbnailBase64,
-                    comments: text ? [{ text: text, author: storyPerson, timestamp: Date.now() }] : [],
-                    updatedAt: serverTimestamp()
-                });
-
-                closeStoryModal();
-                showToast("Story Posted!", "pink");
+                const docRef = await addDoc(expensesCol, { dateTime: serverTimestamp(), category: 'Story', amount: 0, person: storyPerson, name: 'Diary Story', isStory: true });
+                await setDoc(doc(db, "images", docRef.id), { image: storyImageBase64, thumbnail: storyThumbnailBase64, comments: text ? [{ text: text, author: storyPerson, timestamp: Date.now() }] : [], updatedAt: serverTimestamp(), isStory: true });
+                closeStoryModal(); showToast("Story Posted!", "pink");
             } catch(e) { console.error(e); showToast("Error Posting", "red"); }
             finally { setSyncState(false); }
         }
-
-        // --- IMAGE HANDLING FIX ---
         window.triggerImageUpload = function(id, event, isStoryAction = false) {
             if (event) event.stopPropagation();
-            
-            // Explicitly set context
-            if (isStoryAction) {
-                isCreatingStory = true;
-                uploadingForId = null; 
-            } else {
-                uploadingForId = id;
-                isCreatingStory = false;
-            }
-            
-            const fileInput = document.getElementById('diary-image-input');
-            fileInput.value = '';
-            fileInput.click();
+            if (isStoryAction) { isCreatingStory = true; uploadingForId = null; } else { uploadingForId = id; isCreatingStory = false; }
+            const fileInput = document.getElementById('diary-image-input'); fileInput.value = ''; fileInput.click();
         }
-
-        // Updated Helper for "Full" Image Compression (High Quality but < 1MB)
         async function processFullImage(file) {
-            const MAX_SIZE = 950 * 1024; // ~950KB safety limit
-            
-            // 1. Try reading raw file first
-            let base64 = await new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
-            });
-
-            // If raw fits, return it
+            const MAX_SIZE = 950 * 1024;
+            let base64 = await new Promise((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(file); });
             if (base64.length < MAX_SIZE) return base64;
-
-            // 2. If too big, compress iteratively
-            let width = 1600; 
-            let quality = 0.9;
-            
-            while (base64.length > MAX_SIZE && width > 300) {
-                base64 = await compressImage(file, width, quality);
-                width -= 200;
-                quality -= 0.1;
-            }
+            let width = 1600; let quality = 0.9;
+            while (base64.length > MAX_SIZE && width > 300) { base64 = await compressImage(file, width, quality); width -= 200; quality -= 0.1; }
             return base64;
         }
-
-        // Helper for Thumbnail
-        async function processThumbnail(file) {
-            return await compressImage(file, 300, 0.6);
-        }
-
+        async function processThumbnail(file) { return await compressImage(file, 300, 0.6); }
         window.handleImageFile = async function(input) {
             if (input.files && input.files[0]) {
-                const file = input.files[0];
-                showToast("Processing...", "blue");
+                const file = input.files[0]; showToast("Processing...", "blue");
                 try {
-                    // Generate both versions
-                    const [fullBase64, thumbBase64] = await Promise.all([
-                        processFullImage(file),
-                        processThumbnail(file)
-                    ]);
-                    
+                    const [fullBase64, thumbBase64] = await Promise.all([processFullImage(file), processThumbnail(file)]);
                     if (isCreatingStory && !document.getElementById('story-modal').classList.contains('hidden')) {
-                        // Store in state for story submission
-                        storyImageBase64 = fullBase64;
-                        storyThumbnailBase64 = thumbBase64;
-                        document.getElementById('story-img-label').innerText = "Photo Ready!";
-                        showToast("Photo Attached", "green");
+                        storyImageBase64 = fullBase64; storyThumbnailBase64 = thumbBase64;
+                        document.getElementById('story-img-label').innerText = "Photo Ready!"; showToast("Photo Attached", "green");
                     } else if (uploadingForId) {
-                        // Direct upload for transaction
                         setSyncState(true);
-                        await setDoc(doc(db, "images", uploadingForId), {
-                            image: fullBase64,
-                            thumbnail: thumbBase64,
-                            updatedAt: serverTimestamp()
-                        }, { merge: true });
-                        showToast("Photo Saved", "green");
-                        setSyncState(false);
-                    } else {
-                        showToast("Upload Error", "red");
-                    }
-                } catch (e) { 
-                    console.error(e);
-                    showToast("Failed: " + e.message, "red"); 
-                }
+                        await setDoc(doc(db, "images", uploadingForId), { image: fullBase64, thumbnail: thumbBase64, updatedAt: serverTimestamp() }, { merge: true });
+                        showToast("Photo Saved", "green"); setSyncState(false);
+                    } else { showToast("Upload Error", "red"); }
+                } catch (e) { console.error(e); showToast("Failed: " + e.message, "red"); }
                 finally { input.value = ''; }
             }
         }
-
         function compressImage(file, maxWidth, quality) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
+                const reader = new FileReader(); reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target.result;
+                    const img = new Image(); img.src = event.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        
-                        if (width > maxWidth) {
-                            height *= maxWidth / width;
-                            width = maxWidth;
-                        }
-                        
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', quality));
-                    };
-                    img.onerror = reject;
-                };
-                reader.onerror = reject;
+                        const canvas = document.createElement('canvas'); let width = img.width; let height = img.height;
+                        if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                        canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height); resolve(canvas.toDataURL('image/jpeg', quality));
+                    }; img.onerror = reject;
+                }; reader.onerror = reject;
             });
         }
-
-        // --- CAPTION/COMMENT LOGIC ---
         window.openCaptionModal = function(id, event) {
-            event.stopPropagation();
-            uploadingForId = id;
-            document.getElementById('caption-input').value = "";
-            captionPerson = null;
+            event.stopPropagation(); uploadingForId = id; document.getElementById('caption-input').value = ""; captionPerson = null;
             document.getElementById('cap-btn-GET').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('cap-btn-DOM').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('caption-modal').classList.remove('hidden');
         }
-
         window.closeCaptionModal = () => document.getElementById('caption-modal').classList.add('hidden');
-
         window.selectCaptionPerson = (p) => {
             captionPerson = p;
             document.getElementById('cap-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
             document.getElementById('cap-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
         }
-
         window.saveCaption = async function() {
-            const text = document.getElementById('caption-input').value.trim();
-            if (!text || !captionPerson) { showToast("Missing Info", "red"); return; }
+            const text = document.getElementById('caption-input').value.trim(); if (!text || !captionPerson) { showToast("Missing Info", "red"); return; }
             setSyncState(true);
-            try {
-                await setDoc(doc(db, "images", uploadingForId), {
-                    comments: arrayUnion({ text: text, author: captionPerson, timestamp: Date.now() }),
-                    updatedAt: serverTimestamp()
-                }, { merge: true });
-                closeCaptionModal();
-                showToast("Posted", "green");
-            } catch(e) { showToast("Error", "red"); }
-            finally { setSyncState(false); }
+            try { await setDoc(doc(db, "images", uploadingForId), { comments: arrayUnion({ text: text, author: captionPerson, timestamp: Date.now() }), updatedAt: serverTimestamp() }, { merge: true });
+                closeCaptionModal(); showToast("Posted", "green");
+            } catch(e) { showToast("Error", "red"); } finally { setSyncState(false); }
         }
-
         window.openDiaryOptions = (id, isStory = false) => {
             uploadingForId = id;
-            const title = document.getElementById('diary-options-title');
-            const replaceBtn = document.getElementById('btn-replace-photo');
-            const deleteBtnText = document.getElementById('btn-delete-item');
-            
-            if (isStory) {
-                title.innerText = "Story Options";
-                replaceBtn.classList.add('hidden');
-                deleteBtnText.innerText = "Delete Story";
-                pendingAction = 'delete-story';
-            } else {
-                title.innerText = "Photo Options";
-                replaceBtn.classList.remove('hidden');
-                deleteBtnText.innerText = "Delete Photo";
-                pendingAction = null; // will be set by executeReupload/executeDeleteImage
-            }
-            
+            if (isStory) { document.getElementById('diary-options-title').innerText = "Story Options"; document.getElementById('btn-replace-photo').classList.add('hidden'); document.getElementById('btn-delete-item').innerText = "Delete Story"; pendingAction = 'delete-story'; } 
+            else { document.getElementById('diary-options-title').innerText = "Photo Options"; document.getElementById('btn-replace-photo').classList.remove('hidden'); document.getElementById('btn-delete-item').innerText = "Delete Photo"; pendingAction = null; }
             document.getElementById('diary-options-modal').classList.remove('hidden');
         }
-
-        window.closeDiaryOptions = () => {
-            document.getElementById('diary-options-modal').classList.add('hidden');
-        }
-
+        window.closeDiaryOptions = () => { document.getElementById('diary-options-modal').classList.add('hidden'); }
         window.executeReupload = () => { closeDiaryOptions(); openPasswordModal('replace'); }
-        window.executeDeleteImage = () => { 
-            const action = (pendingAction === 'delete-story') ? 'delete-story' : 'delete';
-            closeDiaryOptions(); 
-            openPasswordModal(action); 
-        }
-
-        window.openPasswordModal = (action) => {
-            pendingAction = action;
-            document.getElementById('password-input').value = '';
-            document.getElementById('password-modal').classList.remove('hidden');
-        }
+        window.executeDeleteImage = () => { const action = (pendingAction === 'delete-story') ? 'delete-story' : 'delete'; closeDiaryOptions(); openPasswordModal(action); }
+        window.openPasswordModal = (action) => { pendingAction = action; document.getElementById('password-input').value = ''; document.getElementById('password-modal').classList.remove('hidden'); }
         window.closePasswordModal = () => { document.getElementById('password-modal').classList.add('hidden'); pendingAction = null; }
-
         window.verifyPassword = async () => {
-            const pw = document.getElementById('password-input').value;
-            const action = pendingAction; 
+            const pw = document.getElementById('password-input').value; const action = pendingAction; 
             let isValid = (action === 'replace' && pw === 'yakplian') || (action === 'delete' && pw === 'yaklob') || (action === 'delete-story' && pw === 'yaklob');
-            if (isValid) {
-                closePasswordModal();
-                if (action === 'replace') window.triggerImageUpload(uploadingForId);
-                else if (action === 'delete') await performDeleteImage();
-                else if (action === 'delete-story') await performDeleteStory();
-            } else { showToast("Wrong Password", "red"); }
+            if (isValid) { closePasswordModal(); if (action === 'replace') window.triggerImageUpload(uploadingForId); else if (action === 'delete') await performDeleteImage(); else if (action === 'delete-story') await performDeleteStory(); } 
+            else { showToast("Wrong Password", "red"); }
         }
-
         async function performDeleteImage() {
             setSyncState(true);
-            try {
-                const docRef = doc(db, "images", uploadingForId);
-                const snap = await getDoc(docRef);
-                if (snap.exists()) {
-                    const data = snap.data();
-                    const hasComments = data.comments && data.comments.length > 0;
-                    const hasCaption = !!data.caption;
-                    if (!hasComments && !hasCaption) {
-                        await deleteDoc(docRef);
-                    } else {
-                        await updateDoc(docRef, { image: deleteField(), thumbnail: deleteField() });
-                    }
-                    showToast("Photo Removed", "red");
-                }
-            } catch(e) { showToast("Deletion Failed", "red"); }
-            finally { setSyncState(false); }
+            try { const docRef = doc(db, "images", uploadingForId); const snap = await getDoc(docRef); if (snap.exists()) { const data = snap.data(); if (!data.comments && !data.caption) await deleteDoc(docRef); else await updateDoc(docRef, { image: deleteField(), thumbnail: deleteField() }); showToast("Photo Removed", "red"); } } catch(e) { showToast("Deletion Failed", "red"); } finally { setSyncState(false); }
         }
-
         async function performDeleteStory() {
             setSyncState(true);
-            try {
-                // Modified: Move story to trash too
-                const entryId = uploadingForId;
-                const expenseRef = doc(db, "expenses", entryId);
-                const imageRef = doc(db, "images", entryId);
-                
-                const expSnap = await getDoc(expenseRef);
-                const imgSnap = await getDoc(imageRef);
-                
-                if (expSnap.exists()) {
-                    await addDoc(trashCol, {
-                        ...expSnap.data(),
-                        originalId: entryId,
-                        deletedAt: serverTimestamp(),
-                        imageData: imgSnap.exists() ? imgSnap.data() : null
-                    });
-                    
-                    await deleteDoc(expenseRef);
-                    if (imgSnap.exists()) await deleteDoc(imageRef);
-                    showToast("Story moved to Trash", "red");
-                }
-            } catch(e) { showToast("Deletion Failed", "red"); }
-            finally { setSyncState(false); }
+            try { const entryId = uploadingForId; const expenseRef = doc(db, "expenses", entryId); const imageRef = doc(db, "images", entryId); const expSnap = await getDoc(expenseRef); const imgSnap = await getDoc(imageRef); if (expSnap.exists()) { await addDoc(trashCol, { ...expSnap.data(), originalId: entryId, deletedAt: serverTimestamp(), imageData: imgSnap.exists() ? imgSnap.data() : null }); await deleteDoc(expenseRef); if (imgSnap.exists()) await deleteDoc(imageRef); showToast("Story moved to Trash", "red"); } } catch(e) { showToast("Deletion Failed", "red"); } finally { setSyncState(false); }
         }
-
-        // --- RECYCLE BIN LOGIC ---
         window.openRecycleBin = async () => {
-            const list = document.getElementById('recycle-bin-list');
-            list.innerHTML = '<div class="text-center py-4"><div class="animate-spin-custom inline-block w-6 h-6 border-2 border-t-purple-600 rounded-full"></div></div>';
+            const list = document.getElementById('recycle-bin-list'); list.innerHTML = '<div class="text-center py-4"><div class="animate-spin-custom inline-block w-6 h-6 border-2 border-t-purple-600 rounded-full"></div></div>';
             document.getElementById('recycle-bin-modal').classList.remove('hidden');
-            
-            try {
-                const q = query(trashCol, orderBy("deletedAt", "desc"));
-                const snap = await getDocs(q);
-                list.innerHTML = '';
-                
-                if (snap.empty) {
-                    list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">Trash is empty</div>';
-                    return;
-                }
-
-                snap.forEach(d => {
-                    const data = d.data();
-                    const item = document.createElement('div');
-                    item.className = "flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100";
-                    item.innerHTML = `
-                        <div class="flex flex-col min-w-0 pr-2">
-                            <span class="text-xs font-bold text-gray-700 truncate">${data.name || 'Unknown'}</span>
-                            <span class="text-[9px] text-gray-400">฿${data.amount} • ${data.person}</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="restoreItem('${d.id}')" class="p-2 bg-green-100 text-green-600 rounded-lg text-[10px] font-bold">♻️</button>
-                            <button onclick="permanentDelete('${d.id}')" class="p-2 bg-red-200 text-red-600 rounded-lg text-[10px] font-bold">✕</button>
-                        </div>
-                    `;
-                    list.appendChild(item);
-                });
+            try { const q = query(trashCol, orderBy("deletedAt", "desc")); const snap = await getDocs(q); list.innerHTML = ''; if (snap.empty) { list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">Trash is empty</div>'; return; }
+                snap.forEach(d => { const data = d.data(); const item = document.createElement('div'); item.className = "flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100"; item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${data.name || 'Unknown'}</span><span class="text-[9px] text-gray-400">฿${data.amount} • ${data.person}</span></div><div class="flex gap-2"><button onclick="restoreItem('${d.id}')" class="p-2 bg-green-100 text-green-600 rounded-lg text-[10px] font-bold">♻️</button><button onclick="permanentDelete('${d.id}')" class="p-2 bg-red-200 text-red-600 rounded-lg text-[10px] font-bold">✕</button></div>`; list.appendChild(item); });
             } catch(e) { console.error(e); list.innerHTML = '<div class="text-center text-red-400">Error loading trash</div>'; }
         }
-
         window.closeRecycleBin = () => document.getElementById('recycle-bin-modal').classList.add('hidden');
-
-        window.restoreItem = async (trashId) => {
-            if(!confirm("Restore this item?")) return;
-            const trashRef = doc(db, 'trash', trashId);
-            const snap = await getDoc(trashRef);
-            if(!snap.exists()) return;
-            
-            const data = snap.data();
-            const originalId = data.originalId; 
-            
-            try {
-                // Restore Expense
-                const expenseData = { ...data };
-                delete expenseData.deletedAt;
-                delete expenseData.originalId;
-                delete expenseData.imageData;
-                
-                // Use original ID to keep it clean if possible
-                await setDoc(doc(db, "expenses", originalId), expenseData); 
-                
-                // Restore Image if exists
-                if (data.imageData) {
-                    await setDoc(doc(db, "images", originalId), data.imageData);
-                }
-                
-                // Remove from Trash
-                await deleteDoc(trashRef);
-                
-                openRecycleBin(); // Refresh list
-                showToast("Restored", "green");
-            } catch(e) { console.error(e); showToast("Restore Failed", "red"); }
-        }
-
-        window.permanentDelete = async (trashId) => {
-            if(!confirm("Delete permanently? This cannot be undone.")) return;
-            try {
-                await deleteDoc(doc(db, 'trash', trashId));
-                openRecycleBin();
-                showToast("Permanently Deleted", "red");
-            } catch(e) { showToast("Error", "red"); }
-        }
-
-        // --- BACKUP LOGIC ---
+        window.restoreItem = async (trashId) => { if(!confirm("Restore this item?")) return; const trashRef = doc(db, 'trash', trashId); const snap = await getDoc(trashRef); if(!snap.exists()) return; const data = snap.data(); const originalId = data.originalId; try { const expenseData = { ...data }; delete expenseData.deletedAt; delete expenseData.originalId; delete expenseData.imageData; await setDoc(doc(db, "expenses", originalId), expenseData); if (data.imageData) await setDoc(doc(db, "images", originalId), data.imageData); await deleteDoc(trashRef); openRecycleBin(); showToast("Restored", "green"); } catch(e) { console.error(e); showToast("Restore Failed", "red"); } }
+        window.permanentDelete = async (trashId) => { if(!confirm("Delete permanently? This cannot be undone.")) return; try { await deleteDoc(doc(db, 'trash', trashId)); openRecycleBin(); showToast("Permanently Deleted", "red"); } catch(e) { showToast("Error", "red"); } }
         window.exportJSON = async () => {
-            const btn = document.querySelector('button[onclick="exportJSON()"]');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = "⏳ Exporting...";
-            
-            try {
-                const q = query(expensesCol, orderBy("dateTime", "desc"));
-                const snap = await getDocs(q);
-                const data = snap.docs.map(d => {
-                    const val = d.data();
-                    // Convert Timestamp to readable string for JSON
-                    if(val.dateTime && val.dateTime.toDate) val.dateTime = val.dateTime.toDate().toISOString();
-                    return { id: d.id, ...val };
-                });
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `expense_backup_${new Date().toISOString().split('T')[0]}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast("Backup Downloaded", "green");
-            } catch(e) { console.error(e); showToast("Export Failed", "red"); }
-            finally { btn.innerHTML = originalText; }
+            const btn = document.querySelector('button[onclick="exportJSON()"]'); const originalText = btn.innerHTML; btn.innerHTML = "⏳ Exporting...";
+            try { const q = query(expensesCol, orderBy("dateTime", "desc")); const snap = await getDocs(q); const data = snap.docs.map(d => { const val = d.data(); if(val.dateTime && val.dateTime.toDate) val.dateTime = val.dateTime.toDate().toISOString(); return { id: d.id, ...val }; });
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `expense_backup_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); showToast("Backup Downloaded", "green");
+            } catch(e) { console.error(e); showToast("Export Failed", "red"); } finally { btn.innerHTML = originalText; }
         }
-
-        // --- CATEGORY DETAIL LOGIC ---
         window.showCategoryDetails = (category) => {
-            const start = document.getElementById('start-date').value;
-            const end = document.getElementById('end-date').value;
-            const scope = currentDashboardScope;
-            
-            // --- FIX START: Use correct variable name (dashboardEntries) ---
-            const allAvailableData = [...window.entries];
-            const entryIds = new Set(window.entries.map(e => e.id));
-            
-            // Replaced 'window.monthEntries' with 'window.dashboardEntries'
-            window.dashboardEntries.forEach(me => {
-                if (!entryIds.has(me.id)) allAvailableData.push(me);
-            });
-            // --- FIX END ---
-            
+            const start = document.getElementById('start-date').value; const end = document.getElementById('end-date').value; const scope = currentDashboardScope;
+            const allAvailableData = [...window.entries]; const entryIds = new Set(window.entries.map(e => e.id));
+            window.dashboardEntries.forEach(me => { if (!entryIds.has(me.id)) allAvailableData.push(me); });
             let filtered = allAvailableData.filter(e => e.category === category);
-
-            // FIX: Use explicit local date construction for filtering
-            if (start) {
-                const [sy, sm, sd] = start.split('-').map(Number);
-                const startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-                filtered = filtered.filter(e => e.dateTime >= startDate);
-            }
-            if (end) {
-                const [ey, em, ed] = end.split('-').map(Number);
-                const endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
-                filtered = filtered.filter(e => e.dateTime <= endDate);
-            }
+            if (start) { const [sy, sm, sd] = start.split('-').map(Number); filtered = filtered.filter(e => e.dateTime >= new Date(sy, sm - 1, sd, 0, 0, 0, 0)); }
+            if (end) { const [ey, em, ed] = end.split('-').map(Number); filtered = filtered.filter(e => e.dateTime <= new Date(ey, em - 1, ed, 23, 59, 59, 999)); }
             
+            // --- FILTER LOGIC UPDATED FOR 'ALL' ---
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
-            else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-
+            else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            // If scope is ALL, no additional filtering needed
+            
             filtered.sort((a, b) => b.dateTime - a.dateTime);
-
-            const list = document.getElementById('cat-modal-list');
-            list.innerHTML = '';
-            document.getElementById('cat-modal-title').innerText = category;
-            document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
+            const list = document.getElementById('cat-modal-list'); list.innerHTML = ''; document.getElementById('cat-modal-title').innerText = category; document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
             let total = 0;
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">No transactions found for this period.</div>';
-            } else {
+            if (filtered.length === 0) list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">No transactions found for this period.</div>';
+            else {
                 filtered.forEach(e => {
-                    total += parseFloat(e.amount);
-                    const d = e.dateTime;
-                    const isPrivate = e.isIndividual === true;
-                    let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
-                    const item = document.createElement('div');
-                    item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
-                    item.innerHTML = `
-                        <div class="flex flex-col min-w-0 pr-2">
-                            <span class="text-xs font-bold text-gray-700 truncate">${e.name}</span>
-                            <span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <div class="text-right flex-shrink-0">
-                            <div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div>
-                            <span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span>
-                        </div>`;
-                    list.appendChild(item);
+                    total += parseFloat(e.amount); const d = e.dateTime; const isPrivate = e.isIndividual === true; let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
+                    const item = document.createElement('div'); item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
+                    item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${e.name}</span><span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div><div class="text-right flex-shrink-0"><div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div><span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`; list.appendChild(item);
                 });
             }
-            document.getElementById('cat-modal-total').innerText = '฿' + total.toLocaleString();
-            document.getElementById('category-modal').classList.remove('hidden');
+            document.getElementById('cat-modal-total').innerText = '฿' + total.toLocaleString(); document.getElementById('category-modal').classList.remove('hidden');
         };
-
         window.closeCategoryModal = () => document.getElementById('category-modal').classList.add('hidden');
-
-        window.openImageViewer = function(src, event) {
-            event.stopPropagation();
-            document.getElementById('full-image').src = src;
-            const v = document.getElementById('image-viewer');
-            v.classList.remove('hidden');
-            v.classList.add('image-modal-enter');
-            setTimeout(() => v.classList.add('image-modal-enter-active'), 10);
-        }
-        
-        window.closeImageViewer = function() {
-            const v = document.getElementById('image-viewer');
-            v.classList.remove('image-modal-enter-active');
-            v.classList.add('image-modal-exit-active');
-            setTimeout(() => { v.classList.add('hidden'); v.classList.remove('image-modal-exit-active'); }, 200);
-        }
-
+        window.openImageViewer = function(src, event) { event.stopPropagation(); document.getElementById('full-image').src = src; const v = document.getElementById('image-viewer'); v.classList.remove('hidden'); v.classList.add('image-modal-enter'); setTimeout(() => v.classList.add('image-modal-enter-active'), 10); }
+        window.closeImageViewer = function() { const v = document.getElementById('image-viewer'); v.classList.remove('image-modal-enter-active'); v.classList.add('image-modal-exit-active'); setTimeout(() => { v.classList.add('hidden'); v.classList.remove('image-modal-exit-active'); }, 200); }
         window.pressNum = (n) => { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
         window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
         window.selectCategory = (cat) => { currentCategory = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); updateDisplay(); }
-        
-        window.selectPerson = (p) => { 
-            if (currentPerson === p) isIndividualMode = !isIndividualMode;
-            else { currentPerson = p; isIndividualMode = false; }
-            resetPersonUI(); 
-            const btn = document.getElementById(`btn-${p}`);
-            if (p === 'GET') btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all";
-            else btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all";
-            updateDisplay(); 
-        }
-
-        window.resetPersonUI = () => { 
-            document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all";
-            document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all";
-        }
-        
-        window.selectEditPerson = (p) => { 
-            if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; }
-            updateEditPersonUI();
-        }
-
-        window.updateEditPersonUI = () => {
-            const btnGet = document.getElementById('edit-btn-GET');
-            const btnDom = document.getElementById('edit-btn-DOM');
-            const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all";
-            btnGet.className = baseClass; btnDom.className = baseClass;
-            if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } 
-            else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; }
-        }
-        
-        function updateDisplay() { 
-            document.getElementById('display-amount').innerText = currentAmount; 
-            document.getElementById('display-category').innerText = currentCategory || "Select Category"; 
-            const dp = document.getElementById('display-person'); 
-            const dt = document.getElementById('display-type');
-            if (currentPerson) { 
-                dp.innerText = currentPerson; 
-                let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500');
-                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass}`; 
-                dp.classList.remove('hidden'); 
-                dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED";
-                dt.className = isIndividualMode ? "text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-2" : "hidden";
-                dt.classList.remove('hidden');
-            } else { dp.classList.add('hidden'); dt.classList.add('hidden'); }
-        }
-        
-        window.openEditModal = (id) => { 
-            const e = window.entries.find(x => x.id == id); 
-            editingEntryId = id; 
-            document.getElementById('edit-name').value = e.name; 
-            document.getElementById('edit-amount').value = e.amount; 
-            document.getElementById('edit-category').value = e.category; 
-            editingPerson = e.person;
-            editingIsIndividual = e.isIndividual || false;
-            updateEditPersonUI();
-            document.getElementById('edit-modal').classList.remove('hidden'); 
-        }
-        
+        window.selectPerson = (p) => { if (currentPerson === p) isIndividualMode = !isIndividualMode; else { currentPerson = p; isIndividualMode = false; } resetPersonUI(); const btn = document.getElementById(`btn-${p}`); if (p === 'GET') btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all"; else btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all"; updateDisplay(); }
+        window.resetPersonUI = () => { document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; }
+        window.selectEditPerson = (p) => { if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; } updateEditPersonUI(); }
+        window.updateEditPersonUI = () => { const btnGet = document.getElementById('edit-btn-GET'); const btnDom = document.getElementById('edit-btn-DOM'); const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; btnGet.className = baseClass; btnDom.className = baseClass; if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; } }
+        function updateDisplay() { document.getElementById('display-amount').innerText = currentAmount; document.getElementById('display-category').innerText = currentCategory || "Select Category"; const dp = document.getElementById('display-person'); const dt = document.getElementById('display-type'); if (currentPerson) { dp.innerText = currentPerson; let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500'); dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass}`; dp.classList.remove('hidden'); dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED"; dt.className = isIndividualMode ? "text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-2" : "hidden"; dt.classList.remove('hidden'); } else { dp.classList.add('hidden'); dt.classList.add('hidden'); } }
+        window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; editingPerson = e.person; editingIsIndividual = e.isIndividual || false; updateEditPersonUI(); document.getElementById('edit-modal').classList.remove('hidden'); }
         window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
         window.confirmDelete = () => { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('delete-confirm-modal').classList.remove('hidden'); }
         window.closeDeleteModal = () => { document.getElementById('delete-confirm-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.remove('hidden'); }
-
         window.renderHistory = () => {
-            const list = document.getElementById('history-list');
-            const mini = document.getElementById('mini-history');
-            
-            // Capture the loader reference BEFORE clearing the list
-            let loader = document.getElementById('loading-more-indicator');
-
-            list.innerHTML = ''; mini.innerHTML = '';
-            
+            const list = document.getElementById('history-list'); const mini = document.getElementById('mini-history');
+            let loader = document.getElementById('loading-more-indicator'); list.innerHTML = ''; mini.innerHTML = '';
             if (window.isDiaryMode) {
-                const addStoryBtn = document.createElement('div');
-                addStoryBtn.className = "mb-4";
-                addStoryBtn.innerHTML = `
-                    <button onclick="openStoryModal()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 btn-press transform transition-transform">
-                        <span class="text-xl font-bold">+</span>
-                        <span class="text-xs font-bold uppercase tracking-widest">Add Story</span>
-                    </button>`;
-                list.appendChild(addStoryBtn);
+                const addStoryBtn = document.createElement('div'); addStoryBtn.className = "mb-4";
+                addStoryBtn.innerHTML = `<button onclick="openStoryModal()" class="w-full py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-2xl shadow-lg flex items-center justify-center gap-2 btn-press transform transition-transform"><span class="text-xl font-bold">+</span><span class="text-xs font-bold uppercase tracking-widest">Add Story</span></button>`; list.appendChild(addStoryBtn);
             }
-
             window.entries.forEach((e, idx) => {
                 if (e.isStory && !window.showStories) return;
-                const d = e.dateTime;
-                const card = document.createElement('div');
-                const diaryEntry = window.diaryData[e.id];
-                const isPrivate = e.isIndividual === true;
-                const isStory = e.isStory === true;
+                const d = e.dateTime; const card = document.createElement('div'); const diaryEntry = window.diaryData[e.id]; const isPrivate = e.isIndividual === true; const isStory = e.isStory === true;
                 let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
                 if (isStory) badgeClass = 'bg-pink-100 text-pink-600';
-
-                const dateStr = d.toDateString();
-                const prevDateStr = idx > 0 ? window.entries[idx-1].dateTime.toDateString() : null;
-                const nextDateStr = idx < window.entries.length - 1 ? window.entries[idx+1].dateTime.toDateString() : null;
-                const isLatestOfDay = dateStr !== prevDateStr; 
-                const isEarliestOfDay = dateStr !== nextDateStr;
-                
-                // --- NEW STYLING LOGIC ---
-                let cardBg = "bg-white";
-                let textCol = "text-gray-400";
-                const isToday = d.toDateString() === new Date().toDateString();
-
-                if (isToday) {
-                    cardBg = "bg-orange-300 border-orange-300"; // Pastel orange
-                    textCol = "text-white"; // White text for pastel bg
-                    
-                    // First transaction of the day (chronologically first = bottom of list visually)
-                    if (isEarliestOfDay) {
-                        cardBg = "bg-orange-500 border-orange-500"; // Darker orange
-                        textCol = "text-white";
-                    }
-                } else {
-                    if (isLatestOfDay) cardBg = "bg-gray-100"; 
-                    if (isEarliestOfDay) cardBg = "bg-green-50"; 
-                }
-                // -------------------------
-
+                const isLatestOfDay = d.toDateString() !== (idx > 0 ? window.entries[idx-1].dateTime.toDateString() : null); const isEarliestOfDay = d.toDateString() !== (idx < window.entries.length - 1 ? window.entries[idx+1].dateTime.toDateString() : null);
+                let cardBg = "bg-white"; let textCol = "text-gray-400";
+                if (d.toDateString() === new Date().toDateString()) { cardBg = "bg-orange-300 border-orange-300"; textCol = "text-white"; if (isEarliestOfDay) { cardBg = "bg-orange-500 border-orange-500"; textCol = "text-white"; } } 
+                else { if (isLatestOfDay) cardBg = "bg-gray-100"; if (isEarliestOfDay) cardBg = "bg-green-50"; }
                 if (window.isDiaryMode) {
                     card.className = `p-3 ${isStory ? 'bg-pink-50 border-pink-200' : cardBg} rounded-2xl border ${isStory ? 'border-2' : 'border-pink-100'} shadow-sm flex flex-col gap-3 transition-all`;
                     card.oncontextmenu = (ev) => ev.preventDefault();
-                    let pressTimer;
-                    const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id, isStory), 600); };
-                    const cancelPress = () => clearTimeout(pressTimer);
-                    card.onmousedown = startPress; card.onmouseup = cancelPress; card.onmouseleave = cancelPress;
-                    card.ontouchstart = startPress; card.ontouchend = cancelPress; card.ontouchmove = cancelPress;
-
-                    let headerHtml = `<div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            <div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div>
-                            <div class="flex flex-col min-w-0">
-                                <span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${isStory ? 'Diary Story' : e.name}</span>
-                                <span class="text-[8px] font-bold ${textCol} uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                            </div>
-                        </div>
-                        <span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span>
-                    </div>`;
-
+                    let pressTimer; const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id, isStory), 600); }; const cancelPress = () => clearTimeout(pressTimer);
+                    card.onmousedown = startPress; card.onmouseup = cancelPress; card.onmouseleave = cancelPress; card.ontouchstart = startPress; card.ontouchend = cancelPress; card.ontouchmove = cancelPress;
+                    let headerHtml = `<div class="flex items-center justify-between"><div class="flex items-center gap-2 overflow-hidden"><div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div><div class="flex flex-col min-w-0"><span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${isStory ? 'Diary Story' : e.name}</span><span class="text-[8px] font-bold ${textCol} uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div><span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`;
                     let commentsHtml = '';
                     if (diaryEntry?.caption) commentsHtml += `<div class="text-center text-xs text-gray-500 italic mb-1 py-1 border-b border-gray-100">"${diaryEntry.caption}"</div>`;
-                    if (diaryEntry?.comments && Array.isArray(diaryEntry.comments)) {
-                        commentsHtml += `<div class="flex flex-col gap-2 w-full mt-1 mb-1">`;
-                        diaryEntry.comments.forEach(c => {
-                            const isGet = c.author === 'GET';
-                            commentsHtml += `<div class="${isGet ? 'self-start bg-green-50 text-green-800 rounded-br-xl' : 'self-end bg-blue-50 text-blue-800 rounded-bl-xl'} px-3 py-2 rounded-t-xl text-xs max-w-[85%]">
-                                <span class="font-bold text-[8px] block mb-0.5 opacity-50 uppercase">${c.author}</span>${c.text}
-                            </div>`;
-                        });
-                        commentsHtml += `</div>`;
-                    } else if (!diaryEntry?.caption && !isStory) commentsHtml = `<p class="text-[10px] ${textCol === 'text-white' ? 'text-white/70' : 'text-gray-300'} italic text-center py-1">No notes yet...</p>`;
-                    
+                    if (diaryEntry?.comments && Array.isArray(diaryEntry.comments)) { commentsHtml += `<div class="flex flex-col gap-2 w-full mt-1 mb-1">`; diaryEntry.comments.forEach(c => { const isGet = c.author === 'GET'; commentsHtml += `<div class="${isGet ? 'self-start bg-green-50 text-green-800 rounded-br-xl' : 'self-end bg-blue-50 text-blue-800 rounded-bl-xl'} px-3 py-2 rounded-t-xl text-xs max-w-[85%]"><span class="font-bold text-[8px] block mb-0.5 opacity-50 uppercase">${c.author}</span>${c.text}</div>`; }); commentsHtml += `</div>`; } else if (!diaryEntry?.caption && !isStory) commentsHtml = `<p class="text-[10px] ${textCol === 'text-white' ? 'text-white/70' : 'text-gray-300'} italic text-center py-1">No notes yet...</p>`;
                     let mediaHtml = '';
-                    if (diaryEntry?.thumbnail || diaryEntry?.image) {
-                        const imgSrc = diaryEntry.thumbnail || diaryEntry.image;
-                        const fullSrc = diaryEntry.image || diaryEntry.thumbnail;
-                        mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${fullSrc}', event)">
-                            <img src="${imgSrc}" class="w-full h-40 object-cover rounded-xl border border-gray-100 shadow-sm">
-                            <div class="absolute inset-0 bg-black/0 rounded-xl flex items-center justify-center"><span class="opacity-0 group-hover:opacity-100 text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-lg">View</span></div>
-                            <button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                            </button>
-                        </div>`;
-                    } else {
-                        mediaHtml = `<div class="flex gap-2 mt-1">
-                            <button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center gap-2 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                            </button>
-                            <button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                            </button>
-                        </div>`;
-                    }
+                    if (diaryEntry?.thumbnail || diaryEntry?.image) { mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${diaryEntry.image || diaryEntry.thumbnail}', event)"><img src="${diaryEntry.thumbnail || diaryEntry.image}" class="w-full h-40 object-cover rounded-xl border border-gray-100 shadow-sm"><div class="absolute inset-0 bg-black/0 rounded-xl flex items-center justify-center"><span class="opacity-0 group-hover:opacity-100 text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-lg">View</span></div><button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button></div>`; } 
+                    else { mediaHtml = `<div class="flex gap-2 mt-1"><button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center gap-2 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button><button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button></div>`; }
                     card.innerHTML = headerHtml + commentsHtml + mediaHtml;
                 } else {
-                    if (isStory) return;
-                    card.className = `p-3.5 ${cardBg} rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press`;
-                    card.onclick = () => window.openEditModal(e.id);
-                    const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0));
-                    const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
-                    
-                    // Conditional styling for text color on orange backgrounds
-                    const timeClass = `text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}`;
-                    const nameClass = `font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}`;
-                    const amtClass = `font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}`;
-
-                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="${nameClass}">${e.name} ${diaryIcon}</div><div class="${timeClass}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="${amtClass}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
+                    if (isStory) return; card.className = `p-3.5 ${cardBg} rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press`; card.onclick = () => window.openEditModal(e.id);
+                    const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0)); const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
+                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}">${e.name} ${diaryIcon}</div><div class="text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
                 list.appendChild(card);
-                if (idx < 2 && !isStory) {
-                    const b = document.createElement('div');
-                    b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer";
-                    b.onclick = () => window.openEditModal(e.id);
-                    b.innerHTML = `${getCatIcon(e.category, "w-3 h-3 text-gray-400")} <span class="text-[9px] font-bold">฿${e.amount}</span><span class="text-[7px] font-bold text-gray-300">${e.person}</span>`;
-                    mini.appendChild(b);
-                }
+                if (idx < 2 && !isStory) { const b = document.createElement('div'); b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer"; b.onclick = () => window.openEditModal(e.id); b.innerHTML = `${getCatIcon(e.category, "w-3 h-3 text-gray-400")} <span class="text-[9px] font-bold">฿${e.amount}</span><span class="text-[7px] font-bold text-gray-300">${e.person}</span>`; mini.appendChild(b); }
             });
-
-            // Re-append loader to bottom, creating if necessary
-            if (!loader) {
-                loader = document.createElement('div');
-                loader.id = 'loading-more-indicator';
-                loader.className = 'hidden py-4 text-center';
-                loader.innerHTML = '<div class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>';
-            }
-            list.appendChild(loader);
-
-            // Re-observe if we created a new loader or if it was detached
-            if (window.historyObserver && loader) {
-                 window.historyObserver.disconnect();
-                 window.historyObserver.observe(loader);
-            }
+            if (!loader) { loader = document.createElement('div'); loader.id = 'loading-more-indicator'; loader.className = 'hidden py-4 text-center'; loader.innerHTML = '<div class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>'; } list.appendChild(loader);
+            if (window.historyObserver && loader) { window.historyObserver.disconnect(); window.historyObserver.observe(loader); }
         }
-
         window.renderDashboard = () => {
             if (window.isCalendarMode) {
                 document.getElementById('dashboard-standard-view').classList.add('hidden');
@@ -1751,324 +1006,108 @@
                 document.getElementById('dashboard-standard-view').classList.remove('hidden');
                 document.getElementById('dashboard-calendar-view').classList.add('hidden');
             }
-
-            // USE DEDICATED DASHBOARD ENTRIES (Fixes scroll issue)
             let filtered = [...window.dashboardEntries].filter(e => !e.isStory); 
-            
-            // Note: Date filtering is already done by Firestore listener in setupDashboardListener
-            // We just need to filter by person scope here
             const scope = currentDashboardScope;
             
+            // --- UPDATED FILTER LOGIC FOR 'ALL' ---
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
-            else filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            // If scope is ALL, we include everything (filtered variable remains as is)
             
             let g = 0, d = 0, total = 0; const cats = {}; const dailyTotals = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
                 if (e.person === 'GET') g += amt; else d += amt;
                 cats[e.category] = (cats[e.category] || 0) + amt;
-                
-                // FIX: Use local date for grouping key instead of UTC ISO string
-                const year = e.dateTime.getFullYear();
-                const month = String(e.dateTime.getMonth() + 1).padStart(2, '0');
-                const day = String(e.dateTime.getDate()).padStart(2, '0');
-                const dateKey = `${year}-${month}-${day}`;
-
-                if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime }; // dateObj kept for sorting/display
-                dailyTotals[dateKey][e.person] += amt;
+                const year = e.dateTime.getFullYear(); const month = String(e.dateTime.getMonth() + 1).padStart(2, '0'); const day = String(e.dateTime.getDate()).padStart(2, '0'); const dateKey = `${year}-${month}-${day}`;
+                if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime }; dailyTotals[dateKey][e.person] += amt;
             });
-
-            document.getElementById('chart-get-total').innerText = g.toLocaleString();
-            document.getElementById('chart-dom-total').innerText = d.toLocaleString();
-            // Note: m-get-sum/m-dom-sum are now handled by updateOverviewHeader
-            document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%';
-            document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
+            document.getElementById('chart-get-total').innerText = g.toLocaleString(); document.getElementById('chart-dom-total').innerText = d.toLocaleString();
+            document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%'; document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
             
             const breakdown = document.getElementById('category-breakdown');
             breakdown.innerHTML = '<h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap for Details)</span></h4>';
             Object.keys(cats).forEach(cat => {
-                const p = (cats[cat] / total) * 100;
-                const r = document.createElement('div');
-                r.className = "cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all select-none group";
-                
-                // --- FIXED DOUBLE TAP LOGIC ---
-                let lastCatTap = 0;
-                r.addEventListener('click', (e) => {
-                    const now = Date.now(); 
-                    if (now - lastCatTap < 500) { // Increased timeout to 500ms
-                        e.preventDefault(); 
-                        showCategoryDetails(cat); 
-                        lastCatTap = 0; // Reset after successful double tap
-                    } else {
-                        lastCatTap = now;
-                    }
-                });
-                
-                r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${cat}</span><span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`;
-                breakdown.appendChild(r);
+                const p = (cats[cat] / total) * 100; const r = document.createElement('div'); r.className = "cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all select-none group";
+                let lastCatTap = 0; r.addEventListener('click', (e) => { const now = Date.now(); if (now - lastCatTap < 500) { e.preventDefault(); showCategoryDetails(cat); lastCatTap = 0; } else { lastCatTap = now; } });
+                r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${cat}</span><span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`; breakdown.appendChild(r);
             });
-
-            const chartContainer = document.getElementById('daily-chart-container');
-            const sortedDates = Object.keys(dailyTotals).sort();
-            const maxDailyTotal = sortedDates.reduce((max, date) => Math.max(max, dailyTotals[date].GET + dailyTotals[date].DOM), 0);
-            
+            const chartContainer = document.getElementById('daily-chart-container'); const sortedDates = Object.keys(dailyTotals).sort(); const maxDailyTotal = sortedDates.reduce((max, date) => Math.max(max, dailyTotals[date].GET + dailyTotals[date].DOM), 0);
             let chartHtml = '';
             if (sortedDates.length === 0) { chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>'; } 
             else {
                 chartHtml = '<div class="flex items-end gap-3 h-64 overflow-x-auto pb-2 pt-6 px-2 no-scrollbar w-full">';
                 sortedDates.forEach(date => {
                     const data = dailyTotals[date]; const dayTotal = data.GET + data.DOM;
-                    const getBarColor = scope === 'GET' ? 'bg-green-700' : 'bg-green-400';
-                    const domBarColor = scope === 'DOM' ? 'bg-blue-700' : 'bg-blue-400';
+                    const getBarColor = scope === 'GET' ? 'bg-green-700' : 'bg-green-400'; const domBarColor = scope === 'DOM' ? 'bg-blue-700' : 'bg-blue-400';
                     const barHeightPct = maxDailyTotal > 0 ? (dayTotal / maxDailyTotal) * 100 : 0;
-                    chartHtml += `
-                        <div class="flex flex-col items-center gap-1 min-w-[45px] h-full justify-end group relative">
-                            <div class="absolute -top-8 bg-gray-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">฿${dayTotal.toLocaleString()}</div>
-                            <div class="w-3 sm:w-5 bg-gray-100 rounded-t-sm rounded-b-sm flex flex-col-reverse overflow-hidden relative transition-all" style="height: ${Math.max(barHeightPct, 1)}%">
-                                <div class="${getBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.GET / dayTotal) * 100 : 0)}%"></div>
-                                <div class="${domBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.DOM / dayTotal) * 100 : 0)}%"></div>
-                            </div>
-                            <span class="text-[8px] sm:text-[9px] text-gray-400 font-bold whitespace-nowrap mt-1">${data.dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                            <div class="flex flex-col items-center gap-0.5 mt-1 border-t border-gray-100 pt-1 w-full">
-                                <span class="text-[7px] text-green-600 font-medium">${data.GET.toLocaleString()}</span>
-                                <span class="text-[7px] text-blue-600 font-medium">${data.DOM.toLocaleString()}</span>
-                                <span class="text-[8px] text-gray-800 font-bold">${dayTotal.toLocaleString()}</span>
-                            </div>
-                        </div>`;
-                });
-                chartHtml += '</div>';
-            }
-            chartContainer.innerHTML = chartHtml;
+                    chartHtml += `<div class="flex flex-col items-center gap-1 min-w-[45px] h-full justify-end group relative"><div class="absolute -top-8 bg-gray-800 text-white text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none">฿${dayTotal.toLocaleString()}</div><div class="w-3 sm:w-5 bg-gray-100 rounded-t-sm rounded-b-sm flex flex-col-reverse overflow-hidden relative transition-all" style="height: ${Math.max(barHeightPct, 1)}%"><div class="${getBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.GET / dayTotal) * 100 : 0)}%"></div><div class="${domBarColor} w-full transition-all duration-500" style="height: ${(dayTotal > 0 ? (data.DOM / dayTotal) * 100 : 0)}%"></div></div><span class="text-[8px] sm:text-[9px] text-gray-400 font-bold whitespace-nowrap mt-1">${data.dateObj.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span><div class="flex flex-col items-center gap-0.5 mt-1 border-t border-gray-100 pt-1 w-full"><span class="text-[7px] text-green-600 font-medium">${data.GET.toLocaleString()}</span><span class="text-[7px] text-blue-600 font-medium">${data.DOM.toLocaleString()}</span><span class="text-[8px] text-gray-800 font-bold">${dayTotal.toLocaleString()}</span></div></div>`;
+                }); chartHtml += '</div>';
+            } chartContainer.innerHTML = chartHtml;
         }
-
-        // --- FIXED CALENDAR BUG ---
-        window.changeCalendarMonth = (delta) => { 
-            // Prevent 31st overflow bug by setting date to 1st of month before shifting
-            calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + delta, 1);
-            
-            // Sync the input filters to this new month so dashboard data fetches correctly
-            const year = calendarDate.getFullYear();
-            const month = calendarDate.getMonth();
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            
-            // Update inputs without triggering manual handler
-            document.getElementById('start-date').value = `${year}-${String(month + 1).padStart(2, '0')}-01`;
-            document.getElementById('end-date').value = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-            
-            // Trigger fetch
-            setupDashboardListener();
-            renderCalendar(); 
-        };
-
+        window.changeCalendarMonth = (delta) => { calendarDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth() + delta, 1); const y = calendarDate.getFullYear(); const m = calendarDate.getMonth(); const lastDay = new Date(y, m + 1, 0); document.getElementById('start-date').value = `${y}-${String(m + 1).padStart(2, '0')}-01`; document.getElementById('end-date').value = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`; setupDashboardListener(); renderCalendar(); };
         window.renderCalendar = () => {
             const year = calendarDate.getFullYear(); const month = calendarDate.getMonth();
             document.getElementById('calendar-month-label').innerText = calendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
-            const monthData = {}; let monthTotal = 0; let maxDaily = 0;
-
-            // Use dashboardEntries which contains full data for the viewed month
+            const firstDay = new Date(year, month, 1).getDay(); const daysInMonth = new Date(year, month + 1, 0).getDate(); const grid = document.getElementById('calendar-grid'); grid.innerHTML = '';
+            const monthData = {}; let monthTotal = 0;
             const sourceData = window.dashboardEntries;
-
             sourceData.forEach(e => {
                 if (e.isStory) return;
                 const scope = currentDashboardScope;
                 let include = false;
-                if (scope === 'shared' && e.isIndividual !== true) include = true;
+                
+                // --- UPDATED CALENDAR LOGIC FOR 'ALL' ---
+                if (scope === 'ALL') include = true;
+                else if (scope === 'shared' && e.isIndividual !== true) include = true;
                 else if (scope !== 'shared' && e.isIndividual === true && e.person === scope) include = true;
+                
                 if (e.dateTime.getMonth() === month && e.dateTime.getFullYear() === year && include) {
                     const d = e.dateTime.getDate();
                     if (!monthData[d]) monthData[d] = { GET: 0, DOM: 0, total: 0 };
-                    const amt = parseFloat(e.amount);
-                    monthData[d].total += amt; monthData[d][e.person] += amt;
-                    monthTotal += amt; if (monthData[d].total > maxDaily) maxDaily = monthData[d].total;
+                    const amt = parseFloat(e.amount); monthData[d].total += amt; monthData[d][e.person] += amt; monthTotal += amt;
                 }
             });
             document.getElementById('calendar-month-total').innerText = monthTotal.toLocaleString();
             for (let i = 0; i < firstDay; i++) grid.innerHTML += '<div></div>';
             for (let day = 1; day <= daysInMonth; day++) {
                 const data = monthData[day] || { GET: 0, DOM: 0, total: 0 };
-                const getH = (data.GET / data.total) * 100 || 0;
-                const domH = (data.DOM / data.total) * 100 || 0;
-                grid.innerHTML += `
-                    <div class="aspect-square bg-gray-50 rounded-lg flex flex-col justify-between p-1 relative overflow-hidden border border-transparent hover:border-violet-200 transition-colors">
-                        <span class="text-[9px] font-bold text-gray-400 z-10">${day}</span>
-                        ${data.total > 0 ? `
-                            <div class="flex flex-col-reverse w-full h-1/2 rounded-sm overflow-hidden opacity-80">
-                                <div class="bg-green-400 w-full transition-all" style="height: ${getH}%"></div>
-                                <div class="bg-blue-400 w-full transition-all" style="height: ${domH}%"></div>
-                            </div>
-                            <span class="text-[7px] font-bold text-gray-600 text-center -mt-1 z-10">฿${Math.round(data.total).toLocaleString()}</span>
-                        ` : ''}
-                    </div>`;
+                const getH = (data.GET / data.total) * 100 || 0; const domH = (data.DOM / data.total) * 100 || 0;
+                grid.innerHTML += `<div class="aspect-square bg-gray-50 rounded-lg flex flex-col justify-between p-1 relative overflow-hidden border border-transparent hover:border-violet-200 transition-colors"><span class="text-[9px] font-bold text-gray-400 z-10">${day}</span>${data.total > 0 ? `<div class="flex flex-col-reverse w-full h-1/2 rounded-sm overflow-hidden opacity-80"><div class="bg-green-400 w-full transition-all" style="height: ${getH}%"></div><div class="bg-blue-400 w-full transition-all" style="height: ${domH}%"></div></div><span class="text-[7px] font-bold text-gray-600 text-center -mt-1 z-10">฿${Math.round(data.total).toLocaleString()}</span>` : ''}</div>`;
             }
         };
-
-        window.resetToMonthFilter = () => {
-            const now = new Date(); const y = now.getFullYear(); const m = now.getMonth();
-            const firstDay = new Date(Date.UTC(y, m, 1)); const lastDay = new Date(Date.UTC(y, m + 1, 0));
-            // Fix: Use local time string construction to avoid timezone shifts
-            document.getElementById('start-date').value = `${y}-${String(m + 1).padStart(2, '0')}-01`;
-            document.getElementById('end-date').value = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-            
-            setupDashboardListener(); // Fetch data for this month
-        };
-
+        window.resetToMonthFilter = () => { const now = new Date(); const y = now.getFullYear(); const m = now.getMonth(); const lastDay = new Date(Date.UTC(y, m + 1, 0)); document.getElementById('start-date').value = `${y}-${String(m + 1).padStart(2, '0')}-01`; document.getElementById('end-date').value = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`; setupDashboardListener(); };
         window.updateFilterButtons = () => {
-            const btnMonth = document.getElementById('btn-filter-month');
-            const btnToday = document.getElementById('btn-filter-today');
-            const btnYesterday = document.getElementById('btn-filter-yesterday');
-            
-            const baseClass = "text-[10px] font-bold uppercase tracking-widest transition-colors";
-            const activeClass = `${baseClass} text-purple-600`;
-            const inactiveClass = `${baseClass} text-gray-400 hover:text-purple-600`;
-            
-            btnMonth.className = inactiveClass;
-            btnToday.className = inactiveClass;
-            btnYesterday.className = inactiveClass;
-
-            if (activeDateFilter === 'today') {
-                btnToday.className = activeClass;
-            } else if (activeDateFilter === 'yesterday') {
-                btnYesterday.className = activeClass;
-            } else if (activeDateFilter === 'month') {
-                btnMonth.className = activeClass;
-            }
+            const btnMonth = document.getElementById('btn-filter-month'); const btnToday = document.getElementById('btn-filter-today'); const btnYesterday = document.getElementById('btn-filter-yesterday');
+            const baseClass = "text-[10px] font-bold uppercase tracking-widest transition-colors"; const activeClass = `${baseClass} text-purple-600`; const inactiveClass = `${baseClass} text-gray-400 hover:text-purple-600`;
+            btnMonth.className = inactiveClass; btnToday.className = inactiveClass; btnYesterday.className = inactiveClass;
+            if (activeDateFilter === 'today') btnToday.className = activeClass; else if (activeDateFilter === 'yesterday') btnYesterday.className = activeClass; else if (activeDateFilter === 'month') btnMonth.className = activeClass;
         };
-
         window.setFilter = (type) => {
-            const startInput = document.getElementById('start-date'); 
-            const endInput = document.getElementById('end-date'); 
-            const now = new Date();
-            
-            activeDateFilter = type;
-            
-            if (type === 'month') {
-                resetToMonthFilter(); // This calls setupDashboardListener inside it
-                showToast("Showing Current Month", "purple");
-                updateFilterButtons();
-                return; // Exit early as resetToMonthFilter handles everything
-            } else if (type === 'today') { 
-                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; 
-                startInput.value = todayStr; 
-                endInput.value = todayStr; 
-                showToast("Showing Today", "purple"); 
-            } else if (type === 'yesterday') { 
-                const yest = new Date(now); 
-                yest.setDate(now.getDate() - 1); 
-                const yestStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`; 
-                startInput.value = yestStr; 
-                endInput.value = yestStr; 
-                showToast("Showing Yesterday", "purple"); 
-            }
-            
-            updateFilterButtons(); 
-            setupDashboardListener(); // Trigger fetch for Today/Yesterday
+            const startInput = document.getElementById('start-date'); const endInput = document.getElementById('end-date'); const now = new Date(); activeDateFilter = type;
+            if (type === 'month') { resetToMonthFilter(); showToast("Showing Current Month", "purple"); updateFilterButtons(); return; } 
+            else if (type === 'today') { const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; startInput.value = todayStr; endInput.value = todayStr; showToast("Showing Today", "purple"); } 
+            else if (type === 'yesterday') { const yest = new Date(now); yest.setDate(now.getDate() - 1); const yestStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`; startInput.value = yestStr; endInput.value = yestStr; showToast("Showing Yesterday", "purple"); }
+            updateFilterButtons(); setupDashboardListener();
         }
-
-        window.handleManualDateChange = () => { 
-            activeDateFilter = null; 
-            updateFilterButtons(); 
-            setupDashboardListener(); // Trigger fetch on manual change
-        }
-
-        window.toggleDashboardMode = () => {
-            window.isCalendarMode = !window.isCalendarMode;
-            const mobileTab = document.getElementById('tab-m-dashboard');
-            const desktopTab = document.getElementById('tab-dashboard');
-            const title = document.getElementById('dashboard-title');
-            if (window.isCalendarMode) { title.innerText = "Calendar View"; mobileTab.classList.add('calendar-active'); desktopTab.classList.add('calendar-active'); showToast("Calendar View", "purple"); }
-            else { title.innerText = "Dashboard"; mobileTab.classList.remove('calendar-active'); desktopTab.classList.remove('calendar-active'); showToast("Dashboard View", "green"); }
-            renderDashboard();
-        };
-
-        window.handleDashboardTabClick = () => {
-            const now = Date.now();
-            if (now - lastDashboardTap < 300) toggleDashboardMode();
-            else switchView('dashboard');
-            lastDashboardTap = now;
-        }
-
-        function setSyncState(loading) {
-            const icon = document.getElementById('sync-icon');
-            if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500');
-            else icon.classList.remove('animate-spin-custom', 'text-purple-500');
-        }
-
-        window.handleHistoryTabClick = () => {
-            const now = Date.now();
-            if (now - lastHistoryTap < 300) toggleDiaryMode();
-            else switchView('history');
-            lastHistoryTap = now;
-        }
-
+        window.handleManualDateChange = () => { activeDateFilter = null; updateFilterButtons(); setupDashboardListener(); }
+        window.toggleDashboardMode = () => { window.isCalendarMode = !window.isCalendarMode; const mobileTab = document.getElementById('tab-m-dashboard'); const desktopTab = document.getElementById('tab-dashboard'); const title = document.getElementById('dashboard-title'); if (window.isCalendarMode) { title.innerText = "Calendar View"; mobileTab.classList.add('calendar-active'); desktopTab.classList.add('calendar-active'); showToast("Calendar View", "purple"); } else { title.innerText = "Dashboard"; mobileTab.classList.remove('calendar-active'); desktopTab.classList.remove('calendar-active'); showToast("Dashboard View", "green"); } renderDashboard(); };
+        window.handleDashboardTabClick = () => { const now = Date.now(); if (now - lastDashboardTap < 300) toggleDashboardMode(); else switchView('dashboard'); lastDashboardTap = now; }
+        function setSyncState(loading) { const icon = document.getElementById('sync-icon'); if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500'); else icon.classList.remove('animate-spin-custom', 'text-purple-500'); }
+        window.handleHistoryTabClick = () => { const now = Date.now(); if (now - lastHistoryTap < 300) toggleDiaryMode(); else switchView('history'); lastHistoryTap = now; }
         window.switchView = (view) => {
-            const histCont = document.getElementById('history-container');
-            const dashCont = document.getElementById('dashboard-container');
-            const sideSec = document.getElementById('side-section');
-            const inputSec = document.getElementById('input-section');
-            document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
-            if (window.innerWidth < 768) {
-                if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); }
-                else {
-                    inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view');
-                    if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } 
-                    else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); }
-                }
-            } else {
-                inputSec.classList.remove('mobile-hidden');
-                if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } 
-                else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); }
-            }
+            const histCont = document.getElementById('history-container'); const dashCont = document.getElementById('dashboard-container'); const sideSec = document.getElementById('side-section'); const inputSec = document.getElementById('input-section'); document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
+            if (window.innerWidth < 768) { if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); } else { inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); } } } 
+            else { inputSec.classList.remove('mobile-hidden'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); } }
         }
-
-        window.handleExpenseTabClick = () => {
-            const now = Date.now();
-            if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } 
-            else switchView('input');
-            lastExpenseClick = now;
-        }
-
-        window.resetExpensePage = () => {
-            currentAmount = '0'; currentCategory = null; currentPerson = null; isIndividualMode = false;
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100'));
-            resetPersonUI(); updateDisplay();
-        }
-
-        function showToast(m, c) { 
-            const t = document.getElementById('toast'); 
-            t.innerText = m; 
-            t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899', 'purple':'#8B5CF6'}[c] || '#6366f1'; 
-            t.classList.remove('translate-y-[-100px]', 'opacity-0'); 
-            setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); 
-        }
-
-        // --- PWA LOGIC ---
-        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-
-        window.onload = () => {
-            window.resetToMonthFilter();
-            document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6"));
-            if(window.innerWidth < 768) switchView('input'); else switchView('history');
-            if ('serviceWorker' in navigator) {
-                try {
-                    const swCode = "self.addEventListener('fetch', function(event) {});";
-                    const blob = new Blob([swCode], {type: 'text/javascript'});
-                    navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message));
-                } catch(e) { console.warn(e); }
-            }
-        };
-
+        window.handleExpenseTabClick = () => { const now = Date.now(); if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } else switchView('input'); lastExpenseClick = now; }
+        window.resetExpensePage = () => { currentAmount = '0'; currentCategory = null; currentPerson = null; isIndividualMode = false; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); resetPersonUI(); updateDisplay(); }
+        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899', 'purple':'#8B5CF6'}[c] || '#6366f1'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
+        const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        window.onload = () => { window.resetToMonthFilter(); document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6")); if(window.innerWidth < 768) switchView('input'); else switchView('history'); if ('serviceWorker' in navigator) { try { const swCode = "self.addEventListener('fetch', function(event) {});"; const blob = new Blob([swCode], {type: 'text/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message)); } catch(e) { console.warn(e); } } };
         window.addEventListener('resize', () => { if(window.innerWidth < 768) switchView('input'); });
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
-        
-        window.triggerPWAInstall = async () => { 
-            // Manual install removed as per request
-        }
+        window.triggerPWAInstall = async () => { }
     </script>
 </body>
 </html>
