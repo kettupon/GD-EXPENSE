@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM v.2.0</title>
+    <title>Expense GET n DOM v.2.1</title>
     
     <!-- PWA Manifest (Inline Data URI) -->
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
@@ -117,9 +117,14 @@
                 <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm transition-colors" id="history-header">
                     <div class="flex flex-col">
                         <span id="history-title" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
-                        <div id="story-toggle-container" class="hidden flex items-center mt-1">
+                        <div id="story-toggle-container" class="hidden flex items-center mt-1 gap-1">
                             <button onclick="toggleStoryFilter()" id="btn-story-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors">
                                 Stories: OFF
+                            </button>
+                            <!-- NEW: Media Gallery Toggle -->
+                            <button onclick="toggleMediaGallery()" id="btn-media-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Media
                             </button>
                         </div>
                     </div>
@@ -128,9 +133,28 @@
                         <span id="mode-indicator" class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
                     </div>
                 </div>
+                
+                <!-- Standard List View -->
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
                     <!-- History Items Injected Here -->
                 </div>
+
+                <!-- NEW: Media Gallery View (Hidden by default) -->
+                <div id="media-gallery-view" class="hidden flex-1 overflow-y-auto p-1 no-scrollbar pb-24 md:pb-4 bg-white flex flex-col">
+                    <div id="media-grid" class="grid grid-cols-3 gap-0.5 flex-none">
+                        <!-- Images injected here -->
+                    </div>
+                    <!-- View More Button Container -->
+                    <div id="media-load-more-container" class="p-4 flex justify-center hidden">
+                        <button onclick="loadMoreMedia()" class="px-6 py-2 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-sm">
+                            View More
+                        </button>
+                    </div>
+                    <div id="media-empty" class="hidden text-center text-gray-400 text-xs py-10">
+                        No media found
+                    </div>
+                </div>
+
                 <!-- Loading Sentinel -->
                 <div id="loading-more-indicator" class="hidden py-4 text-center">
                     <div class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>
@@ -555,6 +579,7 @@
         window.isDiaryMode = false;
         window.isCalendarMode = false; 
         window.showStories = false; 
+        window.showMediaGallery = false; // New state for media gallery
         
         let currentAmount = '0';
         let currentCategory = null;
@@ -590,6 +615,9 @@
         let unsubscribe = null;
         let dashboardUnsubscribe = null; // CHANGED: Renamed from monthUnsubscribe
         let isLoadingMore = false;
+        
+        // Media Gallery Vars
+        let mediaGalleryLimit = 9;
 
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
@@ -711,9 +739,11 @@
                     return { id: doc.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
                 });
                 
-                window.renderHistory();
-                // Note: We don't call renderDashboard here anymore to avoid overwriting 
-                // correct dashboard data with incomplete list data
+                if (window.showMediaGallery) {
+                    window.renderMediaGallery();
+                } else {
+                    window.renderHistory();
+                }
                 
                 setSyncState(false);
                 isLoadingMore = false;
@@ -725,7 +755,7 @@
                     if (window.historyObserver) window.historyObserver.disconnect();
                 } else {
                     // Ensure loader is ready for next scroll
-                    if(loader) loader.classList.remove('hidden'); 
+                    if(loader && !window.showMediaGallery) loader.classList.remove('hidden'); 
                     setupObserver();
                 }
             });
@@ -768,7 +798,10 @@
             const newData = {};
             snapshot.docs.forEach(doc => { newData[doc.id] = doc.data(); });
             window.diaryData = newData;
-            if (window.isDiaryMode) window.renderHistory();
+            if (window.isDiaryMode) {
+                if (window.showMediaGallery) window.renderMediaGallery();
+                else window.renderHistory();
+            }
         });
 
         window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
@@ -867,11 +900,21 @@
                 modeIndicator.classList.remove('text-pink-500');
                 storyToggle.classList.add('hidden');
                 showToast("Back to History", "green");
+                
+                // Ensure we exit gallery mode if we exit diary mode
+                if (window.showMediaGallery) {
+                    window.showMediaGallery = false;
+                    document.getElementById('btn-media-toggle').classList.remove('bg-purple-100', 'text-purple-500');
+                    document.getElementById('btn-media-toggle').classList.add('bg-gray-100', 'text-gray-400');
+                    document.getElementById('media-gallery-view').classList.add('hidden');
+                    document.getElementById('history-list').classList.remove('hidden');
+                    document.getElementById('loading-more-indicator').classList.remove('hidden');
+                }
             }
             window.renderHistory();
         }
 
-        // --- STORY LOGIC ---
+        // --- STORY & MEDIA LOGIC ---
         window.toggleStoryFilter = () => {
             window.showStories = !window.showStories;
             const btn = document.getElementById('btn-story-toggle');
@@ -886,7 +929,104 @@
                 btn.classList.add('bg-gray-100', 'text-gray-400');
                 showToast("Transactions Only", "green");
             }
-            renderHistory();
+            if(!window.showMediaGallery) renderHistory();
+        }
+        
+        // --- NEW: Toggle Media Gallery ---
+        window.toggleMediaGallery = () => {
+            window.showMediaGallery = !window.showMediaGallery;
+            const btn = document.getElementById('btn-media-toggle');
+            const list = document.getElementById('history-list');
+            const gallery = document.getElementById('media-gallery-view');
+            const loadMore = document.getElementById('loading-more-indicator');
+
+            if (window.showMediaGallery) {
+                // UI Active
+                btn.classList.add('bg-purple-100', 'text-purple-500');
+                btn.classList.remove('bg-gray-100', 'text-gray-400');
+                // View Switch
+                list.classList.add('hidden');
+                if(loadMore) loadMore.classList.add('hidden'); // Hide loader in gallery mode
+                gallery.classList.remove('hidden');
+                
+                // Reset limit when opening
+                mediaGalleryLimit = 9;
+                renderMediaGallery();
+                showToast("Gallery View", "purple");
+            } else {
+                // UI Inactive
+                btn.classList.remove('bg-purple-100', 'text-purple-500');
+                btn.classList.add('bg-gray-100', 'text-gray-400');
+                // View Switch
+                gallery.classList.add('hidden');
+                list.classList.remove('hidden');
+                if(loadMore) loadMore.classList.remove('hidden');
+                renderHistory(); // Ensure list is up to date
+                showToast("List View", "green");
+            }
+        }
+        
+        window.loadMoreMedia = () => {
+            mediaGalleryLimit += 9;
+            renderMediaGallery();
+        }
+        
+        // --- NEW: Render Media Gallery ---
+        window.renderMediaGallery = () => {
+             const grid = document.getElementById('media-grid');
+             const empty = document.getElementById('media-empty');
+             const loadMoreBtn = document.getElementById('media-load-more-container');
+             grid.innerHTML = '';
+
+             // Get all media from diaryData (Client-side pagination)
+             // We rely on window.diaryData which contains ALL images currently
+             const allMedia = Object.entries(window.diaryData)
+                .map(([id, data]) => ({ id, ...data }))
+                .filter(m => m.image || m.thumbnail);
+
+             // Sort by updatedAt desc (fallback to 0 if missing)
+             allMedia.sort((a, b) => {
+                 const timeA = a.updatedAt?.seconds || 0;
+                 const timeB = b.updatedAt?.seconds || 0;
+                 return timeB - timeA;
+             });
+
+             const totalMedia = allMedia.length;
+             const visibleMedia = allMedia.slice(0, mediaGalleryLimit);
+
+             if (visibleMedia.length === 0) {
+                 empty.classList.remove('hidden');
+                 loadMoreBtn.classList.add('hidden');
+             } else {
+                 empty.classList.add('hidden');
+                 
+                 visibleMedia.forEach(media => {
+                     const src = media.thumbnail || media.image;
+                     const full = media.image || media.thumbnail;
+                     
+                     // Attempt to find if it's a story from loaded entries (Best effort for tag)
+                     // Note: This is imperfect for old items not in 'entries', but acceptable for now
+                     const expense = window.entries.find(e => e.id === media.id);
+                     const isStory = expense?.isStory;
+
+                     const div = document.createElement('div');
+                     div.className = "aspect-square relative group cursor-pointer overflow-hidden bg-gray-100";
+                     div.onclick = (ev) => window.openImageViewer(full, ev);
+
+                     div.innerHTML = `
+                        <img src="${src}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy">
+                        ${isStory ? '<div class="absolute top-1 right-1 text-[8px] bg-pink-500 text-white px-1 rounded shadow-sm opacity-80">Story</div>' : ''}
+                     `;
+                     grid.appendChild(div);
+                 });
+
+                 // Show/Hide Load More
+                 if (mediaGalleryLimit < totalMedia) {
+                     loadMoreBtn.classList.remove('hidden');
+                 } else {
+                     loadMoreBtn.classList.add('hidden');
+                 }
+             }
         }
 
         window.openStoryModal = () => {
