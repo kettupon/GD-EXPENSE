@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM v.3.0</title>
+    <title>Expense GET n DOM v.3.1</title>
     
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
@@ -560,6 +560,9 @@
         let dashboardUnsubscribe = null;
         let isLoadingMore = false;
         let mediaGalleryLimit = 9;
+        
+        // --- NEW: Dashboard State ---
+        let dashboardSubCatMode = false;
 
         // --- SUB CATEGORY CONFIG ---
         const SUB_CATEGORIES = {
@@ -829,13 +832,11 @@
                     category: currentCategory,
                     amount: parseFloat(currentAmount),
                     person: currentPerson,
-                    name: currentCategory,
+                    name: currentSubCategory || currentCategory, // Set default name to sub-cat or category
                     isIndividual: isIndividualMode 
                 };
                 if (currentSubCategory) {
                     data.subCategory = currentSubCategory;
-                    // Optionally update name to include subcategory
-                    // data.name = `${currentCategory} > ${currentSubCategory}`;
                 }
 
                 await addDoc(expensesCol, data);
@@ -1121,8 +1122,8 @@
                     const item = document.createElement('div'); item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
                     
                     // Display sub-category if exists
-                    const displayName = e.subCategory ? `${e.subCategory}` : e.name;
-                    const displaySub = e.subCategory ? `<span class="text-[8px] text-gray-400 ml-1">(${e.category})</span>` : '';
+                    const displayName = e.name; // Keep name as is
+                    const displaySub = e.subCategory ? `<span class="text-[8px] text-gray-400 ml-1">(${e.subCategory})</span>` : '';
 
                     item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${displayName}${displaySub}</span><span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div><div class="text-right flex-shrink-0"><div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div><span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`; list.appendChild(item);
                 });
@@ -1141,7 +1142,17 @@
             document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); 
             updateDisplay(); 
         }
-        window.selectPerson = (p) => { if (currentPerson === p) isIndividualMode = !isIndividualMode; else { currentPerson = p; isIndividualMode = false; } resetPersonUI(); const btn = document.getElementById(`btn-${p}`); if (p === 'GET') btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; else btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; updateDisplay(); }
+        window.selectPerson = (p) => { 
+            if (currentPerson === p) isIndividualMode = !isIndividualMode; 
+            else { currentPerson = p; isIndividualMode = false; } 
+            resetPersonUI(); 
+            const btn = document.getElementById(`btn-${p}`); 
+            if (p === 'GET') 
+                btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; 
+            else 
+                btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; 
+            updateDisplay(); 
+        }
         window.resetPersonUI = () => { document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; }
         window.selectEditPerson = (p) => { if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; } updateEditPersonUI(); }
         window.updateEditPersonUI = () => { const btnGet = document.getElementById('edit-btn-GET'); const btnDom = document.getElementById('edit-btn-DOM'); const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; btnGet.className = baseClass; btnDom.className = baseClass; if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; } }
@@ -1224,9 +1235,10 @@
                     if (isStory) return; card.className = `p-3.5 ${cardBg} rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press`; card.onclick = () => window.openEditModal(e.id);
                     const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0)); const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
                     
-                    // Display sub category
-                    const displayName = e.subCategory ? `${e.subCategory}` : e.name;
-                    const displaySub = e.subCategory ? `<span class="text-[8px] opacity-70 ml-1">(${e.category})</span>` : '';
+                    // Display Name (User Edited)
+                    const displayName = e.name;
+                    // Sub-category tag logic (shows if sub exists)
+                    const displaySub = e.subCategory ? `<span class="text-[8px] opacity-70 ml-1">(${e.subCategory})</span>` : '';
 
                     card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}">${displayName}${displaySub} ${diaryIcon}</div><div class="text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
@@ -1255,7 +1267,15 @@
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
                 if (e.person === 'GET') g += amt; else d += amt;
-                cats[e.category] = (cats[e.category] || 0) + amt;
+                
+                // --- Group Logic ---
+                if (!cats[e.category]) cats[e.category] = { total: 0, subs: {} };
+                cats[e.category].total += amt;
+                
+                const subKey = e.subCategory || 'Other';
+                if (!cats[e.category].subs[subKey]) cats[e.category].subs[subKey] = 0;
+                cats[e.category].subs[subKey] += amt;
+                
                 const year = e.dateTime.getFullYear(); const month = String(e.dateTime.getMonth() + 1).padStart(2, '0'); const day = String(e.dateTime.getDate()).padStart(2, '0'); const dateKey = `${year}-${month}-${day}`;
                 if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime }; dailyTotals[dateKey][e.person] += amt;
             });
@@ -1263,12 +1283,54 @@
             document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%'; document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
             
             const breakdown = document.getElementById('category-breakdown');
-            breakdown.innerHTML = '<h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap for Details)</span></h4>';
-            Object.keys(cats).forEach(cat => {
-                const p = (cats[cat] / total) * 100; const r = document.createElement('div'); r.className = "cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all select-none group";
-                let lastCatTap = 0; r.addEventListener('click', (e) => { const now = Date.now(); if (now - lastCatTap < 500) { e.preventDefault(); showCategoryDetails(cat); lastCatTap = 0; } else { lastCatTap = now; } });
-                r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${cat}</span><span>฿${cats[cat].toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`; breakdown.appendChild(r);
+            
+            // Toggle Button HTML
+            const toggleHtml = `<button onclick="toggleDashboardSubCats()" class="text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${dashboardSubCatMode ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}">${dashboardSubCatMode ? 'Collapse Sub-cats' : 'Expand Sub-cats'}</button>`;
+            
+            breakdown.innerHTML = `<div class="flex justify-between items-center mb-4"><h4 class="font-bold text-gray-400 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap)</span></h4>${toggleHtml}</div>`;
+            
+            Object.keys(cats).forEach(catName => {
+                const catData = cats[catName];
+                const p = (catData.total / total) * 100; 
+                
+                // Render Category Container
+                const container = document.createElement('div');
+                container.className = "mb-3";
+                
+                // Main Category Bar
+                const r = document.createElement('div'); 
+                r.className = "cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all select-none group";
+                let lastCatTap = 0; 
+                r.addEventListener('click', (e) => { 
+                    const now = Date.now(); 
+                    if (now - lastCatTap < 500) { e.preventDefault(); showCategoryDetails(catName); lastCatTap = 0; } 
+                    else { lastCatTap = now; } 
+                });
+                
+                r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${catName}</span><span>฿${catData.total.toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`; 
+                container.appendChild(r);
+
+                // Render Sub-categories if Mode is ON
+                if (dashboardSubCatMode) {
+                    const subContainer = document.createElement('div');
+                    subContainer.className = "pl-4 pr-2 mt-1 space-y-1 border-l-2 border-gray-100 ml-2";
+                    
+                    // Sort subs by amount desc
+                    const sortedSubs = Object.entries(catData.subs).sort((a,b) => b[1] - a[1]);
+                    
+                    sortedSubs.forEach(([subName, subAmt]) => {
+                        const subPct = (subAmt / catData.total) * 100; // % of Category
+                        const subRow = document.createElement('div');
+                        subRow.className = "flex justify-between items-center text-[9px] text-gray-500 py-0.5";
+                        subRow.innerHTML = `<span>${subName}</span><span>฿${subAmt.toLocaleString()} <span class="text-purple-400 font-bold ml-1">${subPct.toFixed(0)}%</span></span>`;
+                        subContainer.appendChild(subRow);
+                    });
+                    container.appendChild(subContainer);
+                }
+                
+                breakdown.appendChild(container);
             });
+            
             const chartContainer = document.getElementById('daily-chart-container'); const sortedDates = Object.keys(dailyTotals).sort(); const maxDailyTotal = sortedDates.reduce((max, date) => Math.max(max, dailyTotals[date].GET + dailyTotals[date].DOM), 0);
             let chartHtml = '';
             if (sortedDates.length === 0) { chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>'; } 
