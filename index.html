@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Expense GET n DOM v.2.3</title>
+    <title>Expense GET n DOM v.3.0</title>
     
     <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
@@ -52,6 +52,11 @@
         .image-modal-enter { opacity: 0; transform: scale(0.9); }
         .image-modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
         .image-modal-exit { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
+        
+        /* Sub Menu Animations */
+        .submenu-btn-enter { opacity: 0; transform: scale(0.5); }
+        .submenu-btn-active { opacity: 1; transform: scale(1); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
         /* Prevent Auto Zoom on iOS Inputs */
         @media screen and (max-width: 768px) {
             input, select, textarea {
@@ -260,19 +265,35 @@
             </div>
             <div class="input-zone flex flex-col p-4 bg-white">
                 <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%] md:h-auto md:mb-6">
-                    <button onclick="selectCategory('Food')" id="btn-Food" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent">
-                        <div class="category-icon-wrapper mb-1"></div>
-                        <span class="font-bold text-[9px] uppercase">Food</span>
+                    <!-- Food Button (Long Press for Sub Menu) -->
+                    <button id="btn-Food" 
+                        onmousedown="handleButtonPress('Food', this, event)" 
+                        ontouchstart="handleButtonPress('Food', this, event)"
+                        onmouseup="handleButtonRelease()"
+                        ontouchend="handleButtonRelease()"
+                        onmouseleave="handleButtonRelease()"
+                        class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent relative select-none">
+                        <div class="category-icon-wrapper mb-1 pointer-events-none"></div>
+                        <span class="font-bold text-[9px] uppercase pointer-events-none">Food</span>
                     </button>
-                    <button onclick="selectCategory('Grocery')" id="btn-Grocery" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent">
-                        <div class="category-icon-wrapper mb-1"></div>
-                        <span class="font-bold text-[9px] uppercase">Shop</span>
+
+                    <!-- Grocery Button (Long Press for Sub Menu) -->
+                    <button id="btn-Grocery"
+                        onmousedown="handleButtonPress('Grocery', this, event)" 
+                        ontouchstart="handleButtonPress('Grocery', this, event)"
+                        onmouseup="handleButtonRelease()"
+                        ontouchend="handleButtonRelease()"
+                        onmouseleave="handleButtonRelease()"
+                        class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent relative select-none">
+                        <div class="category-icon-wrapper mb-1 pointer-events-none"></div>
+                        <span class="font-bold text-[9px] uppercase pointer-events-none">Shop</span>
                     </button>
-                    <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent">
+
+                    <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent select-none">
                         <div class="category-icon-wrapper mb-1"></div>
                         <span class="font-bold text-[9px] uppercase">Trip</span>
                     </button>
-                    <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent">
+                    <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent select-none">
                         <div class="category-icon-wrapper mb-1"></div>
                         <span class="font-bold text-[9px] uppercase">Etc.</span>
                     </button>
@@ -301,6 +322,17 @@
             </div>
         </div>
     </div>
+    
+    <!-- Sub Menu Overlay -->
+    <div id="sub-menu-overlay" class="fixed inset-0 z-[100] hidden" onclick="closeSubMenu()">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/10 backdrop-blur-[1px]"></div>
+        <!-- Container for Buttons -->
+        <div id="sub-menu-container" class="absolute w-0 h-0 flex justify-center items-center pointer-events-none">
+            <!-- Buttons injected here by JS -->
+        </div>
+    </div>
+
     <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
@@ -319,15 +351,23 @@
                     </div>
                     <div>
                         <label class="text-[9px] font-bold text-gray-400 uppercase">Category</label>
-                        <select id="edit-category" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
+                        <select id="edit-category" onchange="handleEditCategoryChange()" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
                             <option value="Food">Food</option>
-                            <option value="Grocery">Grocery</option>
+                            <option value="Grocery">Shop</option>
                             <option value="Trip">Trip</option>
                             <option value="Etc.">Etc.</option>
                             <option value="Story">Story</option>
                         </select>
                     </div>
                 </div>
+                <!-- Sub Category Edit -->
+                <div>
+                    <label class="text-[9px] font-bold text-gray-400 uppercase">Sub-Category</label>
+                    <select id="edit-subcategory" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none text-sm">
+                        <option value="">(None)</option>
+                    </select>
+                </div>
+
                 <div>
                     <label class="text-[9px] font-bold text-gray-400 uppercase">Person</label>
                     <div class="grid grid-cols-2 gap-3 mt-1">
@@ -489,6 +529,7 @@
         
         let currentAmount = '0';
         let currentCategory = null;
+        let currentSubCategory = null; // New
         let currentPerson = null;
         let isIndividualMode = false; 
         let isOverviewIncludingPersonal = false;
@@ -519,6 +560,122 @@
         let dashboardUnsubscribe = null;
         let isLoadingMore = false;
         let mediaGalleryLimit = 9;
+
+        // --- SUB CATEGORY CONFIG ---
+        const SUB_CATEGORIES = {
+            'Food': {
+                'top': { label: 'Drinks', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"></path><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"></path><line x1="6" y1="2" x2="6" y2="4"></line><line x1="10" y1="2" x2="10" y2="4"></line><line x1="14" y1="2" x2="14" y2="4"></line></svg>` },
+                'right': { label: 'Buffet', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>` },
+                'bottom': { label: 'Cuisine', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9Z"></path><path d="M11.38 12a2.4 2.4 0 0 1-.4-4.77 2.4 2.4 0 0 1 3.2-2.77 2.4 2.4 0 0 1 3.47-.63 2.4 2.4 0 0 1 3.37 3.37 2.4 2.4 0 0 1-1.1 3.7 2.51 2.51 0 0 1 .03 1.1"></path><path d="M13 12v3"></path><path d="M10 5v6"></path></svg>` }
+            },
+            'Grocery': {
+                'left': { label: 'Cosmetics', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 22H18a2 2 0 0 0 2-2V7l-5-5-6 6V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18"></path><path d="M6 16h3"></path><path d="M6 22h3"></path></svg>` },
+                'top': { label: 'Stationary', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"></path><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"></path><path d="M2 2l7.586 7.586"></path><circle cx="11" cy="11" r="2"></circle></svg>` },
+                'right': { label: 'Clothes', icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2 13 3 12 2 11 3 8 2 3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"></path></svg>` }
+            }
+        };
+
+        let pressTimer;
+        const PRESS_DELAY = 400; // ms to trigger long press
+
+        window.handleButtonPress = (category, btn, event) => {
+            // Only left click or touch
+            if (event.type === 'mousedown' && event.button !== 0) return;
+            
+            pressTimer = setTimeout(() => {
+                showSubMenu(category, btn);
+                pressTimer = null;
+            }, PRESS_DELAY);
+        };
+
+        window.handleButtonRelease = () => {
+            if (pressTimer) {
+                // Released before timeout -> Normal click
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                // Find category name based on button ID
+                const btnId = event.target.closest('button').id;
+                const cat = btnId.replace('btn-', '');
+                selectCategory(cat);
+            }
+        };
+
+        window.showSubMenu = (category, btn) => {
+            // Trigger haptic if available
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            const rect = btn.getBoundingClientRect();
+            const container = document.getElementById('sub-menu-container');
+            const overlay = document.getElementById('sub-menu-overlay');
+            const config = SUB_CATEGORIES[category];
+            
+            if (!config) return;
+
+            // Position container at center of button
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            container.style.left = `${centerX}px`;
+            container.style.top = `${centerY}px`;
+            container.innerHTML = ''; // Clear prev
+
+            const btnStyleClass = {
+                'Food': 'bg-orange-50 text-orange-600',
+                'Grocery': 'bg-emerald-50 text-emerald-600'
+            }[category];
+
+            // Render buttons based on config
+            // Distance from center
+            const dist = 90; // px
+            
+            Object.entries(config).forEach(([pos, data]) => {
+                let x = 0, y = 0;
+                if (pos === 'top') y = -dist;
+                if (pos === 'bottom') y = dist;
+                if (pos === 'left') x = -dist;
+                if (pos === 'right') x = dist;
+
+                const subBtn = document.createElement('button');
+                subBtn.className = `cat-btn pointer-events-auto absolute flex flex-col justify-center items-center rounded-2xl border-2 border-transparent w-[${rect.width}px] h-[${rect.height}px] shadow-xl ${btnStyleClass} submenu-btn-enter`;
+                // Match parent size roughly
+                subBtn.style.width = `${rect.width}px`;
+                subBtn.style.height = `${rect.height}px`;
+                subBtn.style.left = `${x}px`; // relative to center due to flex center in container
+                subBtn.style.top = `${y}px`;
+                subBtn.style.transform = `translate(-50%, -50%)`; // Center itself
+                
+                // Add margins based on position
+                if(pos === 'top') subBtn.style.marginTop = '-50%';
+                if(pos === 'bottom') subBtn.style.marginTop = '50%';
+                if(pos === 'left') subBtn.style.marginLeft = '-50%';
+                if(pos === 'right') subBtn.style.marginLeft = '50%';
+                
+                subBtn.innerHTML = `
+                    <div class="w-6 h-6 mb-1 pointer-events-none">${data.icon}</div>
+                    <span class="font-bold text-[9px] uppercase pointer-events-none">${data.label}</span>
+                `;
+                
+                subBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    selectCategory(category, data.label);
+                    closeSubMenu();
+                };
+
+                container.appendChild(subBtn);
+                
+                // Animate in
+                requestAnimationFrame(() => {
+                    subBtn.classList.add('submenu-btn-active');
+                    subBtn.classList.remove('submenu-btn-enter');
+                });
+            });
+
+            overlay.classList.remove('hidden');
+        };
+
+        window.closeSubMenu = () => {
+            const overlay = document.getElementById('sub-menu-overlay');
+            overlay.classList.add('hidden');
+        };
 
         const CATEGORY_ICONS = {
             'Food': `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path><path d="M7 2v20"></path><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path></svg>`,
@@ -660,25 +817,34 @@
             }
         });
         window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
+        
         window.submitEntry = async function() {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
             const okBtn = document.getElementById('ok-btn');
             okBtn.innerText = "⏳";
             setSyncState(true);
             try {
-                await addDoc(expensesCol, {
+                const data = {
                     dateTime: serverTimestamp(),
                     category: currentCategory,
                     amount: parseFloat(currentAmount),
                     person: currentPerson,
                     name: currentCategory,
                     isIndividual: isIndividualMode 
-                });
-                currentAmount = '0'; currentPerson = null; isIndividualMode = false; updateDisplay(); resetPersonUI();
+                };
+                if (currentSubCategory) {
+                    data.subCategory = currentSubCategory;
+                    // Optionally update name to include subcategory
+                    // data.name = `${currentCategory} > ${currentSubCategory}`;
+                }
+
+                await addDoc(expensesCol, data);
+                currentAmount = '0'; currentPerson = null; currentSubCategory = null; isIndividualMode = false; updateDisplay(); resetPersonUI();
                 showToast(isIndividualMode ? "Individual Saved" : "Shared Saved", "green");
             } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
+        
         window.saveEdit = async function() {
             setSyncState(true);
             const docRef = doc(db, "expenses", editingEntryId);
@@ -687,6 +853,7 @@
                     name: document.getElementById('edit-name').value,
                     amount: parseFloat(document.getElementById('edit-amount').value) || 0,
                     category: document.getElementById('edit-category').value,
+                    subCategory: document.getElementById('edit-subcategory').value || null,
                     person: editingPerson,
                     isIndividual: editingIsIndividual 
                 });
@@ -695,6 +862,23 @@
             } catch (e) { showToast("Error", "red"); }
             finally { setSyncState(false); }
         };
+
+        window.handleEditCategoryChange = () => {
+            const cat = document.getElementById('edit-category').value;
+            const subSelect = document.getElementById('edit-subcategory');
+            subSelect.innerHTML = '<option value="">(None)</option>';
+            
+            const subs = SUB_CATEGORIES[cat];
+            if (subs) {
+                Object.values(subs).forEach(sub => {
+                    const opt = document.createElement('option');
+                    opt.value = sub.label;
+                    opt.text = sub.label;
+                    subSelect.appendChild(opt);
+                });
+            }
+        };
+
         window.executeDelete = async function() {
             setSyncState(true);
             try {
@@ -924,10 +1108,8 @@
             if (start) { const [sy, sm, sd] = start.split('-').map(Number); filtered = filtered.filter(e => e.dateTime >= new Date(sy, sm - 1, sd, 0, 0, 0, 0)); }
             if (end) { const [ey, em, ed] = end.split('-').map(Number); filtered = filtered.filter(e => e.dateTime <= new Date(ey, em - 1, ed, 23, 59, 59, 999)); }
             
-            // --- FILTER LOGIC UPDATED FOR 'ALL' ---
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-            // If scope is ALL, no additional filtering needed
             
             filtered.sort((a, b) => b.dateTime - a.dateTime);
             const list = document.getElementById('cat-modal-list'); list.innerHTML = ''; document.getElementById('cat-modal-title').innerText = category; document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
@@ -937,7 +1119,12 @@
                 filtered.forEach(e => {
                     total += parseFloat(e.amount); const d = e.dateTime; const isPrivate = e.isIndividual === true; let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
                     const item = document.createElement('div'); item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
-                    item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${e.name}</span><span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div><div class="text-right flex-shrink-0"><div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div><span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`; list.appendChild(item);
+                    
+                    // Display sub-category if exists
+                    const displayName = e.subCategory ? `${e.subCategory}` : e.name;
+                    const displaySub = e.subCategory ? `<span class="text-[8px] text-gray-400 ml-1">(${e.category})</span>` : '';
+
+                    item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${displayName}${displaySub}</span><span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div><div class="text-right flex-shrink-0"><div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div><span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`; list.appendChild(item);
                 });
             }
             document.getElementById('cat-modal-total').innerText = '฿' + total.toLocaleString(); document.getElementById('category-modal').classList.remove('hidden');
@@ -947,13 +1134,60 @@
         window.closeImageViewer = function() { const v = document.getElementById('image-viewer'); v.classList.remove('image-modal-enter-active'); v.classList.add('image-modal-exit-active'); setTimeout(() => { v.classList.add('hidden'); v.classList.remove('image-modal-exit-active'); }, 200); }
         window.pressNum = (n) => { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
         window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
-        window.selectCategory = (cat) => { currentCategory = cat; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); updateDisplay(); }
-        window.selectPerson = (p) => { if (currentPerson === p) isIndividualMode = !isIndividualMode; else { currentPerson = p; isIndividualMode = false; } resetPersonUI(); const btn = document.getElementById(`btn-${p}`); if (p === 'GET') btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all"; else btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all"; updateDisplay(); }
+        window.selectCategory = (cat, sub = null) => { 
+            currentCategory = cat; 
+            currentSubCategory = sub;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); 
+            document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); 
+            updateDisplay(); 
+        }
+        window.selectPerson = (p) => { if (currentPerson === p) isIndividualMode = !isIndividualMode; else { currentPerson = p; isIndividualMode = false; } resetPersonUI(); const btn = document.getElementById(`btn-${p}`); if (p === 'GET') btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; else btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; updateDisplay(); }
         window.resetPersonUI = () => { document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; }
         window.selectEditPerson = (p) => { if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; } updateEditPersonUI(); }
         window.updateEditPersonUI = () => { const btnGet = document.getElementById('edit-btn-GET'); const btnDom = document.getElementById('edit-btn-DOM'); const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; btnGet.className = baseClass; btnDom.className = baseClass; if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; } }
-        function updateDisplay() { document.getElementById('display-amount').innerText = currentAmount; document.getElementById('display-category').innerText = currentCategory || "Select Category"; const dp = document.getElementById('display-person'); const dt = document.getElementById('display-type'); if (currentPerson) { dp.innerText = currentPerson; let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500'); dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass}`; dp.classList.remove('hidden'); dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED"; dt.className = isIndividualMode ? "text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-2" : "hidden"; dt.classList.remove('hidden'); } else { dp.classList.add('hidden'); dt.classList.add('hidden'); } }
-        window.openEditModal = (id) => { const e = window.entries.find(x => x.id == id); editingEntryId = id; document.getElementById('edit-name').value = e.name; document.getElementById('edit-amount').value = e.amount; document.getElementById('edit-category').value = e.category; editingPerson = e.person; editingIsIndividual = e.isIndividual || false; updateEditPersonUI(); document.getElementById('edit-modal').classList.remove('hidden'); }
+        
+        function updateDisplay() { 
+            document.getElementById('display-amount').innerText = currentAmount; 
+            
+            // Format Category > SubCategory
+            let catText = currentCategory || "Select Category";
+            if (currentCategory && currentSubCategory) {
+                catText += ` > ${currentSubCategory}`;
+            }
+            document.getElementById('display-category').innerText = catText; 
+            
+            const dp = document.getElementById('display-person'); const dt = document.getElementById('display-type'); 
+            if (currentPerson) { 
+                dp.innerText = currentPerson; 
+                let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500'); 
+                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass}`; 
+                dp.classList.remove('hidden'); 
+                dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED"; 
+                dt.className = isIndividualMode ? "text-[8px] font-bold text-gray-500 uppercase tracking-widest ml-2" : "hidden"; 
+                dt.classList.remove('hidden'); 
+            } else { 
+                dp.classList.add('hidden'); 
+                dt.classList.add('hidden'); 
+            } 
+        }
+        
+        window.openEditModal = (id) => { 
+            const e = window.entries.find(x => x.id == id); 
+            editingEntryId = id; 
+            document.getElementById('edit-name').value = e.name; 
+            document.getElementById('edit-amount').value = e.amount; 
+            document.getElementById('edit-category').value = e.category; 
+            
+            // Populate Subcategories first
+            handleEditCategoryChange();
+            // Set Value
+            document.getElementById('edit-subcategory').value = e.subCategory || "";
+
+            editingPerson = e.person; 
+            editingIsIndividual = e.isIndividual || false; 
+            updateEditPersonUI(); 
+            document.getElementById('edit-modal').classList.remove('hidden'); 
+        }
         window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
         window.confirmDelete = () => { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('delete-confirm-modal').classList.remove('hidden'); }
         window.closeDeleteModal = () => { document.getElementById('delete-confirm-modal').classList.add('hidden'); document.getElementById('edit-modal').classList.remove('hidden'); }
@@ -989,7 +1223,12 @@
                 } else {
                     if (isStory) return; card.className = `p-3.5 ${cardBg} rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press`; card.onclick = () => window.openEditModal(e.id);
                     const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0)); const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
-                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}">${e.name} ${diaryIcon}</div><div class="text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
+                    
+                    // Display sub category
+                    const displayName = e.subCategory ? `${e.subCategory}` : e.name;
+                    const displaySub = e.subCategory ? `<span class="text-[8px] opacity-70 ml-1">(${e.category})</span>` : '';
+
+                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}">${displayName}${displaySub} ${diaryIcon}</div><div class="text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
                 list.appendChild(card);
                 if (idx < 2 && !isStory) { const b = document.createElement('div'); b.className = "px-2.5 py-1 rounded-lg border bg-white flex items-center gap-1.5 shadow-sm cursor-pointer"; b.onclick = () => window.openEditModal(e.id); b.innerHTML = `${getCatIcon(e.category, "w-3 h-3 text-gray-400")} <span class="text-[9px] font-bold">฿${e.amount}</span><span class="text-[7px] font-bold text-gray-300">${e.person}</span>`; mini.appendChild(b); }
@@ -1009,10 +1248,8 @@
             let filtered = [...window.dashboardEntries].filter(e => !e.isStory); 
             const scope = currentDashboardScope;
             
-            // --- UPDATED FILTER LOGIC FOR 'ALL' ---
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-            // If scope is ALL, we include everything (filtered variable remains as is)
             
             let g = 0, d = 0, total = 0; const cats = {}; const dailyTotals = {};
             filtered.forEach(e => {
@@ -1057,7 +1294,6 @@
                 const scope = currentDashboardScope;
                 let include = false;
                 
-                // --- UPDATED CALENDAR LOGIC FOR 'ALL' ---
                 if (scope === 'ALL') include = true;
                 else if (scope === 'shared' && e.isIndividual !== true) include = true;
                 else if (scope !== 'shared' && e.isIndividual === true && e.person === scope) include = true;
@@ -1101,7 +1337,7 @@
             else { inputSec.classList.remove('mobile-hidden'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); } }
         }
         window.handleExpenseTabClick = () => { const now = Date.now(); if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } else switchView('input'); lastExpenseClick = now; }
-        window.resetExpensePage = () => { currentAmount = '0'; currentCategory = null; currentPerson = null; isIndividualMode = false; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); resetPersonUI(); updateDisplay(); }
+        window.resetExpensePage = () => { currentAmount = '0'; currentCategory = null; currentSubCategory = null; currentPerson = null; isIndividualMode = false; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); resetPersonUI(); updateDisplay(); }
         function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899', 'purple':'#8B5CF6'}[c] || '#6366f1'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
         const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         window.onload = () => { window.resetToMonthFilter(); document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6")); if(window.innerWidth < 768) switchView('input'); else switchView('history'); if ('serviceWorker' in navigator) { try { const swCode = "self.addEventListener('fetch', function(event) {});"; const blob = new Blob([swCode], {type: 'text/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message)); } catch(e) { console.warn(e); } } };
