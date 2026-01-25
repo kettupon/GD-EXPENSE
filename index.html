@@ -1155,8 +1155,26 @@
         }
         window.resetPersonUI = () => { document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; }
         window.selectEditPerson = (p) => { if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; } updateEditPersonUI(); }
-        window.updateEditPersonUI = () => { const btnGet = document.getElementById('edit-btn-GET'); const btnDom = document.getElementById('edit-btn-DOM'); const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; btnGet.className = baseClass; btnDom.className = baseClass; if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; } }
-        
+        window.updateEditPersonUI = () => { 
+            const btnGet = document.getElementById('edit-btn-GET'); 
+            const btnDom = document.getElementById('edit-btn-DOM'); 
+            const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; 
+            
+            // Reset both buttons first
+            btnGet.className = `${baseClass} text-gray-400 border-gray-200`;
+            btnDom.className = `${baseClass} text-gray-400 border-gray-200`;
+            
+            // Apply styling based on selection
+            if (editingPerson === 'GET') { 
+                btnGet.className = editingIsIndividual 
+                    ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` 
+                    : `${baseClass} bg-green-500 text-white border-transparent`; 
+            } else if (editingPerson === 'DOM') { 
+                btnDom.className = editingIsIndividual 
+                    ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` 
+                    : `${baseClass} bg-blue-500 text-white border-transparent`; 
+            } 
+        }
         function updateDisplay() { 
             document.getElementById('display-amount').innerText = currentAmount; 
             
