@@ -1248,6 +1248,10 @@
             if (!loader) { loader = document.createElement('div'); loader.id = 'loading-more-indicator'; loader.className = 'hidden py-4 text-center'; loader.innerHTML = '<div class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>'; } list.appendChild(loader);
             if (window.historyObserver && loader) { window.historyObserver.disconnect(); window.historyObserver.observe(loader); }
         }
+        window.toggleDashboardSubCats = () => {
+            dashboardSubCatMode = !dashboardSubCatMode;
+            renderDashboard();
+        };
         window.renderDashboard = () => {
             if (window.isCalendarMode) {
                 document.getElementById('dashboard-standard-view').classList.add('hidden');
@@ -1313,7 +1317,7 @@
                 // Render Sub-categories if Mode is ON
                 if (dashboardSubCatMode) {
                     const subContainer = document.createElement('div');
-                    subContainer.className = "pl-4 pr-2 mt-1 space-y-1 border-l-2 border-gray-100 ml-2";
+                    subContainer.className = "pl-2 pr-2 mt-2 space-y-2 border-l-2 border-dashed border-gray-100 ml-4 mb-4";
                     
                     // Sort subs by amount desc
                     const sortedSubs = Object.entries(catData.subs).sort((a,b) => b[1] - a[1]);
@@ -1321,8 +1325,16 @@
                     sortedSubs.forEach(([subName, subAmt]) => {
                         const subPct = (subAmt / catData.total) * 100; // % of Category
                         const subRow = document.createElement('div');
-                        subRow.className = "flex justify-between items-center text-[9px] text-gray-500 py-0.5";
-                        subRow.innerHTML = `<span>${subName}</span><span>฿${subAmt.toLocaleString()} <span class="text-purple-400 font-bold ml-1">${subPct.toFixed(0)}%</span></span>`;
+                        subRow.className = "flex flex-col gap-1";
+                        subRow.innerHTML = `
+                            <div class="flex justify-between items-center text-[9px] text-gray-500">
+                                <span>${subName}</span>
+                                <span>฿${subAmt.toLocaleString()} <span class="text-purple-400 font-bold ml-1">${subPct.toFixed(0)}%</span></span>
+                            </div>
+                            <div class="w-full bg-gray-100 h-1 rounded-full overflow-hidden">
+                                <div class="bg-purple-300 h-full" style="width: ${subPct}%"></div>
+                            </div>
+                        `;
                         subContainer.appendChild(subRow);
                     });
                     container.appendChild(subContainer);
