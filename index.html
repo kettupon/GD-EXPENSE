@@ -269,9 +269,6 @@
                     <button id="btn-Food" 
                         onmousedown="handleButtonPress('Food', this, event)" 
                         ontouchstart="handleButtonPress('Food', this, event)"
-                        onmouseup="handleButtonRelease()"
-                        ontouchend="handleButtonRelease()"
-                        onmouseleave="handleButtonRelease()"
                         class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent relative select-none">
                         <div class="category-icon-wrapper mb-1 pointer-events-none"></div>
                         <span class="font-bold text-[9px] uppercase pointer-events-none">Food</span>
@@ -281,9 +278,6 @@
                     <button id="btn-Grocery"
                         onmousedown="handleButtonPress('Grocery', this, event)" 
                         ontouchstart="handleButtonPress('Grocery', this, event)"
-                        onmouseup="handleButtonRelease()"
-                        ontouchend="handleButtonRelease()"
-                        onmouseleave="handleButtonRelease()"
                         class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent relative select-none">
                         <div class="category-icon-wrapper mb-1 pointer-events-none"></div>
                         <span class="font-bold text-[9px] uppercase pointer-events-none">Shop</span>
@@ -580,10 +574,20 @@
 
         let pressTimer;
         const PRESS_DELAY = 400; // ms to trigger long press
+        let dragTarget = null; // Track hovered sub-button
 
         window.handleButtonPress = (category, btn, event) => {
             // Only left click or touch
             if (event.type === 'mousedown' && event.button !== 0) return;
+            
+            // Reset state
+            dragTarget = null;
+            
+            // Track movement globally
+            document.addEventListener('touchmove', handleGlobalDrag, { passive: false });
+            document.addEventListener('mousemove', handleGlobalDrag);
+            document.addEventListener('touchend', handleButtonRelease);
+            document.addEventListener('mouseup', handleButtonRelease);
             
             pressTimer = setTimeout(() => {
                 showSubMenu(category, btn);
@@ -591,17 +595,91 @@
             }, PRESS_DELAY);
         };
 
-        window.handleButtonRelease = () => {
-            if (pressTimer) {
-                // Released before timeout -> Normal click
-                clearTimeout(pressTimer);
-                pressTimer = null;
-                // Find category name based on button ID
-                const btnId = event.target.closest('button').id;
-                const cat = btnId.replace('btn-', '');
-                selectCategory(cat);
+        window.handleGlobalDrag = (e) => {
+            const overlay = document.getElementById('sub-menu-overlay');
+            // Only process if menu is visible
+            if (overlay.classList.contains('hidden')) return;
+
+            // Prevent scroll on mobile while dragging menu
+            if(e.cancelable) e.preventDefault();
+
+            let clientX, clientY;
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+
+            // Detect element under cursor
+            const el = document.elementFromPoint(clientX, clientY);
+            const subBtn = el ? el.closest('.sub-menu-item') : null;
+
+            // Visual Feedback
+            document.querySelectorAll('.sub-menu-item').forEach(b => {
+                // Reset to base state
+                b.style.transform = 'translate(-50%, -50%) scale(1)';
+                b.style.zIndex = '10';
+                b.classList.remove('ring-2', 'ring-white', 'shadow-2xl');
+            });
+
+            if (subBtn) {
+                dragTarget = subBtn;
+                // Highlight active
+                subBtn.style.transform = 'translate(-50%, -50%) scale(1.15)';
+                subBtn.style.zIndex = '20';
+                subBtn.classList.add('ring-2', 'ring-white', 'shadow-2xl');
+                // Haptic feedback on enter
+                if (navigator.vibrate && subBtn.dataset.vibrated !== "true") {
+                     navigator.vibrate(10);
+                     subBtn.dataset.vibrated = "true";
+                }
+            } else {
+                // Reset vibration flag on all if not hovering
+                document.querySelectorAll('.sub-menu-item').forEach(b => delete b.dataset.vibrated);
+                dragTarget = null;
             }
         };
+
+        window.handleButtonRelease = (event) => {
+            // Stop tracking
+            document.removeEventListener('touchmove', handleGlobalDrag);
+            document.removeEventListener('mousemove', handleGlobalDrag);
+            document.removeEventListener('touchend', handleButtonRelease);
+            document.removeEventListener('mouseup', handleButtonRelease);
+
+            if (pressTimer) {
+                // Short press logic (Timer didn't fire)
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                
+                // Determine which button was pressed from the original event target if possible, 
+                // but since this is global handler, we rely on what was clicked initially OR 
+                // just passed context. simpler: rely on the fact that if pressTimer exists, 
+                // it was a short press on the original button. 
+                // We need to re-find the category. 
+                // Actually, the easiest way is to let the click bubble? No, we are handling it here.
+                // We need to know the category. 
+                // IMPROVEMENT: We can store the pending category in handleButtonPress
+                if (window.pendingCategory) {
+                    selectCategory(window.pendingCategory);
+                    window.pendingCategory = null;
+                }
+            } else {
+                // Long press logic (Menu was open)
+                if (dragTarget) {
+                    const cat = dragTarget.dataset.category;
+                    const label = dragTarget.dataset.label;
+                    selectCategory(cat, label);
+                }
+                closeSubMenu();
+            }
+            dragTarget = null;
+        };
+
+        // Added to window to store category for short press
+        window.pendingCategory = null; 
 
         window.showSubMenu = (category, btn) => {
             // Trigger haptic if available
@@ -638,11 +716,17 @@
                 if (pos === 'right') x = dist;
 
                 const subBtn = document.createElement('button');
-                subBtn.className = `cat-btn pointer-events-auto absolute flex flex-col justify-center items-center rounded-2xl border-2 border-transparent w-[${rect.width}px] h-[${rect.height}px] shadow-xl ${btnStyleClass} submenu-btn-enter`;
+                // Added 'sub-menu-item' class for detection
+                subBtn.className = `cat-btn sub-menu-item pointer-events-auto absolute flex flex-col justify-center items-center rounded-2xl border-2 border-transparent w-[${rect.width}px] h-[${rect.height}px] shadow-xl ${btnStyleClass} submenu-btn-enter transition-transform duration-150`;
+                
+                // Store data for selection
+                subBtn.dataset.category = category;
+                subBtn.dataset.label = data.label;
+
                 // Match parent size roughly
                 subBtn.style.width = `${rect.width}px`;
                 subBtn.style.height = `${rect.height}px`;
-                subBtn.style.left = `${x}px`; // relative to center due to flex center in container
+                subBtn.style.left = `${x}px`; // relative to center
                 subBtn.style.top = `${y}px`;
                 subBtn.style.transform = `translate(-50%, -50%)`; // Center itself
                 
@@ -657,12 +741,6 @@
                     <span class="font-bold text-[9px] uppercase pointer-events-none">${data.label}</span>
                 `;
                 
-                subBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    selectCategory(category, data.label);
-                    closeSubMenu();
-                };
-
                 container.appendChild(subBtn);
                 
                 // Animate in
