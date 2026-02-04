@@ -582,6 +582,7 @@
             
             // Reset state
             dragTarget = null;
+            window.pendingCategory = category;
             
             // Track movement globally
             document.addEventListener('touchmove', handleGlobalDrag, { passive: false });
@@ -672,6 +673,11 @@
                     const cat = dragTarget.dataset.category;
                     const label = dragTarget.dataset.label;
                     selectCategory(cat, label);
+                } else {
+                    // NEW LOGIC: User released without selecting a sub-category -> Select Main Category
+                    if (window.pendingCategory) {
+                        selectCategory(window.pendingCategory);
+                    }
                 }
                 closeSubMenu();
             }
