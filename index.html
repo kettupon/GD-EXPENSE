@@ -1,199 +1,344 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Expense GET n DOM v.3.1</title>
-    
-    <link rel="manifest" href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
+
+    <link rel="manifest"
+        href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
     <meta name="theme-color" content="#6D28D9">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         /* Base Settings */
-        html, body { 
-            font-family: 'Inter', sans-serif; 
-            background-color: #F8F4FF; 
-            overscroll-behavior: none; 
-            touch-action: manipulation; 
+        html,
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F4FF;
+            overscroll-behavior: none;
+            touch-action: manipulation;
             height: 100%;
             overflow: hidden;
             -webkit-user-select: none;
             user-select: none;
         }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .btn-press { transition: transform 0.05s ease, background-color 0.1s; cursor: pointer; }
-        .btn-press:active { transform: scale(0.96); filter: brightness(0.92); }
-        
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .btn-press {
+            transition: transform 0.05s ease, background-color 0.1s;
+            cursor: pointer;
+        }
+
+        .btn-press:active {
+            transform: scale(0.96);
+            filter: brightness(0.92);
+        }
+
         .tab-active {
             border-bottom: 2px solid #6D28D9;
             color: #1F2937 !important;
             font-weight: 700;
         }
+
         .diary-active {
-            border-bottom: 2px solid #EC4899 !important; /* Pink for Diary */
+            border-bottom: 2px solid #EC4899 !important;
+            /* Pink for Diary */
             color: #DB2777 !important;
         }
-        
+
         .calendar-active {
-            border-bottom: 2px solid #8B5CF6 !important; /* Violet for Calendar */
+            border-bottom: 2px solid #8B5CF6 !important;
+            /* Violet for Calendar */
             color: #7C3AED !important;
         }
-        .chart-bar-get { background-color: #10B981; transition: width 0.5s ease-out; }
-        .chart-bar-dom { background-color: #3B82F6; transition: width 0.5s ease-out; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        .animate-spin-custom { animation: spin 1s linear infinite; }
+
+        .chart-bar-get {
+            background-color: #10B981;
+            transition: width 0.5s ease-out;
+        }
+
+        .chart-bar-dom {
+            background-color: #3B82F6;
+            transition: width 0.5s ease-out;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin-custom {
+            animation: spin 1s linear infinite;
+        }
+
         /* Image Viewer Transition */
-        .image-modal-enter { opacity: 0; transform: scale(0.9); }
-        .image-modal-enter-active { opacity: 1; transform: scale(1); transition: opacity 200ms, transform 200ms; }
-        .image-modal-exit { opacity: 0; transform: scale(0.9); transition: opacity 200ms, transform 200ms; }
-        
+        .image-modal-enter {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .image-modal-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 200ms, transform 200ms;
+        }
+
+        .image-modal-exit {
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 200ms, transform 200ms;
+        }
+
         /* Sub Menu Animations */
-        .submenu-btn-enter { opacity: 0; transform: scale(0.5); }
-        .submenu-btn-active { opacity: 1; transform: scale(1); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .submenu-btn-enter {
+            opacity: 0;
+            transform: scale(0.5);
+        }
+
+        .submenu-btn-active {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
 
         /* Prevent Auto Zoom on iOS Inputs */
         @media screen and (max-width: 768px) {
-            input, select, textarea {
+
+            input,
+            select,
+            textarea {
                 font-size: 16px !important;
             }
         }
+
         /* --- MOBILE SPECIFIC LAYOUT --- */
         @media (max-width: 768px) {
-            .mobile-h-dvh { height: 100dvh; }
-            .mobile-hidden { display: none !important; }
-            .mobile-view { display: flex !important; }
-            .display-zone { flex: 0 0 auto; min-height: 25%; z-index: 10; }
+            .mobile-h-dvh {
+                height: 100dvh;
+            }
+
+            .mobile-hidden {
+                display: none !important;
+            }
+
+            .mobile-view {
+                display: flex !important;
+            }
+
+            .display-zone {
+                flex: 0 0 auto;
+                min-height: 25%;
+                z-index: 10;
+            }
+
             /* Added explicit safe-area padding for bottom */
-            .input-zone { 
-                flex: 1; 
-                padding-bottom: env(safe-area-inset-bottom); 
-                border-radius: 2rem 2rem 0 0; 
-                box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
-                z-index: 20; 
+            .input-zone {
+                flex: 1;
+                padding-bottom: env(safe-area-inset-bottom);
+                border-radius: 2rem 2rem 0 0;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+                z-index: 20;
             }
         }
+
         @media (min-width: 769px) {
-            body { overflow: auto; }
-            .desktop-card { height: 90vh; max-height: 900px; border-radius: 1.5rem; }
-            .input-zone { flex: 1; border-radius: 2.5rem 0 0 0; }
-            .display-zone { flex: 0 0 35%; }
+            body {
+                overflow: auto;
+            }
+
+            .desktop-card {
+                height: 90vh;
+                max-height: 900px;
+                border-radius: 1.5rem;
+            }
+
+            .input-zone {
+                flex: 1;
+                border-radius: 2.5rem 0 0 0;
+            }
+
+            .display-zone {
+                flex: 0 0 35%;
+            }
         }
     </style>
 </head>
+
 <body class="bg-indigo-50 md:h-screen w-full flex items-center justify-center md:p-4 text-gray-800">
-    <div class="bg-white w-full max-w-6xl h-full mobile-h-dvh desktop-card shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
-        
+    <div
+        class="bg-white w-full max-w-6xl h-full mobile-h-dvh desktop-card shadow-2xl overflow-hidden flex flex-col md:flex-row border border-gray-200 relative">
+
         <div class="md:hidden flex bg-white border-b border-gray-100 flex-none z-50 pt-[env(safe-area-inset-top)]">
-            <button onclick="handleExpenseTabClick()" id="tab-m-input" class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
-            <button onclick="handleHistoryTabClick(true)" id="tab-m-history" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
-            <button onclick="handleDashboardTabClick(true)" id="tab-m-dashboard" class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Dashboard</button>
+            <button onclick="handleExpenseTabClick()" id="tab-m-input"
+                class="flex-1 py-3 text-[11px] font-bold text-gray-400 tab-active uppercase tracking-wider touch-manipulation select-none">Expense</button>
+            <button onclick="handleHistoryTabClick(true)" id="tab-m-history"
+                class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">History</button>
+            <button onclick="handleDashboardTabClick(true)" id="tab-m-dashboard"
+                class="flex-1 py-3 text-[11px] font-bold text-gray-400 uppercase tracking-wider touch-manipulation select-none">Dashboard</button>
         </div>
-        <div id="side-section" class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col mobile-hidden md:flex min-h-0 overflow-hidden relative z-0">
-            
+        <div id="side-section"
+            class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex-col mobile-hidden md:flex min-h-0 overflow-hidden relative z-0">
+
             <div class="bg-white border-b border-gray-200 hidden md:block flex-none">
                 <div class="flex">
-                    <button id="tab-history" onclick="switchView('history')" ondblclick="toggleDiaryMode()" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors tab-active">Activity</button>
-                    <button id="tab-dashboard" onclick="switchView('dashboard')" ondblclick="toggleDashboardMode()" class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors">Dashboard</button>
+                    <button id="tab-history" onclick="switchView('history')" ondblclick="toggleDiaryMode()"
+                        class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors tab-active">Activity</button>
+                    <button id="tab-dashboard" onclick="switchView('dashboard')" ondblclick="toggleDashboardMode()"
+                        class="flex-1 py-4 text-sm text-gray-400 hover:bg-gray-50 transition-colors">Dashboard</button>
                 </div>
             </div>
-            
+
             <div id="history-container" class="flex-1 flex flex-col min-h-0 overflow-hidden">
-                <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm transition-colors" id="history-header">
+                <div class="p-4 flex justify-between items-center border-b border-gray-100 bg-white/80 backdrop-blur-sm transition-colors"
+                    id="history-header">
                     <div class="flex flex-col">
-                        <span id="history-title" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
+                        <span id="history-title"
+                            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Recent Activity</span>
                         <div id="story-toggle-container" class="hidden flex items-center mt-1 gap-1">
-                            <button onclick="toggleStoryFilter()" id="btn-story-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors">
+                            <button onclick="toggleStoryFilter()" id="btn-story-toggle"
+                                class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors">
                                 Stories: OFF
                             </button>
-                            <button onclick="toggleMediaGallery()" id="btn-media-toggle" class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors flex items-center gap-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            <button onclick="toggleMediaGallery()" id="btn-media-toggle"
+                                class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 transition-colors flex items-center gap-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
                                 Media
                             </button>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                         <div id="live-indicator" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                        <span id="mode-indicator" class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
+                        <div id="live-indicator" class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                        <span id="mode-indicator"
+                            class="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Live Sync</span>
                     </div>
                 </div>
-                
+
                 <div id="history-list" class="flex-1 overflow-y-auto p-4 space-y-3 no-scrollbar pb-24 md:pb-4">
-                    </div>
-                <div id="media-gallery-view" class="hidden flex-1 overflow-y-auto p-1 no-scrollbar pb-24 md:pb-4 bg-white flex flex-col">
+                </div>
+                <div id="media-gallery-view"
+                    class="hidden flex-1 overflow-y-auto p-1 no-scrollbar pb-24 md:pb-4 bg-white flex flex-col">
                     <div id="media-grid" class="grid grid-cols-3 gap-0.5 flex-none"></div>
                     <div id="media-load-more-container" class="p-4 flex justify-center hidden">
-                        <button onclick="loadMoreMedia()" class="px-6 py-2 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-sm">View More</button>
+                        <button onclick="loadMoreMedia()"
+                            class="px-6 py-2 bg-gray-100 text-gray-500 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-gray-200 transition-colors shadow-sm">View
+                            More</button>
                     </div>
                     <div id="media-empty" class="hidden text-center text-gray-400 text-xs py-10">No media found</div>
                 </div>
                 <div id="loading-more-indicator" class="hidden py-4 text-center">
-                    <div class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin"></div>
+                    <div
+                        class="inline-block w-5 h-5 border-2 border-gray-300 border-t-purple-600 rounded-full animate-spin">
+                    </div>
                 </div>
             </div>
-            <div id="dashboard-container" class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
+            <div id="dashboard-container"
+                class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
                 <div class="flex flex-col gap-3">
                     <h3 id="dashboard-title" class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
                     <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
-                        <button onclick="setDashboardScope('shared')" id="scope-btn-shared" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
-                        <button onclick="setDashboardScope('GET')" id="scope-btn-GET" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">GET</button>
-                        <button onclick="setDashboardScope('DOM')" id="scope-btn-DOM" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">DOM</button>
-                        <button onclick="setDashboardScope('ALL')" id="scope-btn-ALL" class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200 text-purple-600">ALL</button>
+                        <button onclick="setDashboardScope('shared')" id="scope-btn-shared"
+                            class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
+                        <button onclick="setDashboardScope('GET')" id="scope-btn-GET"
+                            class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">GET</button>
+                        <button onclick="setDashboardScope('DOM')" id="scope-btn-DOM"
+                            class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">DOM</button>
+                        <button onclick="setDashboardScope('ALL')" id="scope-btn-ALL"
+                            class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200 text-purple-600">ALL</button>
                     </div>
                 </div>
-                
+
                 <div id="dashboard-standard-view" class="space-y-6">
                     <div class="p-4 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-center mb-3">
-                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter Period</label>
+                            <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Filter
+                                Period</label>
                             <div class="flex gap-3">
-                                <button id="btn-filter-month" onclick="setFilter('month')" class="text-[10px] font-bold text-purple-600 uppercase tracking-widest hover:text-purple-800 transition-colors">Month</button>
-                                <button id="btn-filter-yesterday" onclick="setFilter('yesterday')" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Yesterday</button>
-                                <button id="btn-filter-today" onclick="setFilter('today')" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Today</button>
+                                <button id="btn-filter-month" onclick="setFilter('month')"
+                                    class="text-[10px] font-bold text-purple-600 uppercase tracking-widest hover:text-purple-800 transition-colors">Month</button>
+                                <button id="btn-filter-yesterday" onclick="setFilter('yesterday')"
+                                    class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Yesterday</button>
+                                <button id="btn-filter-today" onclick="setFilter('today')"
+                                    class="text-[10px] font-bold text-gray-400 uppercase tracking-widest hover:text-purple-600 transition-colors">Today</button>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input type="date" id="start-date" onchange="handleManualDateChange()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
-                            <input type="date" id="end-date" onchange="handleManualDateChange()" class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
+                            <input type="date" id="start-date" onchange="handleManualDateChange()"
+                                class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
+                            <input type="date" id="end-date" onchange="handleManualDateChange()"
+                                class="w-1/2 text-xs font-medium border-none bg-gray-50 p-3 rounded-xl outline-none">
                         </div>
                     </div>
                     <div id="daily-chart-wrapper" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                         <h4 class="font-bold text-gray-400 mb-4 text-[10px] uppercase">Daily Trend</h4>
                         <div id="daily-chart-container" class="w-full">
-                            </div>
+                        </div>
                     </div>
                     <div class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
                         <div class="flex justify-between items-end">
                             <div class="flex flex-col">
                                 <span class="text-[10px] font-bold text-green-500 uppercase">GET Total</span>
-                                <span class="text-lg font-bold text-gray-900">฿<span id="chart-get-total">0</span></span>
+                                <span class="text-lg font-bold text-gray-900">฿<span
+                                        id="chart-get-total">0</span></span>
                             </div>
                             <div class="flex flex-col text-right">
                                 <span class="text-[10px] font-bold text-blue-500 uppercase">DOM Total</span>
-                                <span class="text-lg font-bold text-gray-900">฿<span id="chart-dom-total">0</span></span>
+                                <span class="text-lg font-bold text-gray-900">฿<span
+                                        id="chart-dom-total">0</span></span>
                             </div>
                         </div>
                         <div class="w-full bg-gray-200 h-5 rounded-full overflow-hidden relative">
-                            <div id="chart-bar-get" class="chart-bar-get absolute top-0 left-0 h-full" style="width: 0%;"></div>
-                            <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full" style="width: 0%;"></div>
+                            <div id="chart-bar-get" class="chart-bar-get absolute top-0 left-0 h-full"
+                                style="width: 0%;"></div>
+                            <div id="chart-bar-dom" class="chart-bar-dom absolute top-0 right-0 h-full"
+                                style="width: 0%;"></div>
                         </div>
                     </div>
-                    <div id="category-breakdown" class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
-                        </div>
+                    <div id="category-breakdown"
+                        class="space-y-4 p-5 bg-white rounded-2xl shadow-sm border border-gray-100">
+                    </div>
                 </div>
                 <div id="dashboard-calendar-view" class="hidden flex-col gap-4">
-                    <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-violet-100">
-                        <button onclick="changeCalendarMonth(-1)" class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                    <div
+                        class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-violet-100">
+                        <button onclick="changeCalendarMonth(-1)"
+                            class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                            </svg>
                         </button>
-                        <span id="calendar-month-label" class="text-sm font-bold text-gray-700 uppercase tracking-widest"></span>
-                        <button onclick="changeCalendarMonth(1)" class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        <span id="calendar-month-label"
+                            class="text-sm font-bold text-gray-700 uppercase tracking-widest"></span>
+                        <button onclick="changeCalendarMonth(1)"
+                            class="p-2 text-violet-500 hover:bg-violet-50 rounded-lg transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                            </svg>
                         </button>
                     </div>
                     <div class="bg-white p-3 rounded-2xl shadow-sm border border-violet-100">
@@ -207,19 +352,30 @@
                             <div class="text-[10px] font-bold text-gray-400">Sa</div>
                         </div>
                         <div id="calendar-grid" class="grid grid-cols-7 gap-1.5">
-                            </div>
+                        </div>
                     </div>
                     <div class="p-4 bg-white rounded-2xl shadow-sm border border-violet-100 text-center">
                         <span class="text-[10px] text-gray-400 uppercase font-bold">Total this month</span>
-                        <div class="text-2xl font-bold text-violet-600 mt-1 mb-3">฿<span id="calendar-month-total">0</span></div>
-                        
+                        <div class="text-2xl font-bold text-violet-600 mt-1 mb-3">฿<span
+                                id="calendar-month-total">0</span></div>
+
                         <div class="flex gap-2 justify-center border-t border-gray-100 pt-3">
-                            <button onclick="openRecycleBin()" class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-100 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            <button onclick="openRecycleBin()"
+                                class="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-500 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-red-100 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                                 Recycle Bin
                             </button>
-                            <button onclick="exportJSON()" class="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                            <button onclick="exportJSON()"
+                                class="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-xl text-[10px] font-bold uppercase tracking-wider hover:bg-gray-100 transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                </svg>
                                 Backup JSON
                             </button>
                         </div>
@@ -239,35 +395,43 @@
                             <div class="w-2 h-2 rounded-full bg-blue-500"></div>
                             <span class="text-xs font-bold text-gray-600">DOM: ฿<span id="m-dom-sum">0</span></span>
                         </div>
-                        <span id="overview-mode-label" class="text-[9px] font-bold text-gray-400 self-center uppercase tracking-wider ml-1">(SHARED)</span>
+                        <span id="overview-mode-label"
+                            class="text-[9px] font-bold text-gray-400 self-center uppercase tracking-wider ml-1">(SHARED)</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="fetchEntries(true)" id="sync-btn" class="p-1.5">
-                            <svg xmlns="http://www.w3.org/2000/svg" id="sync-icon" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" id="sync-icon" class="h-4 w-4 text-gray-400"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
                         </button>
                     </div>
                 </div>
                 <div class="px-4 py-1 flex justify-end gap-2 overflow-hidden">
                     <div id="mini-history" class="flex gap-2"></div>
                 </div>
-                
+
                 <div class="flex-1 flex flex-col justify-end items-end px-6 pb-2">
                     <div class="flex items-center gap-2 mb-0.5">
-                        <span id="display-person" class="hidden px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white shadow-sm"></span>
-                        <span id="display-type" class="hidden text-[8px] font-bold text-gray-400 uppercase tracking-widest">SHARED</span>
-                        <span id="display-category" class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Category</span>
+                        <span id="display-person"
+                            class="hidden px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-widest text-white shadow-sm"></span>
+                        <span id="display-type"
+                            class="hidden text-[8px] font-bold text-gray-400 uppercase tracking-widest">SHARED</span>
+                        <span id="display-category"
+                            class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Category</span>
                     </div>
                     <div class="flex items-baseline gap-1">
                         <span class="text-xl font-medium text-gray-300">฿</span>
-                        <div class="text-6xl md:text-7xl font-bold text-gray-900 tracking-tighter leading-none" id="display-amount">0</div>
+                        <div class="text-6xl md:text-7xl font-bold text-gray-900 tracking-tighter leading-none"
+                            id="display-amount">0</div>
                     </div>
                 </div>
             </div>
             <div class="input-zone flex flex-col p-4 bg-white">
                 <div class="grid grid-cols-4 gap-3 mb-4 flex-none h-[15%] md:h-auto md:mb-6">
                     <!-- Food Button (Long Press for Sub Menu) -->
-                    <button id="btn-Food" 
-                        onmousedown="handleButtonPress('Food', this, event)" 
+                    <button id="btn-Food" onmousedown="handleButtonPress('Food', this, event)"
                         ontouchstart="handleButtonPress('Food', this, event)"
                         class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-orange-50 text-orange-600 border-2 border-transparent relative select-none">
                         <div class="category-icon-wrapper mb-1 pointer-events-none"></div>
@@ -275,48 +439,64 @@
                     </button>
 
                     <!-- Grocery Button (Long Press for Sub Menu) -->
-                    <button id="btn-Grocery"
-                        onmousedown="handleButtonPress('Grocery', this, event)" 
+                    <button id="btn-Grocery" onmousedown="handleButtonPress('Grocery', this, event)"
                         ontouchstart="handleButtonPress('Grocery', this, event)"
                         class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-emerald-50 text-emerald-600 border-2 border-transparent relative select-none">
                         <div class="category-icon-wrapper mb-1 pointer-events-none"></div>
                         <span class="font-bold text-[9px] uppercase pointer-events-none">Shop</span>
                     </button>
 
-                    <button onclick="selectCategory('Trip')" id="btn-Trip" class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent select-none">
+                    <button onclick="selectCategory('Trip')" id="btn-Trip"
+                        class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-sky-50 text-sky-600 border-2 border-transparent select-none">
                         <div class="category-icon-wrapper mb-1"></div>
                         <span class="font-bold text-[9px] uppercase">Trip</span>
                     </button>
-                    <button onclick="selectCategory('Etc.')" id="btn-Etc." class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent select-none">
+                    <button onclick="selectCategory('Etc.')" id="btn-Etc."
+                        class="cat-btn btn-press flex flex-col justify-center items-center py-2 md:py-4 rounded-2xl bg-purple-50 text-purple-600 border-2 border-transparent select-none">
                         <div class="category-icon-wrapper mb-1"></div>
                         <span class="font-bold text-[9px] uppercase">Etc.</span>
                     </button>
                 </div>
                 <div class="flex-1 flex gap-3 min-h-0">
                     <div class="grid grid-cols-3 gap-2 flex-grow h-full">
-                        <button onclick="pressNum('7')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">7</button>
-                        <button onclick="pressNum('8')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">8</button>
-                        <button onclick="pressNum('9')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">9</button>
-                        <button onclick="pressNum('4')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">4</button>
-                        <button onclick="pressNum('5')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">5</button>
-                        <button onclick="pressNum('6')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">6</button>
-                        <button onclick="pressNum('1')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">1</button>
-                        <button onclick="pressNum('2')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">2</button>
-                        <button onclick="pressNum('3')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">3</button>
-                        <button onclick="clearEntry()" class="btn-press bg-red-50 rounded-2xl text-xl font-bold text-red-400 h-full uppercase">C</button>
-                        <button onclick="pressNum('0')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">0</button>
-                        <button onclick="pressNum('.')" class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">.</button>
+                        <button onclick="pressNum('7')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">7</button>
+                        <button onclick="pressNum('8')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">8</button>
+                        <button onclick="pressNum('9')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">9</button>
+                        <button onclick="pressNum('4')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">4</button>
+                        <button onclick="pressNum('5')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">5</button>
+                        <button onclick="pressNum('6')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">6</button>
+                        <button onclick="pressNum('1')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">1</button>
+                        <button onclick="pressNum('2')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">2</button>
+                        <button onclick="pressNum('3')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">3</button>
+                        <button onclick="clearEntry()"
+                            class="btn-press bg-red-50 rounded-2xl text-xl font-bold text-red-400 h-full uppercase">C</button>
+                        <button onclick="pressNum('0')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">0</button>
+                        <button onclick="pressNum('.')"
+                            class="btn-press bg-gray-50 rounded-2xl text-2xl font-bold text-gray-700 h-full">.</button>
                     </div>
                     <div class="flex flex-col gap-2 w-24 md:w-32 h-full">
-                        <button onclick="selectPerson('GET')" id="btn-GET" class="person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all">GET</button>
-                        <button onclick="selectPerson('DOM')" id="btn-DOM" class="person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all">DOM</button>
-                        <button onclick="submitEntry()" id="ok-btn" class="btn-press flex-1 rounded-2xl bg-gray-900 text-white font-bold text-2xl shadow-lg flex items-center justify-center">OK</button>
+                        <button onclick="selectPerson('GET')" id="btn-GET"
+                            class="person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all">GET</button>
+                        <button onclick="selectPerson('DOM')" id="btn-DOM"
+                            class="person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all">DOM</button>
+                        <button onclick="submitEntry()" id="ok-btn"
+                            class="btn-press flex-1 rounded-2xl bg-gray-900 text-white font-bold text-2xl shadow-lg flex items-center justify-center">OK</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Sub Menu Overlay -->
     <div id="sub-menu-overlay" class="fixed inset-0 z-[100] hidden" onclick="closeSubMenu()">
         <!-- Backdrop -->
@@ -327,7 +507,8 @@
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
+    <div id="edit-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
             <div class="space-y-4">
@@ -335,17 +516,20 @@
                     <label class="text-[9px] font-bold text-gray-400 uppercase">Description</label>
                     <div class="relative mt-1">
                         <input type="text" id="edit-name" class="w-full p-3 bg-gray-50 rounded-xl outline-none pr-10">
-                        <button onclick="document.getElementById('edit-name').value = ''" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+                        <button onclick="document.getElementById('edit-name').value = ''"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="text-[9px] font-bold text-gray-400 uppercase">Amount (฿)</label>
-                        <input type="text" inputmode="decimal" id="edit-amount" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
+                        <input type="text" inputmode="decimal" id="edit-amount"
+                            class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
                     </div>
                     <div>
                         <label class="text-[9px] font-bold text-gray-400 uppercase">Category</label>
-                        <select id="edit-category" onchange="handleEditCategoryChange()" class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
+                        <select id="edit-category" onchange="handleEditCategoryChange()"
+                            class="w-full mt-1 p-3 bg-gray-50 rounded-xl outline-none">
                             <option value="Food">Food</option>
                             <option value="Grocery">Shop</option>
                             <option value="Trip">Trip</option>
@@ -365,91 +549,131 @@
                 <div>
                     <label class="text-[9px] font-bold text-gray-400 uppercase">Person</label>
                     <div class="grid grid-cols-2 gap-3 mt-1">
-                        <button id="edit-btn-GET" onclick="selectEditPerson('GET')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press">GET</button>
-                        <button id="edit-btn-DOM" onclick="selectEditPerson('DOM')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press">DOM</button>
+                        <button id="edit-btn-GET" onclick="selectEditPerson('GET')"
+                            class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press">GET</button>
+                        <button id="edit-btn-DOM" onclick="selectEditPerson('DOM')"
+                            class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press">DOM</button>
                     </div>
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
-                <button onclick="confirmDelete()" class="w-1/4 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-[11px] btn-press">Delete</button>
-                <button onclick="closeEditModal()" class="w-1/4 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Back</button>
-                <button onclick="saveEdit()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Apply</button>
+                <button onclick="confirmDelete()"
+                    class="w-1/4 py-3 bg-red-50 text-red-500 rounded-xl font-bold text-[11px] btn-press">Delete</button>
+                <button onclick="closeEditModal()"
+                    class="w-1/4 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Back</button>
+                <button onclick="saveEdit()"
+                    class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Apply</button>
             </div>
         </div>
     </div>
-    <div id="recycle-bin-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[130] hidden p-6 backdrop-blur-sm">
+    <div id="recycle-bin-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[130] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md h-[70vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
                 <h3 class="text-lg font-bold text-gray-800 tracking-tight flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                     Recycle Bin
                 </h3>
-                <button onclick="closeRecycleBin()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
+                <button onclick="closeRecycleBin()"
+                    class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
             </div>
             <div id="recycle-bin-list" class="flex-1 overflow-y-auto space-y-2 no-scrollbar"></div>
-            <div class="mt-4 pt-2 text-center text-[10px] text-gray-400">Items here are not permanently deleted yet.</div>
+            <div class="mt-4 pt-2 text-center text-[10px] text-gray-400">Items here are not permanently deleted yet.
+            </div>
         </div>
     </div>
-    <div id="story-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[125] hidden p-6 backdrop-blur-sm">
+    <div id="story-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[125] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Create Story</h3>
             <div class="mb-4">
                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-2">Author</label>
                 <div class="grid grid-cols-2 gap-3">
-                    <button id="story-btn-GET" onclick="selectStoryPerson('GET')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">GET</button>
-                    <button id="story-btn-DOM" onclick="selectStoryPerson('DOM')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">DOM</button>
+                    <button id="story-btn-GET" onclick="selectStoryPerson('GET')"
+                        class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">GET</button>
+                    <button id="story-btn-DOM" onclick="selectStoryPerson('DOM')"
+                        class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">DOM</button>
                 </div>
             </div>
-            <textarea id="story-input" rows="4" class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400 mb-3" placeholder="What's happening?"></textarea>
+            <textarea id="story-input" rows="4"
+                class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400 mb-3"
+                placeholder="What's happening?"></textarea>
             <div class="mb-4">
-                <button onclick="triggerImageUpload(null, null, true)" class="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:text-pink-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <button onclick="triggerImageUpload(null, null, true)"
+                    class="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center gap-2 text-gray-400 hover:text-pink-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
                     <span id="story-img-label" class="text-xs font-bold">Add Photo</span>
                 </button>
             </div>
             <div class="flex gap-3">
-                <button onclick="closeStoryModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
-                <button onclick="saveStory()" class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Post</button>
+                <button onclick="closeStoryModal()"
+                    class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
+                <button onclick="saveStory()"
+                    class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Post</button>
             </div>
         </div>
     </div>
-    <div id="caption-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-sm">
+    <div id="caption-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Add Diary Note</h3>
             <div class="mb-4">
                 <label class="text-[9px] font-bold text-gray-400 uppercase block mb-2">Who are you?</label>
                 <div class="grid grid-cols-2 gap-3">
-                    <button id="cap-btn-GET" onclick="selectCaptionPerson('GET')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">GET</button>
-                    <button id="cap-btn-DOM" onclick="selectCaptionPerson('DOM')" class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">DOM</button>
+                    <button id="cap-btn-GET" onclick="selectCaptionPerson('GET')"
+                        class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">GET</button>
+                    <button id="cap-btn-DOM" onclick="selectCaptionPerson('DOM')"
+                        class="py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200">DOM</button>
                 </div>
             </div>
-            <textarea id="caption-input" rows="3" class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400" placeholder="Write a memory..."></textarea>
+            <textarea id="caption-input" rows="3"
+                class="w-full p-4 bg-gray-50 rounded-2xl outline-none resize-none text-sm text-gray-700 placeholder-gray-400"
+                placeholder="Write a memory..."></textarea>
             <div class="flex gap-3 mt-4">
-                <button onclick="closeCaptionModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
-                <button onclick="saveCaption()" class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Post Comment</button>
+                <button onclick="closeCaptionModal()"
+                    class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
+                <button onclick="saveCaption()"
+                    class="flex-1 py-3 bg-pink-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Post
+                    Comment</button>
             </div>
         </div>
     </div>
-    <div id="diary-options-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[115] hidden p-6 backdrop-blur-md">
+    <div id="diary-options-modal"
+        class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[115] hidden p-6 backdrop-blur-md">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
             <h3 id="diary-options-title" class="text-lg font-bold text-gray-900 mb-4">Photo Options</h3>
             <div class="flex flex-col gap-3">
-                <button id="btn-replace-photo" onclick="executeReupload()" class="w-full py-4 bg-gray-100 text-gray-800 rounded-2xl font-bold text-sm btn-press">Replace Photo</button>
-                <button id="btn-delete-item" onclick="executeDeleteImage()" class="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm btn-press">Delete Item</button>
-                <button onclick="closeDiaryOptions()" class="w-full py-4 bg-white text-gray-400 rounded-2xl font-bold text-sm border border-gray-100 mt-2">Cancel</button>
+                <button id="btn-replace-photo" onclick="executeReupload()"
+                    class="w-full py-4 bg-gray-100 text-gray-800 rounded-2xl font-bold text-sm btn-press">Replace
+                    Photo</button>
+                <button id="btn-delete-item" onclick="executeDeleteImage()"
+                    class="w-full py-4 bg-red-50 text-red-500 rounded-2xl font-bold text-sm btn-press">Delete
+                    Item</button>
+                <button onclick="closeDiaryOptions()"
+                    class="w-full py-4 bg-white text-gray-400 rounded-2xl font-bold text-sm border border-gray-100 mt-2">Cancel</button>
             </div>
         </div>
     </div>
-    <div id="category-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[118] hidden p-6 backdrop-blur-sm">
+    <div id="category-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[118] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md h-[70vh] flex flex-col">
             <div class="flex justify-between items-center mb-4 border-b border-gray-100 pb-4">
                 <div class="flex items-center gap-2">
-                    <div id="cat-modal-icon" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center"></div>
-                    <h3 id="cat-modal-title" class="text-lg font-bold text-gray-800 tracking-tight uppercase">Category</h3>
+                    <div id="cat-modal-icon" class="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center">
+                    </div>
+                    <h3 id="cat-modal-title" class="text-lg font-bold text-gray-800 tracking-tight uppercase">Category
+                    </h3>
                 </div>
-                <button onclick="closeCategoryModal()" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
+                <button onclick="closeCategoryModal()"
+                    class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
             </div>
             <div id="cat-modal-list" class="flex-1 overflow-y-auto space-y-2 no-scrollbar"></div>
             <div class="mt-4 pt-4 border-t border-gray-100 text-right">
@@ -458,43 +682,61 @@
             </div>
         </div>
     </div>
-    <div id="password-modal" class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[120] hidden p-6 backdrop-blur-sm">
+    <div id="password-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[120] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm">
             <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Enter Password</h3>
-            <input type="password" id="password-input" class="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm text-gray-700 placeholder-gray-400 mb-4" placeholder="Required for this action">
+            <input type="password" id="password-input"
+                class="w-full p-4 bg-gray-50 rounded-2xl outline-none text-sm text-gray-700 placeholder-gray-400 mb-4"
+                placeholder="Required for this action">
             <div class="flex gap-3">
-                <button onclick="closePasswordModal()" class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
-                <button onclick="verifyPassword()" class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Confirm</button>
+                <button onclick="closePasswordModal()"
+                    class="flex-1 py-3 bg-gray-100 text-gray-500 rounded-xl font-bold text-[11px] btn-press">Cancel</button>
+                <button onclick="verifyPassword()"
+                    class="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-xs shadow-md btn-press">Confirm</button>
             </div>
         </div>
     </div>
-    <div id="image-viewer" class="fixed inset-0 bg-black z-[125] hidden flex flex-col justify-center items-center touch-none">
-        <button onclick="closeImageViewer()" class="absolute top-4 right-4 text-white p-2 z-50 bg-black/50 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    <div id="image-viewer"
+        class="fixed inset-0 bg-black z-[125] hidden flex flex-col justify-center items-center touch-none">
+        <button onclick="closeImageViewer()"
+            class="absolute top-4 right-4 text-white p-2 z-50 bg-black/50 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
         </button>
         <img id="full-image" src="" class="max-w-full max-h-full object-contain p-2 transition-transform duration-200">
     </div>
-    <div id="delete-confirm-modal" class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-md">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-sm text-center">
+    <div id="delete-confirm-modal"
+        class="fixed inset-0 bg-gray-900/90 flex items-center justify-center z-[110] hidden p-6 backdrop-blur-md">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
             <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             </div>
             <h3 class="text-lg font-bold text-gray-900 mb-2">Delete Transaction?</h3>
             <div class="flex gap-3 mt-6">
-                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs btn-press">Cancel</button>
-                <button onclick="executeDelete()" class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Yes, Delete</button>
+                <button onclick="closeDeleteModal()"
+                    class="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-xs btn-press">Cancel</button>
+                <button onclick="executeDelete()"
+                    class="flex-1 py-3 bg-red-500 text-white rounded-xl font-bold text-xs shadow-md btn-press">Yes,
+                    Delete</button>
             </div>
         </div>
     </div>
-    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[130] uppercase tracking-wider"></div>
+    <div id="toast"
+        class="fixed top-12 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full text-white text-[10px] font-bold shadow-xl transform translate-y-[-100px] opacity-0 transition-all pointer-events-none z-[130] uppercase tracking-wider">
+    </div>
     <input type="file" id="diary-image-input" hidden accept="image/*" onchange="handleImageFile(this)">
-    
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { 
-            getFirestore, collection, addDoc, onSnapshot, query, 
+        import {
+            getFirestore, collection, addDoc, onSnapshot, query,
             orderBy, doc, updateDoc, deleteDoc, serverTimestamp, setDoc, getDoc, arrayUnion, deleteField, limit, where, getDocs
         } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         const firebaseConfig = {
@@ -512,49 +754,49 @@
         const expensesCol = collection(db, "expenses");
         const imagesCol = collection(db, "images");
         const trashCol = collection(db, "trash");
-        
-        window.entries = []; 
+
+        window.entries = [];
         window.dashboardEntries = [];
-        window.diaryData = {}; 
+        window.diaryData = {};
         window.isDiaryMode = false;
-        window.isCalendarMode = false; 
-        window.showStories = false; 
+        window.isCalendarMode = false;
+        window.showStories = false;
         window.showMediaGallery = false;
-        
+
         let currentAmount = '0';
         let currentCategory = null;
         let currentSubCategory = null; // New
         let currentPerson = null;
-        let isIndividualMode = false; 
+        let isIndividualMode = false;
         let isOverviewIncludingPersonal = false;
-        let currentDashboardScope = 'shared'; 
-        
+        let currentDashboardScope = 'shared';
+
         let editingEntryId = null;
         let editingPerson = null;
-        let editingIsIndividual = false; 
-        
+        let editingIsIndividual = false;
+
         let lastExpenseClick = 0;
-        let lastHistoryTap = 0; 
+        let lastHistoryTap = 0;
         let lastDashboardTap = 0;
         let deferredPrompt = null;
-        
+
         let uploadingForId = null;
         let captionPerson = null;
         let pendingAction = null;
-        
+
         let storyPerson = null;
         let storyImageBase64 = null;
         let storyThumbnailBase64 = null;
         let isCreatingStory = false;
-        
-        let calendarDate = new Date(); 
+
+        let calendarDate = new Date();
         let activeDateFilter = 'month';
         let currentLimit = 15;
         let unsubscribe = null;
         let dashboardUnsubscribe = null;
         let isLoadingMore = false;
         let mediaGalleryLimit = 9;
-        
+
         // --- NEW: Dashboard State ---
         let dashboardSubCatMode = false;
 
@@ -579,17 +821,17 @@
         window.handleButtonPress = (category, btn, event) => {
             // Only left click or touch
             if (event.type === 'mousedown' && event.button !== 0) return;
-            
+
             // Reset state
             dragTarget = null;
             window.pendingCategory = category;
-            
+
             // Track movement globally
             document.addEventListener('touchmove', handleGlobalDrag, { passive: false });
             document.addEventListener('mousemove', handleGlobalDrag);
             document.addEventListener('touchend', handleButtonRelease);
             document.addEventListener('mouseup', handleButtonRelease);
-            
+
             pressTimer = setTimeout(() => {
                 showSubMenu(category, btn);
                 pressTimer = null;
@@ -602,7 +844,7 @@
             if (overlay.classList.contains('hidden')) return;
 
             // Prevent scroll on mobile while dragging menu
-            if(e.cancelable) e.preventDefault();
+            if (e.cancelable) e.preventDefault();
 
             let clientX, clientY;
             if (e.touches && e.touches.length > 0) {
@@ -633,8 +875,8 @@
                 subBtn.classList.add('ring-2', 'ring-white', 'shadow-2xl');
                 // Haptic feedback on enter
                 if (navigator.vibrate && subBtn.dataset.vibrated !== "true") {
-                      navigator.vibrate(10);
-                      subBtn.dataset.vibrated = "true";
+                    navigator.vibrate(10);
+                    subBtn.dataset.vibrated = "true";
                 }
             } else {
                 // Reset vibration flag on all if not hovering
@@ -654,7 +896,7 @@
                 // Short press logic (Timer didn't fire)
                 clearTimeout(pressTimer);
                 pressTimer = null;
-                
+
                 // Determine which button was pressed from the original event target if possible, 
                 // but since this is global handler, we rely on what was clicked initially OR 
                 // just passed context. simpler: rely on the fact that if pressTimer exists, 
@@ -683,17 +925,17 @@
         };
 
         // Added to window to store category for short press
-        window.pendingCategory = null; 
+        window.pendingCategory = null;
 
         window.showSubMenu = (category, btn) => {
             // Trigger haptic if available
             if (navigator.vibrate) navigator.vibrate(50);
-            
+
             const rect = btn.getBoundingClientRect();
             const container = document.getElementById('sub-menu-container');
             const overlay = document.getElementById('sub-menu-overlay');
             const config = SUB_CATEGORIES[category];
-            
+
             if (!config) return;
 
             // Position container at center of button
@@ -711,7 +953,7 @@
             // Render buttons based on config
             // Distance from center
             const dist = 90; // px
-            
+
             Object.entries(config).forEach(([pos, data]) => {
                 let x = 0, y = 0;
                 if (pos === 'top') y = -dist;
@@ -722,7 +964,7 @@
                 const subBtn = document.createElement('button');
                 // Added 'sub-menu-item' class for detection
                 subBtn.className = `cat-btn sub-menu-item pointer-events-auto absolute flex flex-col justify-center items-center rounded-2xl border-2 border-transparent w-[${rect.width}px] h-[${rect.height}px] shadow-xl ${btnStyleClass} submenu-btn-enter transition-transform duration-150`;
-                
+
                 // Store data for selection
                 subBtn.dataset.category = category;
                 subBtn.dataset.label = data.label;
@@ -733,20 +975,20 @@
                 subBtn.style.left = `${x}px`; // relative to center
                 subBtn.style.top = `${y}px`;
                 subBtn.style.transform = `translate(-50%, -50%)`; // Center itself
-                
+
                 // Add margins based on position
-                if(pos === 'top') subBtn.style.marginTop = '-50%';
-                if(pos === 'bottom') subBtn.style.marginTop = '50%';
-                if(pos === 'left') subBtn.style.marginLeft = '-50%';
-                if(pos === 'right') subBtn.style.marginLeft = '50%';
-                
+                if (pos === 'top') subBtn.style.marginTop = '-50%';
+                if (pos === 'bottom') subBtn.style.marginTop = '50%';
+                if (pos === 'left') subBtn.style.marginLeft = '-50%';
+                if (pos === 'right') subBtn.style.marginLeft = '50%';
+
                 subBtn.innerHTML = `
                     <div class="w-6 h-6 mb-1 pointer-events-none">${data.icon}</div>
                     <span class="font-bold text-[9px] uppercase pointer-events-none">${data.label}</span>
                 `;
-                
+
                 container.appendChild(subBtn);
-                
+
                 // Animate in
                 requestAnimationFrame(() => {
                     subBtn.classList.add('submenu-btn-active');
@@ -773,22 +1015,22 @@
             const rawIcon = CATEGORY_ICONS[category] || `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>`;
             return rawIcon.replace('width="24" height="24"', `class="${size}"`);
         }
-        function getCatStyle(c) { return {'Food':'bg-orange-50 text-orange-600', 'Grocery':'bg-emerald-50 text-emerald-600', 'Trip':'bg-sky-50 text-sky-600', 'Etc.':'bg-purple-50 text-purple-600', 'Story':'bg-pink-50 text-pink-500'}[c] || 'bg-gray-50'; }
-        
+        function getCatStyle(c) { return { 'Food': 'bg-orange-50 text-orange-600', 'Grocery': 'bg-emerald-50 text-emerald-600', 'Trip': 'bg-sky-50 text-sky-600', 'Etc.': 'bg-purple-50 text-purple-600', 'Story': 'bg-pink-50 text-pink-500' }[c] || 'bg-gray-50'; }
+
         // --- DASHBOARD SCOPE LOGIC ---
         window.setDashboardScope = (scope) => {
             currentDashboardScope = scope;
             // Update UI
             ['shared', 'GET', 'DOM', 'ALL'].forEach(s => {
                 const btn = document.getElementById(`scope-btn-${s}`);
-                if(s === scope) {
+                if (s === scope) {
                     btn.classList.add('bg-white', 'text-gray-800', 'shadow-sm');
                     btn.classList.remove('text-gray-500', 'hover:bg-gray-200');
-                    if(s === 'ALL') btn.classList.remove('text-purple-600'); // Reset purple text on active
+                    if (s === 'ALL') btn.classList.remove('text-purple-600'); // Reset purple text on active
                 } else {
                     btn.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
                     btn.classList.add('text-gray-500', 'hover:bg-gray-200');
-                    if(s === 'ALL') btn.classList.add('text-purple-600'); // Re-add purple text when inactive
+                    if (s === 'ALL') btn.classList.add('text-purple-600'); // Re-add purple text when inactive
                 }
             });
             renderDashboard();
@@ -796,15 +1038,15 @@
 
         function setupDashboardListener() {
             if (dashboardUnsubscribe) dashboardUnsubscribe();
-            
+
             const startInput = document.getElementById('start-date').value;
             const endInput = document.getElementById('end-date').value;
-            
+
             let startDate, endDate;
             if (startInput && endInput) {
                 const [sy, sm, sd] = startInput.split('-').map(Number);
                 startDate = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
-                
+
                 const [ey, em, ed] = endInput.split('-').map(Number);
                 endDate = new Date(ey, em - 1, ed, 23, 59, 59, 999);
             } else {
@@ -812,15 +1054,15 @@
                 startDate = new Date(now.getFullYear(), now.getMonth(), 1);
                 endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
             }
-            
+
             const q = query(expensesCol, where("dateTime", ">=", startDate), where("dateTime", "<=", endDate));
-            
+
             dashboardUnsubscribe = onSnapshot(q, (snapshot) => {
                 window.dashboardEntries = snapshot.docs.map(doc => {
                     const data = doc.data();
                     return { id: doc.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
                 });
-                updateOverviewHeader(); 
+                updateOverviewHeader();
                 renderDashboard();
             }, (error) => {
                 console.error("Dashboard Sync Error:", error);
@@ -841,21 +1083,21 @@
                 const amt = parseFloat(e.amount || 0);
                 if (e.person === 'GET') g += amt; else d += amt;
             });
-            
+
             const elGet = document.getElementById('m-get-sum');
             const elDom = document.getElementById('m-dom-sum');
             const elLabel = document.getElementById('overview-mode-label');
-            
-            if(elGet) elGet.innerText = g.toLocaleString();
-            if(elDom) elDom.innerText = d.toLocaleString();
-            
-            if(elLabel) {
+
+            if (elGet) elGet.innerText = g.toLocaleString();
+            if (elDom) elDom.innerText = d.toLocaleString();
+
+            if (elLabel) {
                 elLabel.innerText = isOverviewIncludingPersonal ? "(ALL)" : "(SHARED)";
                 elLabel.className = isOverviewIncludingPersonal ? "text-[9px] font-bold text-purple-500 self-center uppercase tracking-wider ml-1" : "text-[9px] font-bold text-gray-400 self-center uppercase tracking-wider ml-1";
             }
         }
         function setupRealtimeListener() {
-            if (unsubscribe) unsubscribe(); 
+            if (unsubscribe) unsubscribe();
             const q = query(expensesCol, orderBy("dateTime", "desc"), limit(currentLimit));
             unsubscribe = onSnapshot(q, (snapshot) => {
                 window.entries = snapshot.docs.map(doc => {
@@ -868,15 +1110,15 @@
                 isLoadingMore = false;
                 const loader = document.getElementById('loading-more-indicator');
                 if (snapshot.docs.length < currentLimit) {
-                    if(loader) loader.classList.add('hidden');
+                    if (loader) loader.classList.add('hidden');
                     if (window.historyObserver) window.historyObserver.disconnect();
                 } else {
-                    if(loader && !window.showMediaGallery) loader.classList.remove('hidden'); 
+                    if (loader && !window.showMediaGallery) loader.classList.remove('hidden');
                     setupObserver();
                 }
             });
         }
-        window.loadMore = function() {
+        window.loadMore = function () {
             if (isLoadingMore) return;
             isLoadingMore = true;
             currentLimit += 15;
@@ -901,9 +1143,9 @@
                 else window.renderHistory();
             }
         });
-        window.fetchEntries = function(notify) { if(notify) showToast("Synced with Cloud", "green"); };
-        
-        window.submitEntry = async function() {
+        window.fetchEntries = function (notify) { if (notify) showToast("Synced with Cloud", "green"); };
+
+        window.submitEntry = async function () {
             if (!currentCategory || parseFloat(currentAmount) <= 0 || !currentPerson) { showToast("Fill All Fields", "red"); return; }
             const okBtn = document.getElementById('ok-btn');
             okBtn.innerText = "⏳";
@@ -915,20 +1157,21 @@
                     amount: parseFloat(currentAmount),
                     person: currentPerson,
                     name: currentSubCategory || currentCategory, // Set default name to sub-cat or category
-                    isIndividual: isIndividualMode 
+                    isIndividual: isIndividualMode
                 };
                 if (currentSubCategory) {
                     data.subCategory = currentSubCategory;
                 }
 
                 await addDoc(expensesCol, data);
+                const wasIndividual = isIndividualMode; // Store before reset
                 currentAmount = '0'; currentPerson = null; currentSubCategory = null; isIndividualMode = false; updateDisplay(); resetPersonUI();
-                showToast(isIndividualMode ? "Individual Saved" : "Shared Saved", "green");
+                showToast(wasIndividual ? "Individual Saved" : "Shared Saved", "green");
             } catch (e) { showToast("Error", "red"); }
             finally { okBtn.innerText = "OK"; setSyncState(false); }
         };
-        
-        window.saveEdit = async function() {
+
+        window.saveEdit = async function () {
             setSyncState(true);
             const docRef = doc(db, "expenses", editingEntryId);
             try {
@@ -938,7 +1181,7 @@
                     category: document.getElementById('edit-category').value,
                     subCategory: document.getElementById('edit-subcategory').value || null,
                     person: editingPerson,
-                    isIndividual: editingIsIndividual 
+                    isIndividual: editingIsIndividual
                 });
                 window.closeEditModal();
                 showToast("Updated", "green");
@@ -950,7 +1193,7 @@
             const cat = document.getElementById('edit-category').value;
             const subSelect = document.getElementById('edit-subcategory');
             subSelect.innerHTML = '<option value="">(None)</option>';
-            
+
             const subs = SUB_CATEGORIES[cat];
             if (subs) {
                 Object.values(subs).forEach(sub => {
@@ -962,7 +1205,7 @@
             }
         };
 
-        window.executeDelete = async function() {
+        window.executeDelete = async function () {
             setSyncState(true);
             try {
                 const entryId = editingEntryId;
@@ -980,7 +1223,7 @@
             } catch (e) { console.error(e); showToast("Error Deleting", "red"); }
             finally { setSyncState(false); }
         };
-        window.toggleDiaryMode = function() {
+        window.toggleDiaryMode = function () {
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
             const modeIndicator = document.getElementById('mode-indicator');
@@ -1007,9 +1250,9 @@
         window.toggleStoryFilter = () => {
             window.showStories = !window.showStories;
             const btn = document.getElementById('btn-story-toggle');
-            if (window.showStories) { btn.innerText = "Stories: ON"; btn.classList.add('bg-pink-100', 'text-pink-500'); btn.classList.remove('bg-gray-100', 'text-gray-400'); showToast("Stories Visible", "pink"); } 
+            if (window.showStories) { btn.innerText = "Stories: ON"; btn.classList.add('bg-pink-100', 'text-pink-500'); btn.classList.remove('bg-gray-100', 'text-gray-400'); showToast("Stories Visible", "pink"); }
             else { btn.innerText = "Stories: OFF"; btn.classList.remove('bg-pink-100', 'text-pink-500'); btn.classList.add('bg-gray-100', 'text-gray-400'); showToast("Transactions Only", "green"); }
-            if(!window.showMediaGallery) renderHistory();
+            if (!window.showMediaGallery) renderHistory();
         }
         window.toggleMediaGallery = () => {
             window.showMediaGallery = !window.showMediaGallery;
@@ -1019,39 +1262,39 @@
             const loadMore = document.getElementById('loading-more-indicator');
             if (window.showMediaGallery) {
                 btn.classList.add('bg-purple-100', 'text-purple-500'); btn.classList.remove('bg-gray-100', 'text-gray-400');
-                list.classList.add('hidden'); if(loadMore) loadMore.classList.add('hidden');
+                list.classList.add('hidden'); if (loadMore) loadMore.classList.add('hidden');
                 gallery.classList.remove('hidden'); mediaGalleryLimit = 9; renderMediaGallery(); showToast("Gallery View", "purple");
             } else {
                 btn.classList.remove('bg-purple-100', 'text-purple-500'); btn.classList.add('bg-gray-100', 'text-gray-400');
-                gallery.classList.add('hidden'); list.classList.remove('hidden'); if(loadMore) loadMore.classList.remove('hidden');
+                gallery.classList.add('hidden'); list.classList.remove('hidden'); if (loadMore) loadMore.classList.remove('hidden');
                 renderHistory(); showToast("List View", "green");
             }
         }
         window.loadMoreMedia = () => { mediaGalleryLimit += 9; renderMediaGallery(); }
         window.renderMediaGallery = () => {
-             const grid = document.getElementById('media-grid');
-             const empty = document.getElementById('media-empty');
-             const loadMoreBtn = document.getElementById('media-load-more-container');
-             grid.innerHTML = '';
-             const allMedia = Object.entries(window.diaryData).map(([id, data]) => ({ id, ...data })).filter(m => m.image || m.thumbnail);
-             allMedia.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
-             const visibleMedia = allMedia.slice(0, mediaGalleryLimit);
-             if (visibleMedia.length === 0) { empty.classList.remove('hidden'); loadMoreBtn.classList.add('hidden'); } 
-             else {
-                 empty.classList.add('hidden');
-                 visibleMedia.forEach(media => {
-                     const src = media.thumbnail || media.image;
-                     const full = media.image || media.thumbnail;
-                     const expense = window.entries.find(e => e.id === media.id);
-                     const isStory = media.isStory === true || expense?.isStory === true;
-                     const div = document.createElement('div');
-                     div.className = "aspect-square relative group cursor-pointer overflow-hidden bg-gray-100";
-                     div.onclick = (ev) => window.openImageViewer(full, ev);
-                     div.innerHTML = `<img src="${src}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy"> ${isStory ? '<div class="absolute top-1 right-1 text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded shadow-md z-10 tracking-wide">STORY</div>' : ''}`;
-                     grid.appendChild(div);
-                 });
-                 if (mediaGalleryLimit < allMedia.length) loadMoreBtn.classList.remove('hidden'); else loadMoreBtn.classList.add('hidden');
-             }
+            const grid = document.getElementById('media-grid');
+            const empty = document.getElementById('media-empty');
+            const loadMoreBtn = document.getElementById('media-load-more-container');
+            grid.innerHTML = '';
+            const allMedia = Object.entries(window.diaryData).map(([id, data]) => ({ id, ...data })).filter(m => m.image || m.thumbnail);
+            allMedia.sort((a, b) => (b.updatedAt?.seconds || 0) - (a.updatedAt?.seconds || 0));
+            const visibleMedia = allMedia.slice(0, mediaGalleryLimit);
+            if (visibleMedia.length === 0) { empty.classList.remove('hidden'); loadMoreBtn.classList.add('hidden'); }
+            else {
+                empty.classList.add('hidden');
+                visibleMedia.forEach(media => {
+                    const src = media.thumbnail || media.image;
+                    const full = media.image || media.thumbnail;
+                    const expense = window.entries.find(e => e.id === media.id);
+                    const isStory = media.isStory === true || expense?.isStory === true;
+                    const div = document.createElement('div');
+                    div.className = "aspect-square relative group cursor-pointer overflow-hidden bg-gray-100";
+                    div.onclick = (ev) => window.openImageViewer(full, ev);
+                    div.innerHTML = `<img src="${src}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" loading="lazy"> ${isStory ? '<div class="absolute top-1 right-1 text-[9px] font-bold bg-pink-500 text-white px-1.5 py-0.5 rounded shadow-md z-10 tracking-wide">STORY</div>' : ''}`;
+                    grid.appendChild(div);
+                });
+                if (mediaGalleryLimit < allMedia.length) loadMoreBtn.classList.remove('hidden'); else loadMoreBtn.classList.add('hidden');
+            }
         }
         window.openStoryModal = () => {
             isCreatingStory = true; uploadingForId = null; storyPerson = null; storyImageBase64 = null; storyThumbnailBase64 = null;
@@ -1063,10 +1306,10 @@
         window.closeStoryModal = () => { document.getElementById('story-modal').classList.add('hidden'); isCreatingStory = false; }
         window.selectStoryPerson = (p) => {
             storyPerson = p;
-            document.getElementById('story-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
-            document.getElementById('story-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+            document.getElementById('story-btn-GET').className = p === 'GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+            document.getElementById('story-btn-DOM').className = p === 'DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
         }
-        window.saveStory = async function() {
+        window.saveStory = async function () {
             const text = document.getElementById('story-input').value.trim();
             if (!storyPerson) { showToast("Who is this?", "red"); return; }
             if (!text && !storyImageBase64) { showToast("Empty Story", "red"); return; }
@@ -1075,10 +1318,10 @@
                 const docRef = await addDoc(expensesCol, { dateTime: serverTimestamp(), category: 'Story', amount: 0, person: storyPerson, name: 'Diary Story', isStory: true });
                 await setDoc(doc(db, "images", docRef.id), { image: storyImageBase64, thumbnail: storyThumbnailBase64, comments: text ? [{ text: text, author: storyPerson, timestamp: Date.now() }] : [], updatedAt: serverTimestamp(), isStory: true });
                 closeStoryModal(); showToast("Story Posted!", "pink");
-            } catch(e) { console.error(e); showToast("Error Posting", "red"); }
+            } catch (e) { console.error(e); showToast("Error Posting", "red"); }
             finally { setSyncState(false); }
         }
-        window.triggerImageUpload = function(id, event, isStoryAction = false) {
+        window.triggerImageUpload = function (id, event, isStoryAction = false) {
             if (event) event.stopPropagation();
             if (isStoryAction) { isCreatingStory = true; uploadingForId = null; } else { uploadingForId = id; isCreatingStory = false; }
             const fileInput = document.getElementById('diary-image-input'); fileInput.value = ''; fileInput.click();
@@ -1092,7 +1335,7 @@
             return base64;
         }
         async function processThumbnail(file) { return await compressImage(file, 300, 0.6); }
-        window.handleImageFile = async function(input) {
+        window.handleImageFile = async function (input) {
             if (input.files && input.files[0]) {
                 const file = input.files[0]; showToast("Processing...", "blue");
                 try {
@@ -1123,7 +1366,7 @@
                 }; reader.onerror = reject;
             });
         }
-        window.openCaptionModal = function(id, event) {
+        window.openCaptionModal = function (id, event) {
             event.stopPropagation(); uploadingForId = id; document.getElementById('caption-input').value = ""; captionPerson = null;
             document.getElementById('cap-btn-GET').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
             document.getElementById('cap-btn-DOM').className = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press text-gray-400 border-gray-200";
@@ -1132,19 +1375,20 @@
         window.closeCaptionModal = () => document.getElementById('caption-modal').classList.add('hidden');
         window.selectCaptionPerson = (p) => {
             captionPerson = p;
-            document.getElementById('cap-btn-GET').className = p==='GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
-            document.getElementById('cap-btn-DOM').className = p==='DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+            document.getElementById('cap-btn-GET').className = p === 'GET' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-green-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
+            document.getElementById('cap-btn-DOM').className = p === 'DOM' ? "py-2.5 rounded-xl font-bold text-xs border-2 bg-blue-500 text-white shadow-md" : "py-2.5 rounded-xl font-bold text-xs border-2 text-gray-400 border-gray-200";
         }
-        window.saveCaption = async function() {
+        window.saveCaption = async function () {
             const text = document.getElementById('caption-input').value.trim(); if (!text || !captionPerson) { showToast("Missing Info", "red"); return; }
             setSyncState(true);
-            try { await setDoc(doc(db, "images", uploadingForId), { comments: arrayUnion({ text: text, author: captionPerson, timestamp: Date.now() }), updatedAt: serverTimestamp() }, { merge: true });
+            try {
+                await setDoc(doc(db, "images", uploadingForId), { comments: arrayUnion({ text: text, author: captionPerson, timestamp: Date.now() }), updatedAt: serverTimestamp() }, { merge: true });
                 closeCaptionModal(); showToast("Posted", "green");
-            } catch(e) { showToast("Error", "red"); } finally { setSyncState(false); }
+            } catch (e) { showToast("Error", "red"); } finally { setSyncState(false); }
         }
         window.openDiaryOptions = (id, isStory = false) => {
             uploadingForId = id;
-            if (isStory) { document.getElementById('diary-options-title').innerText = "Story Options"; document.getElementById('btn-replace-photo').classList.add('hidden'); document.getElementById('btn-delete-item').innerText = "Delete Story"; pendingAction = 'delete-story'; } 
+            if (isStory) { document.getElementById('diary-options-title').innerText = "Story Options"; document.getElementById('btn-replace-photo').classList.add('hidden'); document.getElementById('btn-delete-item').innerText = "Delete Story"; pendingAction = 'delete-story'; }
             else { document.getElementById('diary-options-title').innerText = "Photo Options"; document.getElementById('btn-replace-photo').classList.remove('hidden'); document.getElementById('btn-delete-item').innerText = "Delete Photo"; pendingAction = null; }
             document.getElementById('diary-options-modal').classList.remove('hidden');
         }
@@ -1154,34 +1398,36 @@
         window.openPasswordModal = (action) => { pendingAction = action; document.getElementById('password-input').value = ''; document.getElementById('password-modal').classList.remove('hidden'); }
         window.closePasswordModal = () => { document.getElementById('password-modal').classList.add('hidden'); pendingAction = null; }
         window.verifyPassword = async () => {
-            const pw = document.getElementById('password-input').value; const action = pendingAction; 
+            const pw = document.getElementById('password-input').value; const action = pendingAction;
             let isValid = (action === 'replace' && pw === 'yakplian') || (action === 'delete' && pw === 'yaklob') || (action === 'delete-story' && pw === 'yaklob');
-            if (isValid) { closePasswordModal(); if (action === 'replace') window.triggerImageUpload(uploadingForId); else if (action === 'delete') await performDeleteImage(); else if (action === 'delete-story') await performDeleteStory(); } 
+            if (isValid) { closePasswordModal(); if (action === 'replace') window.triggerImageUpload(uploadingForId); else if (action === 'delete') await performDeleteImage(); else if (action === 'delete-story') await performDeleteStory(); }
             else { showToast("Wrong Password", "red"); }
         }
         async function performDeleteImage() {
             setSyncState(true);
-            try { const docRef = doc(db, "images", uploadingForId); const snap = await getDoc(docRef); if (snap.exists()) { const data = snap.data(); if (!data.comments && !data.caption) await deleteDoc(docRef); else await updateDoc(docRef, { image: deleteField(), thumbnail: deleteField() }); showToast("Photo Removed", "red"); } } catch(e) { showToast("Deletion Failed", "red"); } finally { setSyncState(false); }
+            try { const docRef = doc(db, "images", uploadingForId); const snap = await getDoc(docRef); if (snap.exists()) { const data = snap.data(); if (!data.comments && !data.caption) await deleteDoc(docRef); else await updateDoc(docRef, { image: deleteField(), thumbnail: deleteField() }); showToast("Photo Removed", "red"); } } catch (e) { showToast("Deletion Failed", "red"); } finally { setSyncState(false); }
         }
         async function performDeleteStory() {
             setSyncState(true);
-            try { const entryId = uploadingForId; const expenseRef = doc(db, "expenses", entryId); const imageRef = doc(db, "images", entryId); const expSnap = await getDoc(expenseRef); const imgSnap = await getDoc(imageRef); if (expSnap.exists()) { await addDoc(trashCol, { ...expSnap.data(), originalId: entryId, deletedAt: serverTimestamp(), imageData: imgSnap.exists() ? imgSnap.data() : null }); await deleteDoc(expenseRef); if (imgSnap.exists()) await deleteDoc(imageRef); showToast("Story moved to Trash", "red"); } } catch(e) { showToast("Deletion Failed", "red"); } finally { setSyncState(false); }
+            try { const entryId = uploadingForId; const expenseRef = doc(db, "expenses", entryId); const imageRef = doc(db, "images", entryId); const expSnap = await getDoc(expenseRef); const imgSnap = await getDoc(imageRef); if (expSnap.exists()) { await addDoc(trashCol, { ...expSnap.data(), originalId: entryId, deletedAt: serverTimestamp(), imageData: imgSnap.exists() ? imgSnap.data() : null }); await deleteDoc(expenseRef); if (imgSnap.exists()) await deleteDoc(imageRef); showToast("Story moved to Trash", "red"); } } catch (e) { showToast("Deletion Failed", "red"); } finally { setSyncState(false); }
         }
         window.openRecycleBin = async () => {
             const list = document.getElementById('recycle-bin-list'); list.innerHTML = '<div class="text-center py-4"><div class="animate-spin-custom inline-block w-6 h-6 border-2 border-t-purple-600 rounded-full"></div></div>';
             document.getElementById('recycle-bin-modal').classList.remove('hidden');
-            try { const q = query(trashCol, orderBy("deletedAt", "desc")); const snap = await getDocs(q); list.innerHTML = ''; if (snap.empty) { list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">Trash is empty</div>'; return; }
+            try {
+                const q = query(trashCol, orderBy("deletedAt", "desc")); const snap = await getDocs(q); list.innerHTML = ''; if (snap.empty) { list.innerHTML = '<div class="text-center text-gray-400 text-xs mt-10">Trash is empty</div>'; return; }
                 snap.forEach(d => { const data = d.data(); const item = document.createElement('div'); item.className = "flex justify-between items-center p-3 bg-red-50 rounded-xl border border-red-100"; item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${data.name || 'Unknown'}</span><span class="text-[9px] text-gray-400">฿${data.amount} • ${data.person}</span></div><div class="flex gap-2"><button onclick="restoreItem('${d.id}')" class="p-2 bg-green-100 text-green-600 rounded-lg text-[10px] font-bold">♻️</button><button onclick="permanentDelete('${d.id}')" class="p-2 bg-red-200 text-red-600 rounded-lg text-[10px] font-bold">✕</button></div>`; list.appendChild(item); });
-            } catch(e) { console.error(e); list.innerHTML = '<div class="text-center text-red-400">Error loading trash</div>'; }
+            } catch (e) { console.error(e); list.innerHTML = '<div class="text-center text-red-400">Error loading trash</div>'; }
         }
         window.closeRecycleBin = () => document.getElementById('recycle-bin-modal').classList.add('hidden');
-        window.restoreItem = async (trashId) => { if(!confirm("Restore this item?")) return; const trashRef = doc(db, 'trash', trashId); const snap = await getDoc(trashRef); if(!snap.exists()) return; const data = snap.data(); const originalId = data.originalId; try { const expenseData = { ...data }; delete expenseData.deletedAt; delete expenseData.originalId; delete expenseData.imageData; await setDoc(doc(db, "expenses", originalId), expenseData); if (data.imageData) await setDoc(doc(db, "images", originalId), data.imageData); await deleteDoc(trashRef); openRecycleBin(); showToast("Restored", "green"); } catch(e) { console.error(e); showToast("Restore Failed", "red"); } }
-        window.permanentDelete = async (trashId) => { if(!confirm("Delete permanently? This cannot be undone.")) return; try { await deleteDoc(doc(db, 'trash', trashId)); openRecycleBin(); showToast("Permanently Deleted", "red"); } catch(e) { showToast("Error", "red"); } }
+        window.restoreItem = async (trashId) => { if (!confirm("Restore this item?")) return; const trashRef = doc(db, 'trash', trashId); const snap = await getDoc(trashRef); if (!snap.exists()) return; const data = snap.data(); const originalId = data.originalId; try { const expenseData = { ...data }; delete expenseData.deletedAt; delete expenseData.originalId; delete expenseData.imageData; await setDoc(doc(db, "expenses", originalId), expenseData); if (data.imageData) await setDoc(doc(db, "images", originalId), data.imageData); await deleteDoc(trashRef); openRecycleBin(); showToast("Restored", "green"); } catch (e) { console.error(e); showToast("Restore Failed", "red"); } }
+        window.permanentDelete = async (trashId) => { if (!confirm("Delete permanently? This cannot be undone.")) return; try { await deleteDoc(doc(db, 'trash', trashId)); openRecycleBin(); showToast("Permanently Deleted", "red"); } catch (e) { showToast("Error", "red"); } }
         window.exportJSON = async () => {
             const btn = document.querySelector('button[onclick="exportJSON()"]'); const originalText = btn.innerHTML; btn.innerHTML = "⏳ Exporting...";
-            try { const q = query(expensesCol, orderBy("dateTime", "desc")); const snap = await getDocs(q); const data = snap.docs.map(d => { const val = d.data(); if(val.dateTime && val.dateTime.toDate) val.dateTime = val.dateTime.toDate().toISOString(); return { id: d.id, ...val }; });
+            try {
+                const q = query(expensesCol, orderBy("dateTime", "desc")); const snap = await getDocs(q); const data = snap.docs.map(d => { const val = d.data(); if (val.dateTime && val.dateTime.toDate) val.dateTime = val.dateTime.toDate().toISOString(); return { id: d.id, ...val }; });
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `expense_backup_${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); showToast("Backup Downloaded", "green");
-            } catch(e) { console.error(e); showToast("Export Failed", "red"); } finally { btn.innerHTML = originalText; }
+            } catch (e) { console.error(e); showToast("Export Failed", "red"); } finally { btn.innerHTML = originalText; }
         }
         window.showCategoryDetails = (category) => {
             const start = document.getElementById('start-date').value; const end = document.getElementById('end-date').value; const scope = currentDashboardScope;
@@ -1190,10 +1436,10 @@
             let filtered = allAvailableData.filter(e => e.category === category);
             if (start) { const [sy, sm, sd] = start.split('-').map(Number); filtered = filtered.filter(e => e.dateTime >= new Date(sy, sm - 1, sd, 0, 0, 0, 0)); }
             if (end) { const [ey, em, ed] = end.split('-').map(Number); filtered = filtered.filter(e => e.dateTime <= new Date(ey, em - 1, ed, 23, 59, 59, 999)); }
-            
+
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-            
+
             filtered.sort((a, b) => b.dateTime - a.dateTime);
             const list = document.getElementById('cat-modal-list'); list.innerHTML = ''; document.getElementById('cat-modal-title').innerText = category; document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
             let total = 0;
@@ -1202,59 +1448,59 @@
                 filtered.forEach(e => {
                     total += parseFloat(e.amount); const d = e.dateTime; const isPrivate = e.isIndividual === true; let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
                     const item = document.createElement('div'); item.className = "flex justify-between items-center p-3 bg-gray-50/50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all";
-                    
+
                     // Display sub-category if exists
                     const displayName = e.name; // Keep name as is
                     const displaySub = e.subCategory ? `<span class="text-[8px] text-gray-400 ml-1">(${e.subCategory})</span>` : '';
 
-                    item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${displayName}${displaySub}</span><span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div><div class="text-right flex-shrink-0"><div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div><span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`; list.appendChild(item);
+                    item.innerHTML = `<div class="flex flex-col min-w-0 pr-2"><span class="text-xs font-bold text-gray-700 truncate">${displayName}${displaySub}</span><span class="text-[9px] text-gray-400 font-medium">${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} • ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div><div class="text-right flex-shrink-0"><div class="font-bold text-sm text-gray-800">฿${e.amount.toLocaleString()}</div><span class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`; list.appendChild(item);
                 });
             }
             document.getElementById('cat-modal-total').innerText = '฿' + total.toLocaleString(); document.getElementById('category-modal').classList.remove('hidden');
         };
         window.closeCategoryModal = () => document.getElementById('category-modal').classList.add('hidden');
-        window.openImageViewer = function(src, event) { event.stopPropagation(); document.getElementById('full-image').src = src; const v = document.getElementById('image-viewer'); v.classList.remove('hidden'); v.classList.add('image-modal-enter'); setTimeout(() => v.classList.add('image-modal-enter-active'), 10); }
-        window.closeImageViewer = function() { const v = document.getElementById('image-viewer'); v.classList.remove('image-modal-enter-active'); v.classList.add('image-modal-exit-active'); setTimeout(() => { v.classList.add('hidden'); v.classList.remove('image-modal-exit-active'); }, 200); }
+        window.openImageViewer = function (src, event) { event.stopPropagation(); document.getElementById('full-image').src = src; const v = document.getElementById('image-viewer'); v.classList.remove('hidden'); v.classList.add('image-modal-enter'); setTimeout(() => v.classList.add('image-modal-enter-active'), 10); }
+        window.closeImageViewer = function () { const v = document.getElementById('image-viewer'); v.classList.remove('image-modal-enter-active'); v.classList.add('image-modal-exit-active'); setTimeout(() => { v.classList.add('hidden'); v.classList.remove('image-modal-exit-active'); }, 200); }
         window.pressNum = (n) => { if (currentAmount === '0' && n !== '.') currentAmount = n; else if (n === '.' && currentAmount.includes('.')) return; else if (currentAmount.length < 10) currentAmount += n; updateDisplay(); }
         window.clearEntry = () => { currentAmount = '0'; updateDisplay(); }
-        window.selectCategory = (cat, sub = null) => { 
-            currentCategory = cat; 
+        window.selectCategory = (cat, sub = null) => {
+            currentCategory = cat;
             currentSubCategory = sub;
-            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); 
-            document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100'); 
-            updateDisplay(); 
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100'));
+            document.getElementById(`btn-${cat}`).classList.add('border-gray-900', 'ring-2', 'ring-gray-100');
+            updateDisplay();
         }
-        window.selectPerson = (p) => { 
-            if (currentPerson === p) isIndividualMode = !isIndividualMode; 
-            else { currentPerson = p; isIndividualMode = false; } 
-            resetPersonUI(); 
-            const btn = document.getElementById(`btn-${p}`); 
-            if (p === 'GET') 
-                btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all shadow-md"; 
-            else 
-                btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all shadow-md"; 
-            updateDisplay(); 
+        window.selectPerson = (p) => {
+            if (currentPerson === p) isIndividualMode = !isIndividualMode;
+            else { currentPerson = p; isIndividualMode = false; }
+            resetPersonUI();
+            const btn = document.getElementById(`btn-${p}`);
+            if (p === 'GET')
+                btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-green-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-green-500 text-white font-bold border-2 border-transparent text-xl transition-all shadow-md";
+            else
+                btn.className = isIndividualMode ? "person-btn btn-press h-[25%] rounded-2xl bg-blue-800 text-white font-bold border-2 border-transparent text-xl transition-all shadow-inner" : "person-btn btn-press h-[25%] rounded-2xl bg-blue-500 text-white font-bold border-2 border-transparent text-xl transition-all shadow-md";
+            updateDisplay();
         }
         window.resetPersonUI = () => { document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; }
         window.selectEditPerson = (p) => { if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; } updateEditPersonUI(); }
-        window.updateEditPersonUI = () => { 
-            const btnGet = document.getElementById('edit-btn-GET'); 
-            const btnDom = document.getElementById('edit-btn-DOM'); 
-            const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; 
-            btnGet.className = baseClass; 
-            btnDom.className = baseClass; 
-            if (editingPerson === 'GET') { 
+        window.updateEditPersonUI = () => {
+            const btnGet = document.getElementById('edit-btn-GET');
+            const btnDom = document.getElementById('edit-btn-DOM');
+            const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all";
+            btnGet.className = baseClass;
+            btnDom.className = baseClass;
+            if (editingPerson === 'GET') {
                 // Using bg-green-500 for shared mode so white text is visible
-                btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-500 text-white border-transparent`; 
-            } else if (editingPerson === 'DOM') { 
+                btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-500 text-white border-transparent`;
+            } else if (editingPerson === 'DOM') {
                 // Using bg-blue-500 for shared mode so white text is visible
-                btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-500 text-white border-transparent`; 
-            } 
+                btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-500 text-white border-transparent`;
+            }
         }
-        
-        function updateDisplay() { 
-            document.getElementById('display-amount').innerText = currentAmount; 
-            
+
+        function updateDisplay() {
+            document.getElementById('display-amount').innerText = currentAmount;
+
             // Format Category > SubCategory
             let catHtml = currentCategory || "Select Category";
             if (currentCategory && currentSubCategory) {
@@ -1262,42 +1508,42 @@
             } else if (currentCategory) {
                 catHtml = currentCategory;
             }
-            document.getElementById('display-category').innerHTML = catHtml; 
-            
-            const dp = document.getElementById('display-person'); const dt = document.getElementById('display-type'); 
-            if (currentPerson) { 
-                dp.innerText = currentPerson; 
-                let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500'); 
-                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass} shadow-sm`; 
-                dp.classList.remove('hidden'); 
-                
-                dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED"; 
+            document.getElementById('display-category').innerHTML = catHtml;
+
+            const dp = document.getElementById('display-person'); const dt = document.getElementById('display-type');
+            if (currentPerson) {
+                dp.innerText = currentPerson;
+                let bgClass = (currentPerson === 'GET') ? (isIndividualMode ? 'bg-green-800' : 'bg-green-500') : (isIndividualMode ? 'bg-blue-800' : 'bg-blue-500');
+                dp.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase text-white ${bgClass} shadow-sm`;
+                dp.classList.remove('hidden');
+
+                dt.innerText = isIndividualMode ? "PRIVATE" : "SHARED";
                 // Styled Tag Bars
                 let typeStyle = isIndividualMode ? "bg-purple-500" : "bg-orange-400";
-                dt.className = `px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest text-white ml-2 shadow-sm ${typeStyle}`; 
-                dt.classList.remove('hidden'); 
-            } else { 
-                dp.classList.add('hidden'); 
-                dt.classList.add('hidden'); 
-            } 
+                dt.className = `px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-widest text-white ml-2 shadow-sm ${typeStyle}`;
+                dt.classList.remove('hidden');
+            } else {
+                dp.classList.add('hidden');
+                dt.classList.add('hidden');
+            }
         }
-        
-        window.openEditModal = (id) => { 
-            const e = window.entries.find(x => x.id == id); 
-            editingEntryId = id; 
-            document.getElementById('edit-name').value = e.name; 
-            document.getElementById('edit-amount').value = e.amount; 
-            document.getElementById('edit-category').value = e.category; 
-            
+
+        window.openEditModal = (id) => {
+            const e = window.entries.find(x => x.id == id);
+            editingEntryId = id;
+            document.getElementById('edit-name').value = e.name;
+            document.getElementById('edit-amount').value = e.amount;
+            document.getElementById('edit-category').value = e.category;
+
             // Populate Subcategories first
             handleEditCategoryChange();
             // Set Value
             document.getElementById('edit-subcategory').value = e.subCategory || "";
 
-            editingPerson = e.person; 
-            editingIsIndividual = e.isIndividual || false; 
-            updateEditPersonUI(); 
-            document.getElementById('edit-modal').classList.remove('hidden'); 
+            editingPerson = e.person;
+            editingIsIndividual = e.isIndividual || false;
+            updateEditPersonUI();
+            document.getElementById('edit-modal').classList.remove('hidden');
         }
         window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
         window.confirmDelete = () => { document.getElementById('edit-modal').classList.add('hidden'); document.getElementById('delete-confirm-modal').classList.remove('hidden'); }
@@ -1315,42 +1561,42 @@
                 const d = e.dateTime; const card = document.createElement('div'); const diaryEntry = window.diaryData[e.id]; const isPrivate = e.isIndividual === true; const isStory = e.isStory === true;
                 let badgeClass = (e.person === 'GET') ? (isPrivate ? 'bg-green-800 text-white' : 'bg-green-50 text-green-600') : (isPrivate ? 'bg-blue-800 text-white' : 'bg-blue-50 text-blue-600');
                 if (isStory) badgeClass = 'bg-pink-100 text-pink-600';
-                const isLatestOfDay = d.toDateString() !== (idx > 0 ? window.entries[idx-1].dateTime.toDateString() : null); const isEarliestOfDay = d.toDateString() !== (idx < window.entries.length - 1 ? window.entries[idx+1].dateTime.toDateString() : null);
+                const isLatestOfDay = d.toDateString() !== (idx > 0 ? window.entries[idx - 1].dateTime.toDateString() : null); const isEarliestOfDay = d.toDateString() !== (idx < window.entries.length - 1 ? window.entries[idx + 1].dateTime.toDateString() : null);
                 let cardBg = "bg-white"; let textCol = "text-gray-400";
-                if (d.toDateString() === new Date().toDateString()) { cardBg = "bg-orange-300 border-orange-300"; textCol = "text-white"; if (isEarliestOfDay) { cardBg = "bg-orange-500 border-orange-500"; textCol = "text-white"; } } 
+                if (d.toDateString() === new Date().toDateString()) { cardBg = "bg-orange-300 border-orange-300"; textCol = "text-white"; if (isEarliestOfDay) { cardBg = "bg-orange-500 border-orange-500"; textCol = "text-white"; } }
                 else { if (isLatestOfDay) cardBg = "bg-gray-100"; if (isEarliestOfDay) cardBg = "bg-green-50"; }
                 if (window.isDiaryMode) {
                     card.className = `p-3 ${isStory ? 'bg-pink-50 border-pink-200' : cardBg} rounded-2xl border ${isStory ? 'border-2' : 'border-pink-100'} shadow-sm flex flex-col gap-3 transition-all`;
                     card.oncontextmenu = (ev) => ev.preventDefault();
                     let pressTimer; const startPress = () => { pressTimer = setTimeout(() => window.openDiaryOptions(e.id, isStory), 600); }; const cancelPress = () => clearTimeout(pressTimer);
                     card.onmousedown = startPress; card.onmouseup = cancelPress; card.onmouseleave = cancelPress; card.ontouchstart = startPress; card.ontouchend = cancelPress; card.ontouchmove = cancelPress;
-                    let headerHtml = `<div class="flex items-center justify-between"><div class="flex items-center gap-2 overflow-hidden"><div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div><div class="flex flex-col min-w-0"><span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${isStory ? 'Diary Story' : e.name}</span><span class="text-[8px] font-bold ${textCol} uppercase tracking-widest leading-tight">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div></div><span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`;
+                    let headerHtml = `<div class="flex items-center justify-between"><div class="flex items-center gap-2 overflow-hidden"><div class="w-7 h-7 shrink-0 rounded-full flex items-center justify-center bg-gray-50 text-gray-400">${getCatIcon(e.category, "w-4 h-4")}</div><div class="flex flex-col min-w-0"><span class="font-bold text-[11px] truncate text-gray-800 leading-tight">${isStory ? 'Diary Story' : e.name}</span><span class="text-[8px] font-bold ${textCol} uppercase tracking-widest leading-tight">${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} • ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div></div><span class="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</span></div>`;
                     let commentsHtml = '';
                     if (diaryEntry?.caption) commentsHtml += `<div class="text-center text-xs text-gray-500 italic mb-1 py-1 border-b border-gray-100">"${diaryEntry.caption}"</div>`;
                     if (diaryEntry?.comments && Array.isArray(diaryEntry.comments)) { commentsHtml += `<div class="flex flex-col gap-2 w-full mt-1 mb-1">`; diaryEntry.comments.forEach(c => { const isGet = c.author === 'GET'; commentsHtml += `<div class="${isGet ? 'self-start bg-green-50 text-green-800 rounded-br-xl' : 'self-end bg-blue-50 text-blue-800 rounded-bl-xl'} px-3 py-2 rounded-t-xl text-xs max-w-[85%]"><span class="font-bold text-[8px] block mb-0.5 opacity-50 uppercase">${c.author}</span>${c.text}</div>`; }); commentsHtml += `</div>`; } else if (!diaryEntry?.caption && !isStory) commentsHtml = `<p class="text-[10px] ${textCol === 'text-white' ? 'text-white/70' : 'text-gray-300'} italic text-center py-1">No notes yet...</p>`;
                     let mediaHtml = '';
-                    if (diaryEntry?.thumbnail || diaryEntry?.image) { mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${diaryEntry.image || diaryEntry.thumbnail}', event)"><img src="${diaryEntry.thumbnail || diaryEntry.image}" class="w-full h-40 object-cover rounded-xl border border-gray-100 shadow-sm"><div class="absolute inset-0 bg-black/0 rounded-xl flex items-center justify-center"><span class="opacity-0 group-hover:opacity-100 text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-lg">View</span></div><button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button></div>`; } 
+                    if (diaryEntry?.thumbnail || diaryEntry?.image) { mediaHtml = `<div class="relative group cursor-pointer" onclick="openImageViewer('${diaryEntry.image || diaryEntry.thumbnail}', event)"><img src="${diaryEntry.thumbnail || diaryEntry.image}" class="w-full h-40 object-cover rounded-xl border border-gray-100 shadow-sm"><div class="absolute inset-0 bg-black/0 rounded-xl flex items-center justify-center"><span class="opacity-0 group-hover:opacity-100 text-white font-bold text-[10px] bg-black/50 px-2 py-1 rounded-lg">View</span></div><button onclick="openCaptionModal('${e.id}', event)" class="absolute bottom-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button></div>`; }
                     else { mediaHtml = `<div class="flex gap-2 mt-1"><button onclick="triggerImageUpload('${e.id}', event)" class="flex-1 py-3 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center gap-2 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button><button onclick="openCaptionModal('${e.id}', event)" class="w-12 border-2 border-dashed ${textCol === 'text-white' ? 'border-white/50 text-white hover:text-white' : 'border-gray-200 text-gray-400 hover:text-pink-500'} rounded-xl flex items-center justify-center transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg></button></div>`; }
                     card.innerHTML = headerHtml + commentsHtml + mediaHtml;
                 } else {
                     if (isStory) return; card.className = `p-3.5 ${cardBg} rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center btn-press`; card.onclick = () => window.openEditModal(e.id);
                     const hasDiary = diaryEntry && (diaryEntry.image || diaryEntry.caption || (diaryEntry.comments?.length > 0)); const diaryIcon = hasDiary ? `<span class="ml-1 text-[8px] bg-pink-100 text-pink-500 px-1 rounded">❤️</span>` : '';
-                    
+
                     // Display Name (User Edited)
                     const displayName = e.name;
                     // Sub-category tag logic (shows if sub exists)
                     const displaySub = e.subCategory ? `<span class="text-[8px] opacity-70 ml-1">(${e.subCategory})</span>` : '';
 
-                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}">${displayName}${displaySub} ${diaryIcon}</div><div class="text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}">${d.toLocaleDateString([], {month:'short', day:'numeric'})} • ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div></div></div><div class="text-right"><div class="font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
+                    card.innerHTML = `<div class="flex items-center gap-3"><div class="w-9 h-9 rounded-xl flex items-center justify-center ${getCatStyle(e.category)}">${getCatIcon(e.category)}</div><div><div class="font-semibold text-sm flex items-center ${textCol === 'text-white' ? 'text-white' : ''}">${displayName}${displaySub} ${diaryIcon}</div><div class="text-[9px] font-bold uppercase ${textCol === 'text-white' ? 'text-white/80' : 'text-gray-300'}">${d.toLocaleDateString([], { month: 'short', day: 'numeric' })} • ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div></div></div><div class="text-right"><div class="font-bold text-[15px] ${textCol === 'text-white' ? 'text-white' : ''}">฿${e.amount}</div><div class="text-[7px] font-bold uppercase px-1.5 py-0.5 rounded-md ${badgeClass}">${e.person}${isPrivate ? '*' : ''}</div></div>`;
                 }
                 list.appendChild(card);
-                if (miniCount < 3 && !isStory) { 
+                if (miniCount < 3 && !isStory) {
                     const b = document.createElement('div');
                     const miniBg = e.person === 'GET' ? 'bg-green-100 border-green-200 text-green-800' : 'bg-blue-100 border-blue-200 text-blue-800';
-                    b.className = `px-2.5 py-1 rounded-lg border ${miniBg} flex items-center gap-1.5 shadow-sm cursor-pointer`; 
-                    b.onclick = () => window.openEditModal(e.id); 
-                    b.innerHTML = `${getCatIcon(e.category, "w-3 h-3 opacity-60")} <span class="text-[9px] font-bold">฿${e.amount}</span>`; 
-                    mini.appendChild(b); 
+                    b.className = `px-2.5 py-1 rounded-lg border ${miniBg} flex items-center gap-1.5 shadow-sm cursor-pointer`;
+                    b.onclick = () => window.openEditModal(e.id);
+                    b.innerHTML = `${getCatIcon(e.category, "w-3 h-3 opacity-60")} <span class="text-[9px] font-bold">฿${e.amount}</span>`;
+                    mini.appendChild(b);
                     miniCount++;
                 }
             });
@@ -1370,67 +1616,67 @@
                 document.getElementById('dashboard-standard-view').classList.remove('hidden');
                 document.getElementById('dashboard-calendar-view').classList.add('hidden');
             }
-            let filtered = [...window.dashboardEntries].filter(e => !e.isStory); 
+            let filtered = [...window.dashboardEntries].filter(e => !e.isStory);
             const scope = currentDashboardScope;
-            
+
             if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
             else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
-            
+
             let g = 0, d = 0, total = 0; const cats = {}; const dailyTotals = {};
             filtered.forEach(e => {
                 const amt = parseFloat(e.amount); total += amt;
                 if (e.person === 'GET') g += amt; else d += amt;
-                
+
                 // --- Group Logic ---
                 if (!cats[e.category]) cats[e.category] = { total: 0, subs: {} };
                 cats[e.category].total += amt;
-                
+
                 const subKey = e.subCategory || 'Other';
                 if (!cats[e.category].subs[subKey]) cats[e.category].subs[subKey] = 0;
                 cats[e.category].subs[subKey] += amt;
-                
+
                 const year = e.dateTime.getFullYear(); const month = String(e.dateTime.getMonth() + 1).padStart(2, '0'); const day = String(e.dateTime.getDate()).padStart(2, '0'); const dateKey = `${year}-${month}-${day}`;
                 if (!dailyTotals[dateKey]) dailyTotals[dateKey] = { GET: 0, DOM: 0, dateObj: e.dateTime }; dailyTotals[dateKey][e.person] += amt;
             });
             document.getElementById('chart-get-total').innerText = g.toLocaleString(); document.getElementById('chart-dom-total').innerText = d.toLocaleString();
             document.getElementById('chart-bar-get').style.width = (total > 0 ? (g / total) * 100 : 0) + '%'; document.getElementById('chart-bar-dom').style.width = (total > 0 ? (d / total) * 100 : 0) + '%';
-            
+
             const breakdown = document.getElementById('category-breakdown');
-            
+
             // Toggle Button HTML
             const toggleHtml = `<button onclick="toggleDashboardSubCats()" class="text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${dashboardSubCatMode ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}">${dashboardSubCatMode ? 'Collapse Sub-cats' : 'Expand Sub-cats'}</button>`;
-            
+
             breakdown.innerHTML = `<div class="flex justify-between items-center mb-4"><h4 class="font-bold text-gray-400 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap)</span></h4>${toggleHtml}</div>`;
-            
+
             Object.keys(cats).forEach(catName => {
                 const catData = cats[catName];
-                const p = (catData.total / total) * 100; 
-                
+                const p = (catData.total / total) * 100;
+
                 // Render Category Container
                 const container = document.createElement('div');
                 container.className = "mb-3";
-                
+
                 // Main Category Bar
-                const r = document.createElement('div'); 
+                const r = document.createElement('div');
                 r.className = "cursor-pointer hover:bg-gray-50 rounded-xl p-2 transition-all select-none group";
-                let lastCatTap = 0; 
-                r.addEventListener('click', (e) => { 
-                    const now = Date.now(); 
-                    if (now - lastCatTap < 500) { e.preventDefault(); showCategoryDetails(catName); lastCatTap = 0; } 
-                    else { lastCatTap = now; } 
+                let lastCatTap = 0;
+                r.addEventListener('click', (e) => {
+                    const now = Date.now();
+                    if (now - lastCatTap < 500) { e.preventDefault(); showCategoryDetails(catName); lastCatTap = 0; }
+                    else { lastCatTap = now; }
                 });
-                
-                r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${catName}</span><span>฿${catData.total.toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`; 
+
+                r.innerHTML = `<div class="flex justify-between text-[10px] font-bold text-gray-700 mb-1.5"><span>${catName}</span><span>฿${catData.total.toLocaleString()} (${p.toFixed(0)}%)</span></div><div class="w-full bg-gray-50 h-2 rounded-full overflow-hidden"><div class="bg-purple-600 h-full group-hover:bg-purple-500 transition-colors" style="width: ${p}%"></div></div>`;
                 container.appendChild(r);
 
                 // Render Sub-categories if Mode is ON
                 if (dashboardSubCatMode) {
                     const subContainer = document.createElement('div');
                     subContainer.className = "pl-2 pr-2 mt-2 space-y-2 border-l-2 border-dashed border-gray-100 ml-4 mb-4";
-                    
+
                     // Sort subs by amount desc
-                    const sortedSubs = Object.entries(catData.subs).sort((a,b) => b[1] - a[1]);
-                    
+                    const sortedSubs = Object.entries(catData.subs).sort((a, b) => b[1] - a[1]);
+
                     sortedSubs.forEach(([subName, subAmt]) => {
                         const subPct = (subAmt / catData.total) * 100; // % of Category
                         const subRow = document.createElement('div');
@@ -1448,13 +1694,13 @@
                     });
                     container.appendChild(subContainer);
                 }
-                
+
                 breakdown.appendChild(container);
             });
-            
+
             const chartContainer = document.getElementById('daily-chart-container'); const sortedDates = Object.keys(dailyTotals).sort(); const maxDailyTotal = sortedDates.reduce((max, date) => Math.max(max, dailyTotals[date].GET + dailyTotals[date].DOM), 0);
             let chartHtml = '';
-            if (sortedDates.length === 0) { chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>'; } 
+            if (sortedDates.length === 0) { chartHtml = '<div class="text-center text-gray-300 text-xs py-10">No data for this period</div>'; }
             else {
                 chartHtml = '<div class="flex items-end gap-3 h-64 overflow-x-auto pb-2 pt-6 px-2 no-scrollbar w-full">';
                 sortedDates.forEach(date => {
@@ -1476,11 +1722,11 @@
                 if (e.isStory) return;
                 const scope = currentDashboardScope;
                 let include = false;
-                
+
                 if (scope === 'ALL') include = true;
                 else if (scope === 'shared' && e.isIndividual !== true) include = true;
                 else if (scope !== 'shared' && e.isIndividual === true && e.person === scope) include = true;
-                
+
                 if (e.dateTime.getMonth() === month && e.dateTime.getFullYear() === year && include) {
                     const d = e.dateTime.getDate();
                     if (!monthData[d]) monthData[d] = { GET: 0, DOM: 0, total: 0 };
@@ -1495,7 +1741,7 @@
                 grid.innerHTML += `<div class="aspect-square bg-gray-50 rounded-lg flex flex-col justify-between p-1 relative overflow-hidden border border-transparent hover:border-violet-200 transition-colors"><span class="text-[9px] font-bold text-gray-400 z-10">${day}</span>${data.total > 0 ? `<div class="flex flex-col-reverse w-full h-1/2 rounded-sm overflow-hidden opacity-80"><div class="bg-green-400 w-full transition-all" style="height: ${getH}%"></div><div class="bg-blue-400 w-full transition-all" style="height: ${domH}%"></div></div><span class="text-[7px] font-bold text-gray-600 text-center -mt-1 z-10">฿${Math.round(data.total).toLocaleString()}</span>` : ''}</div>`;
             }
         };
-        window.resetToMonthFilter = () => { const now = new Date(); const y = now.getFullYear(); const m = now.getMonth(); const lastDay = new Date(Date.UTC(y, m + 1, 0)); document.getElementById('start-date').value = `${y}-${String(m + 1).padStart(2, '0')}-01`; document.getElementById('end-date').value = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`; setupDashboardListener(); };
+        window.resetToMonthFilter = () => { const now = new Date(); const y = now.getFullYear(); const m = now.getMonth(); const lastDay = new Date(y, m + 1, 0); document.getElementById('start-date').value = `${y}-${String(m + 1).padStart(2, '0')}-01`; document.getElementById('end-date').value = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`; setupDashboardListener(); };
         window.updateFilterButtons = () => {
             const btnMonth = document.getElementById('btn-filter-month'); const btnToday = document.getElementById('btn-filter-today'); const btnYesterday = document.getElementById('btn-filter-yesterday');
             const baseClass = "text-[10px] font-bold uppercase tracking-widest transition-colors"; const activeClass = `${baseClass} text-purple-600`; const inactiveClass = `${baseClass} text-gray-400 hover:text-purple-600`;
@@ -1504,8 +1750,8 @@
         };
         window.setFilter = (type) => {
             const startInput = document.getElementById('start-date'); const endInput = document.getElementById('end-date'); const now = new Date(); activeDateFilter = type;
-            if (type === 'month') { resetToMonthFilter(); showToast("Showing Current Month", "purple"); updateFilterButtons(); return; } 
-            else if (type === 'today') { const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; startInput.value = todayStr; endInput.value = todayStr; showToast("Showing Today", "purple"); } 
+            if (type === 'month') { resetToMonthFilter(); showToast("Showing Current Month", "purple"); updateFilterButtons(); return; }
+            else if (type === 'today') { const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; startInput.value = todayStr; endInput.value = todayStr; showToast("Showing Today", "purple"); }
             else if (type === 'yesterday') { const yest = new Date(now); yest.setDate(now.getDate() - 1); const yestStr = `${yest.getFullYear()}-${String(yest.getMonth() + 1).padStart(2, '0')}-${String(yest.getDate()).padStart(2, '0')}`; startInput.value = yestStr; endInput.value = yestStr; showToast("Showing Yesterday", "purple"); }
             updateFilterButtons(); setupDashboardListener();
         }
@@ -1516,17 +1762,18 @@
         window.handleHistoryTabClick = () => { const now = Date.now(); if (now - lastHistoryTap < 300) toggleDiaryMode(); else switchView('history'); lastHistoryTap = now; }
         window.switchView = (view) => {
             const histCont = document.getElementById('history-container'); const dashCont = document.getElementById('dashboard-container'); const sideSec = document.getElementById('side-section'); const inputSec = document.getElementById('input-section'); document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
-            if (window.innerWidth < 768) { if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); } else { inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); } } } 
+            if (window.innerWidth < 768) { if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); } else { inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); } } }
             else { inputSec.classList.remove('mobile-hidden'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); } }
         }
         window.handleExpenseTabClick = () => { const now = Date.now(); if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } else switchView('input'); lastExpenseClick = now; }
         window.resetExpensePage = () => { currentAmount = '0'; currentCategory = null; currentSubCategory = null; currentPerson = null; isIndividualMode = false; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); resetPersonUI(); updateDisplay(); }
-        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = {'green':'#10B981', 'red':'#EF4444', 'blue':'#3B82F6', 'pink':'#EC4899', 'purple':'#8B5CF6'}[c] || '#6366f1'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
+        function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = { 'green': '#10B981', 'red': '#EF4444', 'blue': '#3B82F6', 'pink': '#EC4899', 'purple': '#8B5CF6' }[c] || '#6366f1'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
         const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        window.onload = () => { window.resetToMonthFilter(); document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food','Grocery','Trip','Etc.'][i], "w-6 h-6")); if(window.innerWidth < 768) switchView('input'); else switchView('history'); if ('serviceWorker' in navigator) { try { const swCode = "self.addEventListener('fetch', function(event) {});"; const blob = new Blob([swCode], {type: 'text/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message)); } catch(e) { console.warn(e); } } };
-        window.addEventListener('resize', () => { if(window.innerWidth < 768) switchView('input'); });
+        window.onload = () => { window.resetToMonthFilter(); document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food', 'Grocery', 'Trip', 'Etc.'][i], "w-6 h-6")); if (window.innerWidth < 768) switchView('input'); else switchView('history'); if ('serviceWorker' in navigator) { try { const swCode = "self.addEventListener('fetch', function(event) {});"; const blob = new Blob([swCode], { type: 'text/javascript' }); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message)); } catch (e) { console.warn(e); } } };
+        window.addEventListener('resize', () => { if (window.innerWidth < 768) switchView('input'); });
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
         window.triggerPWAInstall = async () => { }
     </script>
 </body>
+
 </html>
