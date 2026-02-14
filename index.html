@@ -633,8 +633,8 @@
                 subBtn.classList.add('ring-2', 'ring-white', 'shadow-2xl');
                 // Haptic feedback on enter
                 if (navigator.vibrate && subBtn.dataset.vibrated !== "true") {
-                     navigator.vibrate(10);
-                     subBtn.dataset.vibrated = "true";
+                      navigator.vibrate(10);
+                      subBtn.dataset.vibrated = "true";
                 }
             } else {
                 // Reset vibration flag on all if not hovering
@@ -660,8 +660,6 @@
                 // just passed context. simpler: rely on the fact that if pressTimer exists, 
                 // it was a short press on the original button. 
                 // We need to re-find the category. 
-                // Actually, the easiest way is to let the click bubble? No, we are handling it here.
-                // We need to know the category. 
                 // IMPROVEMENT: We can store the pending category in handleButtonPress
                 if (window.pendingCategory) {
                     selectCategory(window.pendingCategory);
@@ -1239,7 +1237,20 @@
         }
         window.resetPersonUI = () => { document.getElementById('btn-GET').className = "person-btn btn-press h-[25%] rounded-2xl bg-green-50 text-green-700 font-bold border-2 border-transparent text-xl transition-all"; document.getElementById('btn-DOM').className = "person-btn btn-press h-[25%] rounded-2xl bg-blue-50 text-blue-700 font-bold border-2 border-transparent text-xl transition-all"; }
         window.selectEditPerson = (p) => { if (editingPerson === p) { editingIsIndividual = !editingIsIndividual; } else { editingPerson = p; editingIsIndividual = false; } updateEditPersonUI(); }
-        window.updateEditPersonUI = () => { const btnGet = document.getElementById('edit-btn-GET'); const btnDom = document.getElementById('edit-btn-DOM'); const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; btnGet.className = baseClass; btnDom.className = baseClass; if (editingPerson === 'GET') { btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-50 text-white border-transparent`; } else if (editingPerson === 'DOM') { btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-50 text-white border-transparent`; } }
+        window.updateEditPersonUI = () => { 
+            const btnGet = document.getElementById('edit-btn-GET'); 
+            const btnDom = document.getElementById('edit-btn-DOM'); 
+            const baseClass = "py-2.5 rounded-xl font-bold text-xs border-2 btn-press transition-all"; 
+            btnGet.className = baseClass; 
+            btnDom.className = baseClass; 
+            if (editingPerson === 'GET') { 
+                // Using bg-green-500 for shared mode so white text is visible
+                btnGet.className = editingIsIndividual ? `${baseClass} bg-green-800 text-white shadow-inner border-transparent` : `${baseClass} bg-green-500 text-white border-transparent`; 
+            } else if (editingPerson === 'DOM') { 
+                // Using bg-blue-500 for shared mode so white text is visible
+                btnDom.className = editingIsIndividual ? `${baseClass} bg-blue-800 text-white shadow-inner border-transparent` : `${baseClass} bg-blue-500 text-white border-transparent`; 
+            } 
+        }
         
         function updateDisplay() { 
             document.getElementById('display-amount').innerText = currentAmount; 
