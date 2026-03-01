@@ -510,14 +510,37 @@
     <div id="edit-modal"
         class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[100] hidden p-6 backdrop-blur-sm">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md">
-            <h3 class="text-lg font-bold mb-4 text-gray-800 tracking-tight">Modify Record</h3>
+            <!-- Header: title + clock button -->
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 tracking-tight">Modify Record</h3>
+                <button onclick="toggleEditTime()" id="edit-time-btn" title="Change transaction time"
+                    class="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-500 hover:bg-indigo-100 transition-colors btn-press">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                </button>
+            </div>
+            <!-- Hidden time editor row -->
+            <div id="edit-time-row" class="hidden mb-4">
+                <label class="text-[9px] font-bold text-indigo-400 uppercase">Transaction Date &amp; Time</label>
+                <input type="datetime-local" id="edit-time"
+                    class="w-full mt-1 p-3 bg-indigo-50 rounded-xl outline-none text-sm text-indigo-700 font-medium">
+            </div>
             <div class="space-y-4">
                 <div>
                     <label class="text-[9px] font-bold text-gray-400 uppercase">Description</label>
                     <div class="relative mt-1">
-                        <input type="text" id="edit-name" class="w-full p-3 bg-gray-50 rounded-xl outline-none pr-10">
+                        <input type="text" id="edit-name" class="w-full p-3 bg-gray-50 rounded-xl outline-none pr-14">
                         <button onclick="document.getElementById('edit-name').value = ''"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">✕</button>
+                            class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 text-red-400 hover:bg-red-200 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2.5">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
@@ -791,7 +814,8 @@
 
         let calendarDate = new Date();
         let activeDateFilter = 'month';
-        let currentLimit = 15;
+        let currentLimit = 30;
+        let historyDateCutoff = true; // start with 45-day cutoff for fast load
         let unsubscribe = null;
         let dashboardUnsubscribe = null;
         let isLoadingMore = false;
@@ -1098,7 +1122,17 @@
         }
         function setupRealtimeListener() {
             if (unsubscribe) unsubscribe();
-            const q = query(expensesCol, orderBy("dateTime", "desc"), limit(currentLimit));
+            // For the initial load, restrict to last 45 days for a much faster query.
+            // After user taps "load more", historyDateCutoff is cleared to allow older items.
+            let q;
+            if (historyDateCutoff) {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - 45);
+                cutoff.setHours(0, 0, 0, 0);
+                q = query(expensesCol, where("dateTime", ">=", cutoff), orderBy("dateTime", "desc"), limit(currentLimit));
+            } else {
+                q = query(expensesCol, orderBy("dateTime", "desc"), limit(currentLimit));
+            }
             unsubscribe = onSnapshot(q, (snapshot) => {
                 window.entries = snapshot.docs.map(doc => {
                     const data = doc.data();
@@ -1121,7 +1155,8 @@
         window.loadMore = function () {
             if (isLoadingMore) return;
             isLoadingMore = true;
-            currentLimit += 15;
+            currentLimit += 30;
+            historyDateCutoff = false; // drop the date cutoff so older history can load
             setupRealtimeListener();
         }
         function setupObserver() {
@@ -1175,18 +1210,30 @@
             setSyncState(true);
             const docRef = doc(db, "expenses", editingEntryId);
             try {
-                await updateDoc(docRef, {
+                const updateData = {
                     name: document.getElementById('edit-name').value,
                     amount: parseFloat(document.getElementById('edit-amount').value) || 0,
                     category: document.getElementById('edit-category').value,
                     subCategory: document.getElementById('edit-subcategory').value || null,
                     person: editingPerson,
                     isIndividual: editingIsIndividual
-                });
+                };
+                // Include updated dateTime only if the time row was visible (user changed it)
+                const timeRow = document.getElementById('edit-time-row');
+                if (!timeRow.classList.contains('hidden')) {
+                    const timeVal = document.getElementById('edit-time').value;
+                    if (timeVal) updateData.dateTime = new Date(timeVal);
+                }
+                await updateDoc(docRef, updateData);
                 window.closeEditModal();
                 showToast("Updated", "green");
             } catch (e) { showToast("Error", "red"); }
             finally { setSyncState(false); }
+        };
+
+        window.toggleEditTime = () => {
+            const row = document.getElementById('edit-time-row');
+            row.classList.toggle('hidden');
         };
 
         window.handleEditCategoryChange = () => {
@@ -1543,6 +1590,17 @@
             editingPerson = e.person;
             editingIsIndividual = e.isIndividual || false;
             updateEditPersonUI();
+
+            // Populate datetime-local input from entry's dateTime
+            if (e.dateTime instanceof Date) {
+                const pad = n => String(n).padStart(2, '0');
+                const dt = e.dateTime;
+                const localStr = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+                document.getElementById('edit-time').value = localStr;
+            }
+            // Hide time row by default each time modal opens
+            document.getElementById('edit-time-row').classList.add('hidden');
+
             document.getElementById('edit-modal').classList.remove('hidden');
         }
         window.closeEditModal = () => { document.getElementById('edit-modal').classList.add('hidden'); }
