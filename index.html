@@ -264,11 +264,9 @@
                     <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
                         <button onclick="setDashboardScope('shared')" id="scope-btn-shared"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
-                        <button onclick="setDashboardScope('GET')" ondblclick="setPersonalView('GET')"
-                            id="scope-btn-GET"
+                        <button onclick="handleScopeTap('GET')" id="scope-btn-GET"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">GET</button>
-                        <button onclick="setDashboardScope('DOM')" ondblclick="setPersonalView('DOM')"
-                            id="scope-btn-DOM"
+                        <button onclick="handleScopeTap('DOM')" id="scope-btn-DOM"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">DOM</button>
                         <button onclick="setDashboardScope('ALL')" id="scope-btn-ALL"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200 text-purple-600">ALL</button>
@@ -1052,6 +1050,19 @@
         function getCatStyle(c) { return { 'Food': 'bg-orange-50 text-orange-600', 'Grocery': 'bg-emerald-50 text-emerald-600', 'Trip': 'bg-sky-50 text-sky-600', 'Etc.': 'bg-purple-50 text-purple-600', 'Story': 'bg-pink-50 text-pink-500' }[c] || 'bg-gray-50'; }
 
         // --- DASHBOARD SCOPE LOGIC ---
+        let lastScopeTap = { GET: 0, DOM: 0 };
+        window.handleScopeTap = (person) => {
+            const now = Date.now();
+            if (now - lastScopeTap[person] < 400) {
+                // Double tap: toggle personal view
+                lastScopeTap[person] = 0;
+                setPersonalView(person);
+            } else {
+                // Single tap: normal scope switch
+                lastScopeTap[person] = now;
+                setDashboardScope(person);
+            }
+        };
         window.setDashboardScope = (scope) => {
             currentPersonalView = null; // reset personal view on any single-tap
             currentDashboardScope = scope;
