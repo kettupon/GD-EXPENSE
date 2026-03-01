@@ -13,6 +13,8 @@
         href='data:application/json,{"name":"Expense GET n DOM","short_name":"ExpenseGD","description":"Shared expense tracker for GET and DOM","start_url":".","display":"standalone","background_color":"#F8F4FF","theme_color":"#6D28D9","icons":[{"src":"https://cdn-icons-png.flaticon.com/512/552/552791.png","sizes":"512x512","type":"image/png"}]}'>
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/552/552791.png">
     <meta name="theme-color" content="#6D28D9">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js">
+    <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -524,9 +526,14 @@
             </div>
             <!-- Hidden time editor row -->
             <div id="edit-time-row" class="hidden mb-4">
-                <label class="text-[9px] font-bold text-indigo-400 uppercase">Transaction Date &amp; Time</label>
-                <input type="datetime-local" id="edit-time"
-                    class="w-full mt-1 p-3 bg-indigo-50 rounded-xl outline-none text-sm text-indigo-700 font-medium">
+                <label class="text-[9px] font-bold text-indigo-400 uppercase block mb-1">Transaction Date &amp;
+                    Time</label>
+                <div class="flex gap-2">
+                    <input type="date" id="edit-date"
+                        class="flex-1 p-3 bg-indigo-50 rounded-xl outline-none text-sm text-indigo-700 font-medium min-w-0">
+                    <input type="time" id="edit-time"
+                        class="w-28 p-3 bg-indigo-50 rounded-xl outline-none text-sm text-indigo-700 font-medium">
+                </div>
             </div>
             <div class="space-y-4">
                 <div>
@@ -1169,15 +1176,22 @@
             if (sentinel) window.historyObserver.observe(sentinel);
         }
         setupRealtimeListener();
-        onSnapshot(imagesCol, (snapshot) => {
-            const newData = {};
-            snapshot.docs.forEach(doc => { newData[doc.id] = doc.data(); });
-            window.diaryData = newData;
-            if (window.isDiaryMode) {
-                if (window.showMediaGallery) window.renderMediaGallery();
-                else window.renderHistory();
-            }
-        });
+        // Images listener is deferred — only start when diary mode is first activated
+        // to avoid fetching all base64 image data on every page load.
+        let imagesListenerStarted = false;
+        window.startImagesListener = function () {
+            if (imagesListenerStarted) return;
+            imagesListenerStarted = true;
+            onSnapshot(imagesCol, (snapshot) => {
+                const newData = {};
+                snapshot.docs.forEach(doc => { newData[doc.id] = doc.data(); });
+                window.diaryData = newData;
+                if (window.isDiaryMode) {
+                    if (window.showMediaGallery) window.renderMediaGallery();
+                    else window.renderHistory();
+                }
+            });
+        };
         window.fetchEntries = function (notify) { if (notify) showToast("Synced with Cloud", "green"); };
 
         window.submitEntry = async function () {
@@ -1221,8 +1235,11 @@
                 // Include updated dateTime only if the time row was visible (user changed it)
                 const timeRow = document.getElementById('edit-time-row');
                 if (!timeRow.classList.contains('hidden')) {
+                    const dateVal = document.getElementById('edit-date').value;
                     const timeVal = document.getElementById('edit-time').value;
-                    if (timeVal) updateData.dateTime = new Date(timeVal);
+                    if (dateVal && timeVal) {
+                        updateData.dateTime = new Date(`${dateVal}T${timeVal}:00`);
+                    }
                 }
                 await updateDoc(docRef, updateData);
                 window.closeEditModal();
@@ -1271,6 +1288,7 @@
             finally { setSyncState(false); }
         };
         window.toggleDiaryMode = function () {
+            window.startImagesListener(); // start lazy image listener on first diary access
             window.isDiaryMode = !window.isDiaryMode;
             const historyTitle = document.getElementById('history-title');
             const modeIndicator = document.getElementById('mode-indicator');
@@ -1591,12 +1609,12 @@
             editingIsIndividual = e.isIndividual || false;
             updateEditPersonUI();
 
-            // Populate datetime-local input from entry's dateTime
+            // Populate separate date + time inputs from entry's dateTime
             if (e.dateTime instanceof Date) {
                 const pad = n => String(n).padStart(2, '0');
                 const dt = e.dateTime;
-                const localStr = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-                document.getElementById('edit-time').value = localStr;
+                document.getElementById('edit-date').value = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+                document.getElementById('edit-time').value = `${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
             }
             // Hide time row by default each time modal opens
             document.getElementById('edit-time-row').classList.add('hidden');
@@ -1818,16 +1836,33 @@
         window.handleDashboardTabClick = () => { const now = Date.now(); if (now - lastDashboardTap < 300) toggleDashboardMode(); else switchView('dashboard'); lastDashboardTap = now; }
         function setSyncState(loading) { const icon = document.getElementById('sync-icon'); if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500'); else icon.classList.remove('animate-spin-custom', 'text-purple-500'); }
         window.handleHistoryTabClick = () => { const now = Date.now(); if (now - lastHistoryTap < 300) toggleDiaryMode(); else switchView('history'); lastHistoryTap = now; }
+        // Dashboard listener starts lazily on first dashboard view
+        let dashboardListenerStarted = false;
         window.switchView = (view) => {
             const histCont = document.getElementById('history-container'); const dashCont = document.getElementById('dashboard-container'); const sideSec = document.getElementById('side-section'); const inputSec = document.getElementById('input-section'); document.querySelectorAll('[id^="tab-"]').forEach(el => el.classList.remove('tab-active'));
-            if (window.innerWidth < 768) { if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); } else { inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-m-dashboard').classList.add('tab-active'); window.renderDashboard(); } } }
-            else { inputSec.classList.remove('mobile-hidden'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } else { dashCont.classList.remove('hidden'); histCont.classList.add('hidden'); document.getElementById('tab-dashboard').classList.add('tab-active'); window.renderDashboard(); } }
+            const openDashboard = () => {
+                dashCont.classList.remove('hidden'); histCont.classList.add('hidden');
+                if (!dashboardListenerStarted) {
+                    dashboardListenerStarted = true;
+                    window.resetToMonthFilter(); // sets dates + fires setupDashboardListener once
+                } else {
+                    window.renderDashboard();
+                }
+            };
+            if (window.innerWidth < 768) { if (view === 'input') { sideSec.classList.add('mobile-hidden'); sideSec.classList.remove('mobile-view'); inputSec.classList.remove('mobile-hidden'); inputSec.style.display = 'flex'; document.getElementById('tab-m-input').classList.add('tab-active'); } else { inputSec.classList.add('mobile-hidden'); inputSec.style.display = ''; sideSec.classList.remove('mobile-hidden'); sideSec.classList.add('mobile-view'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-m-history').classList.add('tab-active'); } else { openDashboard(); document.getElementById('tab-m-dashboard').classList.add('tab-active'); } } }
+            else { inputSec.classList.remove('mobile-hidden'); if (view === 'history') { histCont.classList.remove('hidden'); dashCont.classList.add('hidden'); document.getElementById('tab-history').classList.add('tab-active'); } else { openDashboard(); document.getElementById('tab-dashboard').classList.add('tab-active'); } }
         }
         window.handleExpenseTabClick = () => { const now = Date.now(); if (now - lastExpenseClick < 300) { window.resetExpensePage(); showToast("Refreshed", "green"); } else switchView('input'); lastExpenseClick = now; }
         window.resetExpensePage = () => { currentAmount = '0'; currentCategory = null; currentSubCategory = null; currentPerson = null; isIndividualMode = false; document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('border-gray-900', 'ring-2', 'ring-gray-100')); resetPersonUI(); updateDisplay(); }
         function showToast(m, c) { const t = document.getElementById('toast'); t.innerText = m; t.style.backgroundColor = { 'green': '#10B981', 'red': '#EF4444', 'blue': '#3B82F6', 'pink': '#EC4899', 'purple': '#8B5CF6' }[c] || '#6366f1'; t.classList.remove('translate-y-[-100px]', 'opacity-0'); setTimeout(() => t.classList.add('translate-y-[-100px]', 'opacity-0'), 2500); }
         const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        window.onload = () => { window.resetToMonthFilter(); document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food', 'Grocery', 'Trip', 'Etc.'][i], "w-6 h-6")); if (window.innerWidth < 768) switchView('input'); else switchView('history'); if ('serviceWorker' in navigator) { try { const swCode = "self.addEventListener('fetch', function(event) {});"; const blob = new Blob([swCode], { type: 'text/javascript' }); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message)); } catch (e) { console.warn(e); } } };
+        window.onload = () => {
+            // NOTE: resetToMonthFilter (which starts the dashboard listener) is intentionally
+            // NOT called here — it fires lazily when the user first opens the Dashboard tab.
+            document.querySelectorAll('.category-icon-wrapper').forEach((w, i) => w.innerHTML = getCatIcon(['Food', 'Grocery', 'Trip', 'Etc.'][i], "w-6 h-6"));
+            if (window.innerWidth < 768) switchView('input'); else switchView('history');
+            if ('serviceWorker' in navigator) { try { const swCode = "self.addEventListener('fetch', function(event) {});"; const blob = new Blob([swCode], { type: 'text/javascript' }); navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(e => console.warn(e.message)); } catch (e) { console.warn(e); } }
+        };
         window.addEventListener('resize', () => { if (window.innerWidth < 768) switchView('input'); });
         window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; });
         window.triggerPWAInstall = async () => { }
