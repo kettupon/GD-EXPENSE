@@ -264,9 +264,11 @@
                     <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
                         <button onclick="setDashboardScope('shared')" id="scope-btn-shared"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
-                        <button onclick="setDashboardScope('GET')" id="scope-btn-GET"
+                        <button onclick="setDashboardScope('GET')" ondblclick="setPersonalView('GET')"
+                            id="scope-btn-GET"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">GET</button>
-                        <button onclick="setDashboardScope('DOM')" id="scope-btn-DOM"
+                        <button onclick="setDashboardScope('DOM')" ondblclick="setPersonalView('DOM')"
+                            id="scope-btn-DOM"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200">DOM</button>
                         <button onclick="setDashboardScope('ALL')" id="scope-btn-ALL"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200 text-purple-600">ALL</button>
@@ -830,6 +832,7 @@
 
         // --- NEW: Dashboard State ---
         let dashboardSubCatMode = false;
+        let currentPersonalView = null; // 'GET' | 'DOM' | null
 
         // --- SUB CATEGORY CONFIG ---
         const SUB_CATEGORIES = {
@@ -1050,21 +1053,51 @@
 
         // --- DASHBOARD SCOPE LOGIC ---
         window.setDashboardScope = (scope) => {
+            currentPersonalView = null; // reset personal view on any single-tap
             currentDashboardScope = scope;
-            // Update UI
+            updateScopeBtnUI();
+            renderDashboard();
+        }
+
+        window.setPersonalView = (person) => {
+            // Double-tap: toggle personal view for this person
+            if (currentPersonalView === person) {
+                currentPersonalView = null; // double-tap again to exit
+            } else {
+                currentPersonalView = person;
+                currentDashboardScope = person; // keep scope btn visually selected
+            }
+            updateScopeBtnUI();
+            renderDashboard();
+            if (currentPersonalView) {
+                showToast(`${person} Total View`, person === 'GET' ? 'green' : 'blue');
+            } else {
+                showToast('Exited Total View', 'purple');
+            }
+        };
+
+        function updateScopeBtnUI() {
+            const scope = currentDashboardScope;
+            const pv = currentPersonalView;
             ['shared', 'GET', 'DOM', 'ALL'].forEach(s => {
                 const btn = document.getElementById(`scope-btn-${s}`);
-                if (s === scope) {
+                if (!btn) return;
+                // Reset all classes first
+                btn.className = 'flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all';
+                if (s === scope && !pv) {
+                    // Normal active (white bg)
                     btn.classList.add('bg-white', 'text-gray-800', 'shadow-sm');
-                    btn.classList.remove('text-gray-500', 'hover:bg-gray-200');
-                    if (s === 'ALL') btn.classList.remove('text-purple-600'); // Reset purple text on active
+                } else if (pv === 'GET' && s === 'GET') {
+                    // Personal view active for GET → dark green
+                    btn.classList.add('bg-green-600', 'text-white', 'shadow-sm');
+                } else if (pv === 'DOM' && s === 'DOM') {
+                    // Personal view active for DOM → dark blue
+                    btn.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
                 } else {
-                    btn.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
                     btn.classList.add('text-gray-500', 'hover:bg-gray-200');
-                    if (s === 'ALL') btn.classList.add('text-purple-600'); // Re-add purple text when inactive
+                    if (s === 'ALL') btn.classList.add('text-purple-600');
                 }
             });
-            renderDashboard();
         }
 
         function setupDashboardListener() {
@@ -1502,8 +1535,14 @@
             if (start) { const [sy, sm, sd] = start.split('-').map(Number); filtered = filtered.filter(e => e.dateTime >= new Date(sy, sm - 1, sd, 0, 0, 0, 0)); }
             if (end) { const [ey, em, ed] = end.split('-').map(Number); filtered = filtered.filter(e => e.dateTime <= new Date(ey, em - 1, ed, 23, 59, 59, 999)); }
 
-            if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
-            else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            // Respect personal view mode (double-tap GET/DOM = shared + personal for that person)
+            if (currentPersonalView) {
+                filtered = filtered.filter(e => e.person === currentPersonalView);
+            } else if (scope === 'shared') {
+                filtered = filtered.filter(e => e.isIndividual !== true);
+            } else if (scope !== 'ALL') {
+                filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            }
 
             filtered.sort((a, b) => b.dateTime - a.dateTime);
             const list = document.getElementById('cat-modal-list'); list.innerHTML = ''; document.getElementById('cat-modal-title').innerText = category; document.getElementById('cat-modal-icon').innerHTML = getCatIcon(category, "w-5 h-5 text-gray-500");
@@ -1694,9 +1733,16 @@
             }
             let filtered = [...window.dashboardEntries].filter(e => !e.isStory);
             const scope = currentDashboardScope;
+            const pv = currentPersonalView;
 
-            if (scope === 'shared') filtered = filtered.filter(e => e.isIndividual !== true);
-            else if (scope !== 'ALL') filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            if (pv) {
+                // Personal view: show everything for this person (personal + shared)
+                filtered = filtered.filter(e => e.person === pv);
+            } else if (scope === 'shared') {
+                filtered = filtered.filter(e => e.isIndividual !== true);
+            } else if (scope !== 'ALL') {
+                filtered = filtered.filter(e => e.isIndividual === true && e.person === scope);
+            }
 
             let g = 0, d = 0, total = 0; const cats = {}; const dailyTotals = {};
             filtered.forEach(e => {
@@ -1719,10 +1765,18 @@
 
             const breakdown = document.getElementById('category-breakdown');
 
+            // Personal view banner
+            const pvBannerHtml = currentPersonalView
+                ? `<div class="mb-3 px-3 py-2 rounded-xl text-[10px] font-bold uppercase tracking-wider ${currentPersonalView === 'GET'
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-blue-50 text-blue-700 border border-blue-200'
+                }">👤 ${currentPersonalView} — Personal + Shared Total &nbsp;<span class="opacity-50 font-normal">Double tap to exit</span></div>`
+                : '';
+
             // Toggle Button HTML
             const toggleHtml = `<button onclick="toggleDashboardSubCats()" class="text-[9px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg transition-colors ${dashboardSubCatMode ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'}">${dashboardSubCatMode ? 'Collapse Sub-cats' : 'Expand Sub-cats'}</button>`;
 
-            breakdown.innerHTML = `<div class="flex justify-between items-center mb-4"><h4 class="font-bold text-gray-400 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap)</span></h4>${toggleHtml}</div>`;
+            breakdown.innerHTML = pvBannerHtml + `<div class="flex justify-between items-center mb-4"><h4 class="font-bold text-gray-400 text-[10px] uppercase">Category Totals <span class="text-[8px] opacity-50 ml-1">(Double Tap)</span></h4>${toggleHtml}</div>`;
 
             Object.keys(cats).forEach(catName => {
                 const catData = cats[catName];
