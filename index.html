@@ -923,45 +923,52 @@
         window.lockedDate = null;
         window.budgets = {};
         window.showBudgetsOnDashboard = true;
-        window.loadBudgets = () => {
-            try {
-                const stored = localStorage.getItem('expense_budgets');
-                if (stored) {
-                    const data = JSON.parse(stored);
-                    if (data.shared || data.GET || data.DOM) {
-                        window.budgets = data;
-                    } else {
+        const settingsDocRef = doc(db, 'settings', 'budgets');
+
+        window.startBudgetsListener = () => {
+            onSnapshot(settingsDocRef, (snap) => {
+                if (snap.exists()) {
+                    const data = snap.data();
+                    if (data.shared !== undefined || data.GET !== undefined || data.DOM !== undefined) {
                         window.budgets = {
-                            shared: data,
-                            GET: {},
-                            DOM: {}
+                            shared: data.shared || {},
+                            GET: data.GET || {},
+                            DOM: data.DOM || {}
                         };
-                        window.saveBudgets();
+                    } else {
+                        // Migrate old flat format
+                        window.budgets = { shared: data, GET: {}, DOM: {} };
                     }
                 } else {
-                    window.budgets = {
-                        shared: {},
-                        GET: {},
-                        DOM: {}
-                    };
+                    window.budgets = { shared: {}, GET: {}, DOM: {} };
                 }
-            } catch (e) {
-                console.error("Error loading budgets:", e);
-                window.budgets = {
-                    shared: {},
-                    GET: {},
-                    DOM: {}
-                };
-            }
+                // Cache locally for fast offline reads
+                try { localStorage.setItem('expense_budgets', JSON.stringify(window.budgets)); } catch(e) {}
+                // Re-render dashboard if visible
+                if (typeof window.renderDashboard === 'function') window.renderDashboard();
+            });
         };
-        window.saveBudgets = () => {
+
+        window.saveBudgets = async () => {
             try {
-                localStorage.setItem('expense_budgets', JSON.stringify(window.budgets));
+                await setDoc(settingsDocRef, window.budgets);
+                // localStorage updated automatically by onSnapshot callback
             } catch (e) {
-                console.error("Error saving budgets:", e);
+                console.error('Error saving budgets to Firestore:', e);
+                showToast('Budget save failed', 'red');
             }
         };
-        window.loadBudgets();
+
+        // Seed window.budgets from localStorage immediately (fast cache) before Firestore responds
+        try {
+            const cached = localStorage.getItem('expense_budgets');
+            if (cached) {
+                const data = JSON.parse(cached);
+                window.budgets = (data.shared !== undefined || data.GET !== undefined || data.DOM !== undefined)
+                    ? { shared: data.shared || {}, GET: data.GET || {}, DOM: data.DOM || {} }
+                    : { shared: data, GET: {}, DOM: {} };
+            }
+        } catch(e) {}
 
         let currentAmount = '0';
         let currentCategory = null;
@@ -1406,6 +1413,7 @@
             if (sentinel) window.historyObserver.observe(sentinel);
         }
         setupRealtimeListener();
+        window.startBudgetsListener();
         // Images listener is deferred — only start when diary mode is first activated
         // to avoid fetching all base64 image data on every page load.
         let imagesListenerStarted = false;
@@ -2095,7 +2103,7 @@
             document.getElementById('settings-modal').classList.add('hidden');
         };
         
-        window.saveSettingsBudgets = () => {
+        window.saveSettingsBudgets = async () => {
             const inputs = document.querySelectorAll('#settings-budget-list input');
             const tempBudgets = {};
             
@@ -2111,10 +2119,9 @@
             });
             
             window.budgets[settingsCurrentScope] = tempBudgets;
-            window.saveBudgets();
-            window.renderDashboard();
             window.closeSettingsModal();
-            showToast("Budgets saved successfully", "green");
+            showToast("Budgets saved & synced", "green");
+            await window.saveBudgets(); // Firestore write — onSnapshot triggers renderDashboard automatically
         };
 
         window.toggleShowBudgets = () => {
