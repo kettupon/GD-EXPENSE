@@ -269,7 +269,14 @@
             <div id="dashboard-container"
                 class="flex-1 flex-col overflow-y-auto p-4 space-y-6 hidden pb-24 md:pb-4 no-scrollbar">
                 <div class="flex flex-col gap-3">
-                    <h3 id="dashboard-title" class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
+                    <div class="flex items-center gap-2">
+                        <h3 id="dashboard-title" class="text-xl font-bold text-gray-800 tracking-tight">Dashboard</h3>
+                        <button id="year-overview-btn" onclick="openYearOverviewModal()" class="hidden w-7 h-7 flex items-center justify-center bg-purple-50 text-purple-600 hover:bg-purple-100 active:scale-95 rounded-full transition-all focus:outline-none" title="Year Overview">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                        </button>
+                    </div>
                     <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
                         <button onclick="setDashboardScope('shared')" id="scope-btn-shared"
                             class="flex-1 py-1.5 px-3 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-800 shadow-sm">Shared</button>
@@ -837,6 +844,63 @@
                         <div id="impact-monthly-bar" class="h-full rounded-full bg-blue-500" style="width: 0%; transition: width 1.5s cubic-bezier(0.1, 0.8, 0.25, 1);"></div>
                     </div>
                 </div>
+
+                <div id="impact-total-monthly-wrapper" class="hidden space-y-1">
+                    <div class="flex justify-between text-[10px] font-bold text-gray-500">
+                        <span>Total Monthly Budget</span>
+                        <span id="impact-total-monthly-label">฿0 / ฿0</span>
+                    </div>
+                    <div class="w-full bg-gray-100 h-3.5 rounded-full overflow-hidden relative">
+                        <div id="impact-total-monthly-bar" class="h-full rounded-full bg-purple-600" style="width: 0%; transition: width 1.5s cubic-bezier(0.1, 0.8, 0.25, 1);"></div>
+                        <div class="absolute inset-y-0 left-1/4 w-[1px] bg-red-500/60 pointer-events-none"></div>
+                        <div class="absolute inset-y-0 left-2/4 w-[1px] bg-red-500/60 pointer-events-none"></div>
+                        <div class="absolute inset-y-0 left-3/4 w-[1px] bg-red-500/60 pointer-events-none"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="year-overview-modal"
+        class="fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[118] hidden p-6 backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-md h-[80vh] flex flex-col transform scale-95 opacity-0 transition-all duration-300">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-sm font-bold text-gray-800 uppercase tracking-tight">Yearly Overview</h3>
+                </div>
+                <button onclick="closeYearOverviewModal()"
+                    class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 transition-colors">✕</button>
+            </div>
+
+            <div class="space-y-3 mb-5">
+                <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
+                    <button onclick="changeYearOverviewYear(2025)" id="yo-year-2025"
+                        class="flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all">2025</button>
+                    <button onclick="changeYearOverviewYear(2026)" id="yo-year-2026"
+                        class="flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all">2026</button>
+                </div>
+                <div class="flex bg-gray-100 rounded-xl p-1 gap-1">
+                    <button onclick="changeYearOverviewScope('shared')" id="yo-scope-shared"
+                        class="flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all">Shared</button>
+                    <button onclick="changeYearOverviewScope('GET')" id="yo-scope-GET"
+                        class="flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all">GET</button>
+                    <button onclick="changeYearOverviewScope('DOM')" id="yo-scope-DOM"
+                        class="flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all">DOM</button>
+                    <button onclick="changeYearOverviewScope('ALL')" id="yo-scope-ALL"
+                        class="flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all">ALL</button>
+                </div>
+            </div>
+
+            <div id="yo-months-list" class="flex-1 overflow-y-auto space-y-4 no-scrollbar pr-1">
+            </div>
+            
+            <div class="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
+                <span class="text-xs font-bold text-gray-400 uppercase">Year Total:</span>
+                <span id="yo-total-sum" class="text-lg font-black text-gray-800">฿0</span>
             </div>
         </div>
     </div>
@@ -2065,6 +2129,30 @@
                 div.innerHTML = catHtml;
                 listContainer.appendChild(div.firstElementChild);
             });
+            
+            if (settingsCurrentScope === 'GET' || settingsCurrentScope === 'DOM') {
+                const totalBudget = currentScopeBudgets['TOTAL_MONTHLY_BUDGET'] || { monthly: '' };
+                const totalHtml = `
+                    <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-150 space-y-3 mt-4 shadow-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center shadow-sm border border-blue-200">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <span class="text-xs font-black uppercase tracking-wider text-blue-900">Total Monthly Budget (${settingsCurrentScope})</span>
+                        </div>
+                        <div>
+                            <label class="text-[8px] font-bold text-blue-400 uppercase tracking-widest block mb-1">Monthly Budget Limit</label>
+                            <input type="number" data-key="TOTAL_MONTHLY_BUDGET" data-type="monthly" value="${totalBudget.monthly || ''}" placeholder="No Budget Limit"
+                                class="w-full text-xs font-medium border border-blue-200 bg-white text-gray-800 p-2.5 rounded-lg outline-none focus:border-blue-400 transition-colors">
+                        </div>
+                    </div>
+                `;
+                const div = document.createElement('div');
+                div.innerHTML = totalHtml;
+                listContainer.appendChild(div.firstElementChild);
+            }
         };
 
         window.changeSettingsScope = (newScope) => {
@@ -2130,6 +2218,81 @@
             window.showBudgetsOnDashboard = !window.showBudgetsOnDashboard;
             window.renderDashboard();
         };
+
+        function getTotalMonthlyBudgetBarColor(pct) {
+            if (pct >= 99) return 'bg-red-500';
+            if (pct >= 75) return 'bg-orange-500';
+            if (pct >= 50) return 'bg-yellow-500';
+            if (pct >= 25) return 'bg-blue-500';
+            return 'bg-green-500';
+        }
+
+        function getTotalMonthlyBudgetTextColor(pct) {
+            if (pct >= 99) return 'text-red-600 font-extrabold';
+            if (pct >= 75) return 'text-orange-600 font-bold';
+            if (pct >= 50) return 'text-yellow-600 font-bold';
+            if (pct >= 25) return 'text-blue-600 font-bold';
+            return 'text-green-600 font-bold';
+        }
+
+        function getTotalMonthlySpent(person) {
+            const now = new Date();
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+            
+            let total = 0;
+            const allAvailableData = [...window.entries];
+            const entryIds = new Set(window.entries.map(e => e.id));
+            window.dashboardEntries.forEach(me => { if (!entryIds.has(me.id)) allAvailableData.push(me); });
+            
+            allAvailableData.filter(e => !e.isStory && e.person === person).forEach(e => {
+                const d = e.dateTime;
+                if (d >= startOfMonth && d <= now) {
+                    total += parseFloat(e.amount) || 0;
+                }
+            });
+            return total;
+        }
+
+        function renderTotalMonthlyBudgetGaugeHtml() {
+            if (!window.showBudgetsOnDashboard) return '';
+            
+            const scopeKey = currentPersonalView || (currentDashboardScope === 'ALL' ? null : currentDashboardScope);
+            if (scopeKey !== 'GET' && scopeKey !== 'DOM') return '';
+            
+            const scopeBudgets = window.budgets[scopeKey] || {};
+            const budget = scopeBudgets['TOTAL_MONTHLY_BUDGET'];
+            if (!budget || !budget.monthly) return '';
+            
+            const monthlySpent = getTotalMonthlySpent(scopeKey);
+            const pct = Math.min((monthlySpent / budget.monthly) * 100, 100);
+            
+            const colorClass = getTotalMonthlyBudgetBarColor(pct);
+            const textClass = getTotalMonthlyBudgetTextColor(pct);
+            
+            return `
+                <div class="mb-5 bg-blue-50/40 p-4 rounded-2xl border border-blue-100/50 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center shadow-sm">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <span class="text-xs font-black text-blue-700 uppercase tracking-wider">Total Monthly Budget (${scopeKey})</span>
+                        </div>
+                        <span class="text-[10px] ${textClass}">
+                            ฿${Math.round(monthlySpent).toLocaleString()} / ฿${budget.monthly.toLocaleString()} (${pct.toFixed(0)}%)
+                        </span>
+                    </div>
+                    <div class="w-full bg-blue-100/50 h-3 rounded-full overflow-hidden relative">
+                        <div class="${colorClass} h-full rounded-full transition-all duration-550" style="width: ${pct}%"></div>
+                        <div class="absolute inset-y-0 left-1/4 w-[1px] bg-red-500/50 pointer-events-none"></div>
+                        <div class="absolute inset-y-0 left-2/4 w-[1px] bg-red-500/50 pointer-events-none"></div>
+                        <div class="absolute inset-y-0 left-3/4 w-[1px] bg-red-500/50 pointer-events-none"></div>
+                    </div>
+                </div>
+            `;
+        }
 
         function getSpentForBudget(category, subCategory = null, forcePerson = null) {
             const now = new Date();
@@ -2240,12 +2403,15 @@
             const budgetKey = (subKey && scopeBudgets[subKey]) ? subKey : category;
             const budget = scopeBudgets[budgetKey];
             
-            if (!budget || (!budget.weekly && !budget.monthly)) return;
+            const totalBudget = scopeBudgets['TOTAL_MONTHLY_BUDGET'];
+            
+            const hasCatBudget = budget && (budget.weekly || budget.monthly);
+            const hasTotalBudget = totalBudget && totalBudget.monthly;
+            
+            if (!hasCatBudget && !hasTotalBudget) return;
             
             const targetCat = (budgetKey === category) ? category : category;
             const targetSub = (budgetKey === category) ? null : subCategory;
-            const { weeklyTotal, monthlyTotal } = getSpentForBudget(targetCat, targetSub, person);
-            
             const titleText = targetSub ? `${targetCat} > ${targetSub}` : targetCat;
             document.getElementById('impact-category-title').innerText = titleText;
             document.getElementById('impact-amount-text').innerText = `+ ฿${amount.toLocaleString()}`;
@@ -2254,24 +2420,46 @@
             const weeklyBar = document.getElementById('impact-weekly-bar');
             const monthlyWrapper = document.getElementById('impact-monthly-wrapper');
             const monthlyBar = document.getElementById('impact-monthly-bar');
+            const totalMonthlyWrapper = document.getElementById('impact-total-monthly-wrapper');
+            const totalMonthlyBar = document.getElementById('impact-total-monthly-bar');
             
             weeklyWrapper.classList.add('hidden');
             monthlyWrapper.classList.add('hidden');
+            totalMonthlyWrapper.classList.add('hidden');
             weeklyBar.style.width = '0%';
             monthlyBar.style.width = '0%';
+            totalMonthlyBar.style.width = '0%';
             
-            if (budget.weekly) {
-                const pct = Math.min((weeklyTotal / budget.weekly) * 100, 100);
-                document.getElementById('impact-weekly-label').innerText = `฿${Math.round(weeklyTotal).toLocaleString()} / ฿${budget.weekly.toLocaleString()} (${pct.toFixed(0)}%)`;
-                weeklyWrapper.classList.remove('hidden');
-                weeklyBar.className = pct >= 100 ? 'h-full rounded-full bg-red-500' : (pct >= 80 ? 'h-full rounded-full bg-yellow-500' : 'h-full rounded-full bg-green-500');
+            let weeklyTotal = 0, monthlyTotal = 0;
+            if (hasCatBudget) {
+                const spent = getSpentForBudget(targetCat, targetSub, person);
+                weeklyTotal = spent.weeklyTotal;
+                monthlyTotal = spent.monthlyTotal;
+                
+                if (budget.weekly) {
+                    const pct = Math.min((weeklyTotal / budget.weekly) * 100, 100);
+                    document.getElementById('impact-weekly-label').innerText = `฿${Math.round(weeklyTotal).toLocaleString()} / ฿${budget.weekly.toLocaleString()} (${pct.toFixed(0)}%)`;
+                    weeklyWrapper.classList.remove('hidden');
+                    weeklyBar.className = pct >= 100 ? 'h-full rounded-full bg-red-500' : (pct >= 80 ? 'h-full rounded-full bg-yellow-500' : 'h-full rounded-full bg-green-500');
+                }
+                
+                if (budget.monthly) {
+                    const pct = Math.min((monthlyTotal / budget.monthly) * 100, 100);
+                    document.getElementById('impact-monthly-label').innerText = `฿${Math.round(monthlyTotal).toLocaleString()} / ฿${budget.monthly.toLocaleString()} (${pct.toFixed(0)}%)`;
+                    monthlyWrapper.classList.remove('hidden');
+                    monthlyBar.className = pct >= 100 ? 'h-full rounded-full bg-red-500' : (pct >= 80 ? 'h-full rounded-full bg-yellow-500' : 'h-full rounded-full bg-blue-500');
+                }
             }
             
-            if (budget.monthly) {
-                const pct = Math.min((monthlyTotal / budget.monthly) * 100, 100);
-                document.getElementById('impact-monthly-label').innerText = `฿${Math.round(monthlyTotal).toLocaleString()} / ฿${budget.monthly.toLocaleString()} (${pct.toFixed(0)}%)`;
-                monthlyWrapper.classList.remove('hidden');
-                monthlyBar.className = pct >= 100 ? 'h-full rounded-full bg-red-500' : (pct >= 80 ? 'h-full rounded-full bg-yellow-500' : 'h-full rounded-full bg-blue-500');
+            let totalMonthlySpent = 0;
+            if (hasTotalBudget) {
+                totalMonthlySpent = getTotalMonthlySpent(person);
+                const pct = Math.min((totalMonthlySpent / totalBudget.monthly) * 100, 100);
+                document.getElementById('impact-total-monthly-label').innerText = `฿${Math.round(totalMonthlySpent).toLocaleString()} / ฿${totalBudget.monthly.toLocaleString()} (${pct.toFixed(0)}%)`;
+                totalMonthlyWrapper.classList.remove('hidden');
+                
+                const colorClass = getTotalMonthlyBudgetBarColor(pct);
+                totalMonthlyBar.className = `h-full rounded-full ${colorClass}`;
             }
             
             const modal = document.getElementById('budget-impact-modal');
@@ -2284,13 +2472,19 @@
             }, 10);
             
             setTimeout(() => {
-                if (budget.weekly) {
-                    const pct = Math.min((weeklyTotal / budget.weekly) * 100, 100);
-                    weeklyBar.style.width = `${pct}%`;
+                if (hasCatBudget) {
+                    if (budget.weekly) {
+                        const pct = Math.min((weeklyTotal / budget.weekly) * 100, 100);
+                        weeklyBar.style.width = `${pct}%`;
+                    }
+                    if (budget.monthly) {
+                        const pct = Math.min((monthlyTotal / budget.monthly) * 100, 100);
+                        monthlyBar.style.width = `${pct}%`;
+                    }
                 }
-                if (budget.monthly) {
-                    const pct = Math.min((monthlyTotal / budget.monthly) * 100, 100);
-                    monthlyBar.style.width = `${pct}%`;
+                if (hasTotalBudget) {
+                    const pct = Math.min((totalMonthlySpent / totalBudget.monthly) * 100, 100);
+                    totalMonthlyBar.style.width = `${pct}%`;
                 }
             }, 150);
 
@@ -2462,7 +2656,7 @@
                 ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600 transition-colors" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="20" height="12" rx="6" fill="#DDD6FE"/><circle cx="16" cy="12" r="5" fill="#7C3AED"/></svg>`
                 : `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-300 transition-colors" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="6" width="20" height="12" rx="6" fill="#E5E7EB"/><circle cx="8" cy="12" r="5" fill="#9CA3AF"/></svg>`;
 
-            breakdown.innerHTML = pvBannerHtml + `<div class="flex justify-between items-center mb-4"><div class="flex items-center gap-2"><h4 class="font-bold text-gray-400 text-[10px] uppercase">Category Totals</h4><button onclick="toggleShowBudgets()" class="focus:outline-none flex items-center justify-center p-0.5 rounded-lg hover:bg-gray-50 active:scale-95 transition-all" title="Toggle budgets on dashboard">${budgetToggleSvg}</button></div>${toggleHtml}</div>`;
+            breakdown.innerHTML = pvBannerHtml + `<div class="flex justify-between items-center mb-4"><div class="flex items-center gap-2"><h4 class="font-bold text-gray-400 text-[10px] uppercase">Category Totals</h4><button onclick="toggleShowBudgets()" class="focus:outline-none flex items-center justify-center p-0.5 rounded-lg hover:bg-gray-50 active:scale-95 transition-all" title="Toggle budgets on dashboard">${budgetToggleSvg}</button></div>${toggleHtml}</div>` + renderTotalMonthlyBudgetGaugeHtml();
 
             Object.keys(cats).forEach(catName => {
                 const catData = cats[catName];
@@ -2684,7 +2878,182 @@
             updateFilterButtons(); setupDashboardListener();
         }
         window.handleManualDateChange = () => { activeDateFilter = null; updateFilterButtons(); setupDashboardListener(); }
-        window.toggleDashboardMode = () => { window.isCalendarMode = !window.isCalendarMode; const mobileTab = document.getElementById('tab-m-dashboard'); const desktopTab = document.getElementById('tab-dashboard'); const title = document.getElementById('dashboard-title'); if (window.isCalendarMode) { title.innerText = "Calendar View"; mobileTab.classList.add('calendar-active'); desktopTab.classList.add('calendar-active'); showToast("Calendar View", "purple"); } else { title.innerText = "Dashboard"; mobileTab.classList.remove('calendar-active'); desktopTab.classList.remove('calendar-active'); showToast("Dashboard View", "green"); } renderDashboard(); };
+        let yearOverviewActiveYear = 2026;
+        let yearOverviewActiveScope = 'ALL';
+        let yearOverviewFetchedEntries = [];
+        let yearOverviewUnsubscribe = null;
+        
+        window.openYearOverviewModal = () => {
+            yearOverviewActiveScope = currentDashboardScope || 'ALL';
+            if (currentPersonalView) {
+                yearOverviewActiveScope = currentPersonalView;
+            }
+            
+            const currentYear = new Date().getFullYear();
+            yearOverviewActiveYear = (currentYear === 2025 || currentYear === 2026) ? currentYear : 2026;
+            
+            const modal = document.getElementById('year-overview-modal');
+            const modalContent = modal.querySelector('div');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+            
+            window.setupYearOverviewListener();
+        };
+        
+        window.closeYearOverviewModal = () => {
+            if (yearOverviewUnsubscribe) {
+                yearOverviewUnsubscribe();
+                yearOverviewUnsubscribe = null;
+            }
+            const modal = document.getElementById('year-overview-modal');
+            const modalContent = modal.querySelector('div');
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        };
+        
+        window.changeYearOverviewYear = (year) => {
+            yearOverviewActiveYear = year;
+            window.setupYearOverviewListener();
+        };
+        
+        window.changeYearOverviewScope = (scope) => {
+            yearOverviewActiveScope = scope;
+            window.renderYearOverview();
+        };
+
+        window.setupYearOverviewListener = () => {
+            if (yearOverviewUnsubscribe) {
+                yearOverviewUnsubscribe();
+                yearOverviewUnsubscribe = null;
+            }
+            
+            const monthsList = document.getElementById('yo-months-list');
+            monthsList.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-20 text-gray-400 space-y-3">
+                    <div class="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                    <span class="text-xs font-medium">Loading year overview...</span>
+                </div>
+            `;
+            
+            const startOfYear = new Date(yearOverviewActiveYear, 0, 1, 0, 0, 0, 0);
+            const endOfYear = new Date(yearOverviewActiveYear, 11, 31, 23, 59, 59, 999);
+            const q = query(expensesCol, where("dateTime", ">=", startOfYear), where("dateTime", "<=", endOfYear));
+            
+            yearOverviewUnsubscribe = onSnapshot(q, (snapshot) => {
+                yearOverviewFetchedEntries = snapshot.docs.map(docSnap => {
+                    const data = docSnap.data();
+                    return { id: docSnap.id, ...data, dateTime: data.dateTime?.toDate() || new Date() };
+                });
+                window.renderYearOverview();
+            }, (error) => {
+                console.error("Year Overview Sync Error:", error);
+                yearOverviewFetchedEntries = [];
+                window.renderYearOverview();
+            });
+        };
+        
+        window.renderYearOverview = () => {
+            const scopes = ['shared', 'GET', 'DOM', 'ALL'];
+            scopes.forEach(s => {
+                const btn = document.getElementById(`yo-scope-${s}`);
+                if (yearOverviewActiveScope === s) {
+                    btn.className = s === 'ALL'
+                        ? "flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all bg-white text-purple-600 shadow-sm"
+                        : s === 'GET'
+                        ? "flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all bg-green-500 text-white shadow-sm"
+                        : s === 'DOM'
+                        ? "flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all bg-blue-500 text-white shadow-sm"
+                        : "flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all bg-purple-600 text-white shadow-sm";
+                } else {
+                    btn.className = "flex-1 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200";
+                }
+            });
+            
+            [2025, 2026].forEach(y => {
+                const btn = document.getElementById(`yo-year-${y}`);
+                if (yearOverviewActiveYear === y) {
+                    btn.className = "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all bg-white text-gray-900 shadow-sm border border-gray-200/50";
+                } else {
+                    btn.className = "flex-1 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all text-gray-500 hover:bg-gray-200";
+                }
+            });
+            
+            let filtered = yearOverviewFetchedEntries.filter(e => !e.isStory);
+            
+            if (yearOverviewActiveScope === 'shared') {
+                filtered = filtered.filter(e => e.isIndividual !== true);
+            } else if (yearOverviewActiveScope === 'ALL') {
+            } else {
+                filtered = filtered.filter(e => e.person === yearOverviewActiveScope);
+            }
+            
+            const monthlyTotals = Array(12).fill(0);
+            filtered.forEach(e => {
+                const monthIdx = e.dateTime.getMonth();
+                monthlyTotals[monthIdx] += parseFloat(e.amount) || 0;
+            });
+            
+            const maxSpent = Math.max(...monthlyTotals, 1);
+            const yearSum = monthlyTotals.reduce((a, b) => a + b, 0);
+            document.getElementById('yo-total-sum').innerText = `฿${Math.round(yearSum).toLocaleString()}`;
+            
+            const monthsList = document.getElementById('yo-months-list');
+            monthsList.innerHTML = '';
+            
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            
+            monthNames.forEach((month, idx) => {
+                const total = monthlyTotals[idx];
+                const pct = (total / maxSpent) * 100;
+                
+                let barColor = 'bg-purple-600';
+                if (yearOverviewActiveScope === 'GET') barColor = 'bg-green-500';
+                else if (yearOverviewActiveScope === 'DOM') barColor = 'bg-blue-500';
+                else if (yearOverviewActiveScope === 'shared') barColor = 'bg-purple-600';
+                else barColor = 'bg-indigo-500';
+                
+                const monthRow = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-8 text-[10px] font-bold text-gray-500 uppercase">${month}</span>
+                        <div class="flex-1 bg-gray-100 h-3 rounded-full overflow-hidden">
+                            <div class="${barColor} h-full rounded-full transition-all duration-550" style="width: ${pct}%"></div>
+                        </div>
+                        <span class="w-20 text-[10px] font-black text-gray-700 text-right">${total > 0 ? `฿${Math.round(total).toLocaleString()}` : '—'}</span>
+                    </div>
+                `;
+                const div = document.createElement('div');
+                div.innerHTML = monthRow;
+                monthsList.appendChild(div.firstElementChild);
+            });
+        };
+
+        window.toggleDashboardMode = () => {
+            window.isCalendarMode = !window.isCalendarMode;
+            const mobileTab = document.getElementById('tab-m-dashboard');
+            const desktopTab = document.getElementById('tab-dashboard');
+            const title = document.getElementById('dashboard-title');
+            const yoBtn = document.getElementById('year-overview-btn');
+            if (window.isCalendarMode) {
+                title.innerText = "Calendar View";
+                mobileTab.classList.add('calendar-active');
+                desktopTab.classList.add('calendar-active');
+                if (yoBtn) yoBtn.classList.remove('hidden');
+                showToast("Calendar View", "purple");
+            } else {
+                title.innerText = "Dashboard";
+                mobileTab.classList.remove('calendar-active');
+                desktopTab.classList.remove('calendar-active');
+                if (yoBtn) yoBtn.classList.add('hidden');
+                showToast("Dashboard View", "green");
+            }
+            renderDashboard();
+        };
         window.handleDashboardTabClick = () => { const now = Date.now(); if (now - lastDashboardTap < 300) toggleDashboardMode(); else switchView('dashboard'); lastDashboardTap = now; }
         function setSyncState(loading) { const icon = document.getElementById('sync-icon'); if (loading) icon.classList.add('animate-spin-custom', 'text-purple-500'); else icon.classList.remove('animate-spin-custom', 'text-purple-500'); }
         window.handleHistoryTabClick = () => { const now = Date.now(); if (now - lastHistoryTap < 300) toggleDiaryMode(); else switchView('history'); lastHistoryTap = now; }
