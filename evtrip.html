@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>EV Trip ERP Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --yellow: #FFD84D; --bg: #fff; --border: #eee; --text: #222; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; color: var(--text); }
+        .card { background: var(--bg); border: 1px solid var(--border); border-left: 4px solid var(--yellow); padding: 12px; }
+        .table-wrap { background: #fff; border: 1px solid var(--border); overflow: auto; border-radius: 8px; }
+        th { background: #fffbe6; }
+    </style>
+    <!-- Firebase SDKs compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="container mx-auto p-4 max-w-5xl">
+        <!-- Header -->
+        <div class="header font-bold text-xl mb-4 flex justify-between items-center relative pb-3 border-b border-gray-200">
+            <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 10l1.5-4.5h11L19 10H5z"/>
+                </svg>
+                <span class="text-gray-800">แดชบอร์ดวางแผนเดินทาง EV</span>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Trip Name Input -->
+                <div class="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs shadow-sm">
+                    <span class="text-gray-400 font-normal">ทริป:</span>
+                    <input id="tripTitle" type="text" placeholder="ตั้งชื่อทริป..." class="font-semibold border-none focus:outline-none bg-transparent text-gray-700 w-32" onchange="saveTripName()">
+                </div>
+
+                <!-- Cloud Sync Status Badge -->
+                <div id="cloudStatus" class="flex items-center gap-1 text-[10px] text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 font-semibold" title="กำลังเชื่อมต่อฐานข้อมูลคลาวด์...">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    </svg>
+                    <span>เชื่อมต่อคลาวด์...</span>
+                </div>
+
+                <!-- Settings & Export Menu -->
+                <div class="relative" id="settingsMenu">
+                    <button onclick="toggleSettings()" class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition focus:outline-none flex items-center justify-center border border-gray-200 bg-white shadow-sm" title="การตั้งค่า">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                    <div id="settingsDropdown" class="origin-top-right absolute right-0 mt-2 w-52 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 hidden z-50 overflow-hidden">
+                        <div class="py-1">
+                            <button onclick="shareTripOnline()" class="group flex items-center px-4 py-2 text-xs text-emerald-600 hover:bg-emerald-50 w-full text-left transition font-semibold">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l4.636-2.318a3 3 0 11.832 1.664L9.516 12.42a3 3 0 010 1.62l4.646 2.324a3 3 0 11-.83 1.658L8.684 15.26a3 3 0 110-4.518z" />
+                                </svg>
+                                แชร์แผนเดินทาง (คลาวด์)
+                            </button>
+                            <button onclick="exportToCSV()" class="group flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                </svg>
+                                ส่งออกเป็น CSV
+                            </button>
+                            <button onclick="resetAllManualTimes()" class="group flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                คำนวณเวลาออโต้
+                            </button>
+                        </div>
+                        <div class="py-1">
+                            <button onclick="clearLocalStorage()" class="group flex items-center px-4 py-2 text-xs text-red-600 hover:bg-red-50 w-full text-left transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                ล้างข้อมูลในเครื่อง
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
+            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">อัตราสิ้นเปลือง</small><div class="flex items-center gap-1 mt-1"><input id="effRate" type="number" value="5" class="w-12 border-b font-bold text-center text-gray-800" onchange="calc()"> <span class="text-xs text-gray-500">กม./1%</span></div></div>
+            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">ระยะทางรวม</small><div class="value font-bold text-lg text-gray-800" id="totalKm">0 กม.</div></div>
+            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">เวลาขับรถรวม</small><div class="value font-bold text-lg text-gray-800" id="totalTime">0 นาที</div></div>
+            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">จุดแวะทั้งหมด</small><div class="value font-bold text-lg text-gray-800" id="totalStops">0</div></div>
+            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">จุดชาร์จทั้งหมด</small><div class="value font-bold text-lg text-amber-600" id="chargeStops">0</div></div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="actions mb-4 flex items-center justify-between gap-2">
+            <button onclick="addRow()" class="bg-yellow-400 px-4 py-2 rounded-lg shadow-sm text-sm font-semibold transition hover:bg-yellow-500 text-gray-900 flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                เพิ่มจุดแวะ
+            </button>
+            <div class="flex items-center gap-2 text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
+                <span class="text-gray-500 font-medium">เวลาล้อหมุน:</span>
+                <input type="time" id="departureTime" value="08:00" class="border-b border-gray-300 font-bold text-gray-800 bg-transparent focus:outline-none text-sm" onchange="calc()">
+            </div>
+        </div>
+
+        <!-- Itinerary Grid Table -->
+        <div class="table-wrap shadow-sm">
+            <table id="grid" class="w-full text-sm">
+                <thead>
+                    <tr class="border-b">
+                        <th class="p-3 text-left">ชื่อสถานที่</th>
+                        <th class="p-3">ประเภท</th>
+                        <th class="p-3">ระยะทาง (กม.)</th>
+                        <th class="p-3">เวลาขับ (นาที)</th>
+                        <th class="p-3">เวลาถึง (ETA)</th>
+                        <th class="p-3">แบตเตอรี่เมื่อถึง</th>
+                        <th class="p-3">ชาร์จถึง %</th>
+                        <th class="p-3">เวลาชาร์จ (นาที)</th>
+                        <th class="p-3">เวลาออก (ETD)</th>
+                        <th class="p-3"></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Firebase Script & Logic -->
+    <script>
+        // Firebase Configuration (Global Online Sync)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCA1razTnJuJdrDrJ4_jaxQoOih-FnghF8",
+            authDomain: "expensegetndom.firebaseapp.com",
+            databaseURL: "https://expensegetndom-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "expensegetndom",
+            storageBucket: "expensegetndom.firebasestorage.app",
+            messagingSenderId: "550903272896",
+            appId: "1:550903272896:web:0a2d73dd023f8721b62425",
+            measurementId: "G-4ENMN4ECT3"
+        };
+
+        let db = null;
+        let isCloudConnected = false;
+
+        // Initialize Firebase
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            isCloudConnected = true;
+            
+            // Update UI status to Connected
+            setTimeout(() => {
+                const statusDiv = document.getElementById('cloudStatus');
+                if (statusDiv) {
+                    statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
+                    statusDiv.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
+                        </svg>
+                        <span>คลาวด์ซิงก์</span>
+                    `;
+                    statusDiv.setAttribute("title", "เชื่อมต่อฐานข้อมูลคลาวด์เรียบร้อย (ซิงก์อัตโนมัติ)");
+                }
+            }, 800);
+        } catch (e) {
+            console.error("Firebase Initialization Failed: ", e);
+            setTimeout(() => {
+                const statusDiv = document.getElementById('cloudStatus');
+                if (statusDiv) {
+                    statusDiv.className = "flex items-center gap-1 text-[10px] text-red-600 bg-red-50 px-2.5 py-1 rounded-lg border border-red-200 font-semibold";
+                    statusDiv.innerHTML = `<span>คลาวด์ออฟไลน์</span>`;
+                }
+            }, 800);
+        }
+
+        // Load settings from localStorage
+        const savedData = localStorage.getItem('ev_trip_data');
+        const savedEff = localStorage.getItem('ev_trip_eff');
+        const savedDeparture = localStorage.getItem('ev_trip_departure');
+        const savedTitle = localStorage.getItem('ev_trip_title') || '';
+
+        let data = savedData ? JSON.parse(savedData) : [
+            {name: "จุดเริ่มต้น", type: "start", distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
+            {name: "สถานีชาร์จ EV", type: "charge", distance: 144, drive: 135, arrival: 0, charge: 80, chargeTime: 45},
+            {name: "จุดหมายปลายทาง", type: "stop", distance: 80, drive: 60, arrival: 0, charge: 0, chargeTime: 0}
+        ];
+
+        // Apply loaded inputs before rendering
+        if (savedEff) {
+            document.getElementById("effRate").value = savedEff;
+        }
+        if (savedDeparture) {
+            document.getElementById("departureTime").value = savedDeparture;
+        }
+        document.getElementById("tripTitle").value = savedTitle;
+
+        function formatMinsToTimeStr(totalMins) {
+            const h = Math.floor((totalMins % 1440) / 60);
+            const m = Math.floor(totalMins % 60);
+            const dayOffset = Math.floor(totalMins / 1440);
+            const dayLabel = dayOffset > 0 ? ` (+${dayOffset} วัน)` : '';
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}${dayLabel}`;
+        }
+
+        function formatMinsToEtdTimeStr(totalMins) {
+            const h = Math.floor((totalMins % 1440) / 60);
+            const m = Math.floor(totalMins % 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function render(){
+            const tbody = document.querySelector("#grid tbody");
+            tbody.innerHTML = "";
+            data.forEach((row, i) => {
+                const tr = document.createElement("tr");
+                tr.className = "border-b hover:bg-gray-50 text-center";
+                
+                const isStart = i === 0;
+                const isCharge = row.type === 'charge';
+                
+                tr.innerHTML = `
+                    <td class="p-2.5 text-left relative">
+                        <div class="flex items-center gap-2 w-full">
+                            <input class="flex-1 bg-transparent outline-none border-b border-transparent focus:border-yellow-400 font-medium min-w-0" value="${row.name}" onchange="update(${i},'name',this.value)">
+                            
+                            <!-- Navigation Menu -->
+                            <div class="relative flex shrink-0" id="navMenu-${i}">
+                                <button onclick="toggleNavMenu(${i}, event)" class="text-gray-400 hover:text-yellow-600 p-1 rounded hover:bg-gray-100 transition focus:outline-none flex items-center justify-center" title="นำทาง / แผนที่">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                    </svg>
+                                </button>
+                                <div id="navDropdown-${i}" class="origin-top-left absolute left-0 mt-6 w-48 rounded-lg shadow-xl bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 hidden z-50 text-left overflow-hidden">
+                                    <div class="px-3 py-2 text-xs bg-gray-50">
+                                        <label class="block text-gray-500 font-medium mb-1">วางลิงก์แผนที่:</label>
+                                        <input type="url" class="w-full border border-gray-300 rounded px-2 py-1 text-[11px] focus:outline-none focus:border-yellow-400 bg-white" placeholder="https://maps.google..." value="${row.mapUrl || ''}" onchange="updateMapUrl(${i}, this.value)" onclick="event.stopPropagation()">
+                                    </div>
+                                    ${row.mapUrl ? `
+                                    <div class="py-1">
+                                        <a href="${row.mapUrl}" target="_blank" onclick="event.stopPropagation(); document.getElementById('navDropdown-${i}').classList.add('hidden');" class="group flex items-center px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 w-full text-left transition font-semibold">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-2 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                            เปิดลิงก์ที่วางไว้
+                                        </a>
+                                    </div>
+                                    ` : ''}
+                                    <div class="py-1">
+                                        <div class="px-3 py-0.5 text-[9px] text-gray-400 font-bold uppercase tracking-wider">ค้นหาด้วยชื่อสถานที่</div>
+                                        <button onclick="openMapLink(${i}, 'google_search', event)" class="group flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
+                                            Google Maps (ค้นหา)
+                                        </button>
+                                        <button onclick="openMapLink(${i}, 'apple_search', event)" class="group flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
+                                            Apple Maps (ค้นหา)
+                                        </button>
+                                        <button onclick="openMapLink(${i}, 'google_dir', event)" class="group flex items-center px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 w-full text-left transition">
+                                            เส้นทาง (Google Maps)
+                                        </button>
+                                        <button onclick="openMapLink(${i}, 'apple_dir', event)" class="group flex items-center px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 w-full text-left transition">
+                                            เส้นทาง (Apple Maps)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="p-2.5">
+                        <select class="w-full bg-transparent outline-none font-medium" onchange="updateType(${i},this.value)">
+                            <option value="start" ${row.type==='start'?'selected':''}>จุดเริ่มต้น</option>
+                            <option value="charge" ${row.type==='charge'?'selected':''}>จุดชาร์จ</option>
+                            <option value="stop" ${row.type==='stop'?'selected':''}>จุดแวะพัก</option>
+                        </select>
+                    </td>
+                    <td class="p-2.5">
+                        <input type="number" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isStart ? 0 : row.distance}" ${isStart ? 'disabled' : ''} onchange="update(${i},'distance',this.value)">
+                    </td>
+                    <td class="p-2.5">
+                        <input type="number" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isStart ? 0 : row.drive}" ${isStart ? 'disabled' : ''} onchange="update(${i},'drive',this.value)">
+                    </td>
+                    <td class="p-2.5 font-semibold text-gray-600">-</td>
+                    <td class="p-2.5 font-mono font-bold text-emerald-600">-</td>
+                    <td class="p-2.5">
+                        <input type="number" min="0" max="100" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${row.charge}" onchange="update(${i},'charge',this.value)">
+                    </td>
+                    <td class="p-2.5">
+                        <input type="number" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isCharge ? row.chargeTime : 0}" ${isCharge ? '' : 'disabled class="opacity-30"'} onchange="update(${i},'chargeTime',this.value)">
+                    </td>
+                    <td class="p-2.5">
+                        <input type="time" class="bg-transparent text-center font-semibold text-gray-700 focus:outline-none focus:border-yellow-400" value="${formatMinsToEtdTimeStr(row.etd || 0)}" onchange="updateEtd(${i}, this.value)" ${isStart ? 'disabled' : ''}>
+                    </td>
+                    <td class="p-2.5 relative">
+                        <div class="inline-block text-left" id="actionMenu-${i}">
+                            <button onclick="toggleActionMenu(${i}, event)" class="text-gray-500 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition focus:outline-none flex items-center justify-center mx-auto" title="การจัดการ">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            </button>
+                            <div id="actionDropdown-${i}" class="origin-top-right absolute right-0 mt-1 w-36 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 hidden z-50 text-left overflow-hidden">
+                                <div class="py-1">
+                                    <button onclick="moveRow(${i}, -1)" class="group flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition ${i === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${i === 0 ? 'disabled' : ''}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                        </svg>
+                                        เลื่อนขึ้น
+                                    </button>
+                                    <button onclick="moveRow(${i}, 1)" class="group flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition ${i === data.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${i === data.length - 1 ? 'disabled' : ''}>
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                        เลื่อนลง
+                                    </button>
+                                </div>
+                                ${row.manualEtd ? `
+                                <div class="py-1">
+                                    <button onclick="resetManualTime(${i})" class="group flex items-center px-3 py-1.5 text-xs text-blue-600 hover:bg-blue-50 w-full text-left transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                                        </svg>
+                                        คำนวณเวลาออโต้
+                                    </button>
+                                </div>
+                                ` : ''}
+                                <div class="py-1">
+                                    <button onclick="delRow(${i})" class="group flex items-center px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 w-full text-left transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-2 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                        ลบจุดแวะ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            calc();
+        }
+
+        function update(i, key, val){
+            data[i][key] = isNaN(val) || val === "" ? val : Number(val);
+            if (key === 'chargeTime') {
+                delete data[i].manualEtd;
+            }
+            calc();
+        }
+
+        function updateEtd(i, val) {
+            if (i === 0) {
+                document.getElementById("departureTime").value = val;
+            } else {
+                if (val === "") {
+                    delete data[i].manualEtd;
+                } else {
+                    data[i].manualEtd = val;
+                }
+            }
+            calc();
+        }
+
+        function updateType(i, val) {
+            data[i].type = val;
+            if (val === 'start') {
+                data[i].distance = 0;
+                data[i].drive = 0;
+                data[i].chargeTime = 0;
+                delete data[i].manualEtd;
+            } else if (val === 'stop') {
+                data[i].chargeTime = 0;
+                data[i].charge = 0;
+            }
+            render();
+        }
+
+        function calc(){
+            const eff = Number(document.getElementById("effRate").value) || 1;
+            const departureTimeStr = document.getElementById("departureTime").value || "08:00";
+            const [startH, startM] = departureTimeStr.split(":").map(Number);
+            let runningMins = startH * 60 + startM;
+
+            let km = 0, driveTime = 0, chargeTime = 0, chargeCount = 0;
+            const minSafety = 15;
+
+            data.forEach((r, i) => {
+                if(i === 0) {
+                    r.distance = 0;
+                    r.drive = 0;
+                    r.arrival = r.charge || 100;
+                    r.chargeTime = 0;
+                    r.eta = runningMins;
+                    r.etd = runningMins;
+                } else {
+                    const prev = data[i - 1];
+                    let prevDepartureBat = prev.arrival;
+                    if (prev.type === 'charge') {
+                        prevDepartureBat = Math.max(prev.arrival, prev.charge || prev.arrival);
+                    } else if (prev.type === 'start') {
+                        prevDepartureBat = prev.charge || 100;
+                    }
+
+                    let consumption = r.distance / eff;
+                    r.arrival = Math.max(0, prevDepartureBat - consumption);
+
+                    r.eta = runningMins + (r.drive || 0);
+                    
+                    let etdMins;
+                    if (r.manualEtd) {
+                        const [h, m] = r.manualEtd.split(":").map(Number);
+                        const manualMins = h * 60 + m;
+                        const dayOffset = Math.floor(r.eta / 1440);
+                        etdMins = dayOffset * 1440 + manualMins;
+                        if (etdMins < r.eta) {
+                            etdMins += 1440;
+                        }
+                        if (r.type === 'charge') {
+                            r.chargeTime = Math.max(0, etdMins - r.eta);
+                            chargeCount++;
+                            chargeTime += r.chargeTime;
+                        } else {
+                            r.chargeTime = 0;
+                        }
+                    } else {
+                        let cTime = 0;
+                        if (r.type === 'charge') {
+                            cTime = Number(r.chargeTime) || 0;
+                            chargeCount++;
+                            chargeTime += cTime;
+                        } else {
+                            r.chargeTime = 0;
+                        }
+                        etdMins = r.eta + cTime;
+                    }
+
+                    r.etd = etdMins;
+                    runningMins = r.etd;
+
+                    km += r.distance || 0;
+                    driveTime += r.drive || 0;
+                }
+            });
+
+            document.getElementById("totalKm").innerText = km + " กม.";
+            
+            let driveH = Math.floor(driveTime / 60);
+            let driveM = driveTime % 60;
+            document.getElementById("totalTime").innerText = (driveH > 0 ? `${driveH} ชม. ` : "") + `${driveM} นาที`;
+            
+            document.getElementById("totalStops").innerText = data.length;
+            document.getElementById("chargeStops").innerText = chargeCount;
+            
+            const rows = document.querySelectorAll("#grid tbody tr");
+            data.forEach((r, i) => {
+                if (rows[i]) {
+                    rows[i].cells[4].innerText = formatMinsToTimeStr(r.eta);
+                    
+                    const arrivalCell = rows[i].cells[5];
+                    if (i === 0) {
+                        arrivalCell.innerText = "-";
+                        arrivalCell.className = "p-2.5 font-mono text-gray-400";
+                    } else {
+                        arrivalCell.innerText = r.arrival.toFixed(1) + "%";
+                        if (r.arrival < minSafety) {
+                            arrivalCell.className = "p-2.5 font-mono font-bold text-red-500";
+                        } else {
+                            arrivalCell.className = "p-2.5 font-mono font-bold text-emerald-600";
+                        }
+                    }
+                    
+                    const chargeTimeInput = rows[i].cells[7].querySelector("input");
+                    if (chargeTimeInput && r.type === 'charge') {
+                        chargeTimeInput.value = r.chargeTime;
+                    }
+
+                    const etdInput = rows[i].cells[8].querySelector("input");
+                    if (etdInput) {
+                        etdInput.value = formatMinsToEtdTimeStr(r.etd);
+                    }
+                }
+            });
+
+            // Save state to localStorage
+            localStorage.setItem('ev_trip_data', JSON.stringify(data));
+            localStorage.setItem('ev_trip_eff', eff);
+            localStorage.setItem('ev_trip_departure', departureTimeStr);
+
+            // Auto-sync to cloud if trip is named
+            const title = document.getElementById("tripTitle") ? document.getElementById("tripTitle").value.trim() : '';
+            if (isCloudConnected && title) {
+                syncToCloudQuietly();
+            }
+        }
+
+        function addRow(){
+            data.push({name: "จุดแวะพักใหม่", type: "stop", distance: 50, drive: 45, arrival: 0, charge: 0, chargeTime: 0});
+            render();
+        }
+
+        function delRow(i){
+            if (data.length <= 1) {
+                alert("ต้องมีจุดแวะเดินทางอย่างน้อย 1 จุดครับ");
+                return;
+            }
+            data.splice(i, 1);
+            if (data[0].type !== 'start') {
+                data[0].type = 'start';
+                data[0].distance = 0;
+                data[0].drive = 0;
+                data[0].chargeTime = 0;
+                delete data[0].manualEtd;
+            }
+            render();
+        }
+
+        function toggleActionMenu(i, event) {
+            event.stopPropagation();
+            const dropdowns = document.querySelectorAll("[id^='actionDropdown-']");
+            dropdowns.forEach(d => {
+                if (d.id !== `actionDropdown-${i}`) {
+                    d.classList.add("hidden");
+                }
+            });
+            const dropdown = document.getElementById(`actionDropdown-${i}`);
+            dropdown.classList.toggle("hidden");
+        }
+
+        function moveRow(i, dir) {
+            const targetIndex = i + dir;
+            if (targetIndex < 0 || targetIndex >= data.length) return;
+            const temp = data[i];
+            data[i] = data[targetIndex];
+            data[targetIndex] = temp;
+
+            if (data[0].type !== 'start') {
+                data[0].type = 'start';
+                data[0].distance = 0;
+                data[0].drive = 0;
+                data[0].chargeTime = 0;
+                delete data[0].manualEtd;
+            }
+            for (let j = 1; j < data.length; j++) {
+                if (data[j].type === 'start') {
+                    data[j].type = 'stop';
+                }
+            }
+            render();
+        }
+
+        function resetManualTime(i) {
+            delete data[i].manualEtd;
+            render();
+        }
+
+        function resetAllManualTimes() {
+            data.forEach(r => {
+                delete r.manualEtd;
+            });
+            render();
+            document.getElementById("settingsDropdown").classList.add("hidden");
+        }
+
+        function toggleSettings() {
+            const dropdown = document.getElementById("settingsDropdown");
+            dropdown.classList.toggle("hidden");
+        }
+
+        function exportToCSV() {
+            let csv = "\uFEFF";
+            csv += "ชื่อสถานที่,ประเภท,ระยะทาง (กม.),เวลาขับ (นาที),เวลาถึง (ETA),แบตเตอรี่เมื่อถึง,ชาร์จถึง %,เวลาชาร์จ (นาที),เวลาออก (ETD)\n";
+            data.forEach((r, i) => {
+                const typeLabel = r.type === 'start' ? 'จุดเริ่มต้น' : (r.type === 'charge' ? 'จุดชาร์จ' : 'จุดแวะพัก');
+                const distanceVal = i === 0 ? 0 : r.distance;
+                const driveVal = i === 0 ? 0 : r.drive;
+                const etaVal = formatMinsToTimeStr(r.eta);
+                const arrivalVal = i === 0 ? "-" : r.arrival.toFixed(1) + "%";
+                const chargeVal = r.charge + "%";
+                const chargeTimeVal = r.type === 'charge' ? r.chargeTime : 0;
+                const etdVal = formatMinsToTimeStr(r.etd);
+
+                const escapedName = `"${r.name.replace(/"/g, '""')}"`;
+
+                csv += `${escapedName},${typeLabel},${distanceVal},${driveVal},${etaVal},${arrivalVal},${chargeVal},${chargeTimeVal},${etdVal}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "ev_trip_plan.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function clearLocalStorage() {
+            if (confirm("คุณต้องการล้างข้อมูลแผนการเดินทางที่บันทึกไว้ในเครื่องทั้งหมดใช่หรือไม่?")) {
+                localStorage.removeItem('ev_trip_data');
+                localStorage.removeItem('ev_trip_eff');
+                localStorage.removeItem('ev_trip_departure');
+                localStorage.removeItem('ev_trip_title');
+                
+                document.getElementById("effRate").value = 5;
+                document.getElementById("departureTime").value = "08:00";
+                document.getElementById("tripTitle").value = "";
+                
+                data = [
+                    {name: "จุดเริ่มต้น", type: "start", distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
+                    {name: "สถานีชาร์จ EV", type: "charge", distance: 144, drive: 135, arrival: 0, charge: 80, chargeTime: 45},
+                    {name: "จุดหมายปลายทาง", type: "stop", distance: 80, drive: 60, arrival: 0, charge: 0, chargeTime: 0}
+                ];
+                render();
+            }
+        }
+
+        function updateMapUrl(i, val) {
+            data[i].mapUrl = val;
+            localStorage.setItem('ev_trip_data', JSON.stringify(data));
+            render();
+        }
+
+        function toggleNavMenu(i, event) {
+            event.stopPropagation();
+            const dropdowns = document.querySelectorAll("[id^='navDropdown-']");
+            dropdowns.forEach(d => {
+                if (d.id !== `navDropdown-${i}`) {
+                    d.classList.add("hidden");
+                }
+            });
+            const otherDropdowns = document.querySelectorAll("[id^='actionDropdown-']");
+            otherDropdowns.forEach(d => d.classList.add("hidden"));
+            document.getElementById("settingsDropdown").classList.add("hidden");
+
+            const dropdown = document.getElementById(`navDropdown-${i}`);
+            dropdown.classList.toggle("hidden");
+        }
+
+        function openMapLink(i, type, event) {
+            event.preventDefault();
+            const name = data[i].name || "";
+            if (!name) {
+                alert("กรุณาระบุชื่อสถานที่ก่อนนำทางครับ");
+                return;
+            }
+
+            const prev = i > 0 ? data[i - 1] : null;
+            let url = "";
+
+            if (type === 'google_search') {
+                url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(name)}`;
+            } else if (type === 'apple_search') {
+                url = `https://maps.apple.com/?q=${encodeURIComponent(name)}`;
+            } else if (type === 'google_dir') {
+                if (prev && prev.name) {
+                    url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(prev.name)}&destination=${encodeURIComponent(name)}`;
+                } else {
+                    url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(name)}`;
+                }
+            } else if (type === 'apple_dir') {
+                if (prev && prev.name) {
+                    url = `https://maps.apple.com/?saddr=${encodeURIComponent(prev.name)}&daddr=${encodeURIComponent(name)}`;
+                } else {
+                    url = `https://maps.apple.com/?daddr=${encodeURIComponent(name)}`;
+                }
+            }
+
+            if (url) {
+                window.open(url, '_blank');
+            }
+            
+            document.getElementById(`navDropdown-${i}`).classList.add("hidden");
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener("click", function(event) {
+            const dropdown = document.getElementById("settingsDropdown");
+            const menu = document.getElementById("settingsMenu");
+            if (dropdown && menu && !menu.contains(event.target)) {
+                dropdown.classList.add("hidden");
+            }
+            
+            const actionDropdowns = document.querySelectorAll("[id^='actionDropdown-']");
+            actionDropdowns.forEach(d => {
+                d.classList.add("hidden");
+            });
+
+            const navDropdowns = document.querySelectorAll("[id^='navDropdown-']");
+            navDropdowns.forEach(d => {
+                d.classList.add("hidden");
+            });
+        });
+
+        function saveTripName() {
+            const title = document.getElementById("tripTitle").value.trim();
+            localStorage.setItem('ev_trip_title', title);
+            if (isCloudConnected && title) {
+                syncToCloudQuietly();
+            }
+        }
+
+        function syncToCloudQuietly() {
+            const title = document.getElementById("tripTitle").value.trim();
+            if (!title || !isCloudConnected) return;
+
+            const eff = Number(document.getElementById("effRate").value) || 5;
+            const departureTimeStr = document.getElementById("departureTime").value || "08:00";
+            const tripData = {
+                title: title,
+                efficiency: eff,
+                departureTime: departureTimeStr,
+                data: data,
+                updatedAt: new Date().toISOString()
+            };
+
+            db.ref('ev_trips/' + encodeURIComponent(title)).set(tripData)
+                .then(() => {
+                    const statusDiv = document.getElementById('cloudStatus');
+                    if (statusDiv) {
+                        statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
+                        statusDiv.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
+                            </svg>
+                            <span>ซิงก์แล้ว</span>
+                        `;
+                        setTimeout(() => {
+                            statusDiv.innerHTML = `
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
+                                </svg>
+                                <span>คลาวด์ซิงก์</span>
+                            `;
+                        }, 2000);
+                    }
+                })
+                .catch(err => console.error("Cloud auto-sync failed:", err));
+        }
+
+        function shareTripOnline() {
+            const title = document.getElementById("tripTitle").value.trim();
+            if (!title) {
+                alert("กรุณาระบุชื่อทริปของคุณก่อนแชร์ออนไลน์ครับ");
+                document.getElementById("tripTitle").focus();
+                return;
+            }
+
+            if (!isCloudConnected) {
+                alert("ระบบคลาวด์ไม่ได้เชื่อมต่อขณะนี้ กรุณาลองใหม่อีกครั้งครับ");
+                return;
+            }
+
+            const eff = Number(document.getElementById("effRate").value) || 5;
+            const departureTimeStr = document.getElementById("departureTime").value || "08:00";
+            const tripData = {
+                title: title,
+                efficiency: eff,
+                departureTime: departureTimeStr,
+                data: data,
+                updatedAt: new Date().toISOString()
+            };
+
+            db.ref('ev_trips/' + encodeURIComponent(title)).set(tripData)
+                .then(() => {
+                    const shareUrl = window.location.origin + window.location.pathname + '?trip=' + encodeURIComponent(title);
+                    document.getElementById("shareLinkInput").value = shareUrl;
+                    document.getElementById("shareModal").classList.remove("hidden");
+                    document.getElementById("settingsDropdown").classList.add("hidden");
+                })
+                .catch(err => {
+                    console.error("Cloud save failed:", err);
+                    alert("ไม่สามารถอัปโหลดทริปขึ้นคลาวด์ได้ในขณะนี้");
+                });
+        }
+
+        function copyShareLink() {
+            const copyText = document.getElementById("shareLinkInput");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value)
+                .then(() => {
+                    alert("คัดลอกลิงก์แชร์ไปยังคลิปบอร์ดแล้วครับ!");
+                })
+                .catch(err => {
+                    console.error("Failed to copy text:", err);
+                    alert("ไม่สามารถคัดลอกลิงก์อัตโนมัติได้ กรุณาคลิกคัดลอกด้วยตนเองครับ");
+                });
+        }
+
+        function closeShareModal() {
+            document.getElementById("shareModal").classList.add("hidden");
+        }
+
+        function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tripName = urlParams.get('trip');
+            if (tripName && isCloudConnected) {
+                const statusDiv = document.getElementById('cloudStatus');
+                if (statusDiv) {
+                    statusDiv.innerHTML = '<span>กำลังโหลดทริป...</span>';
+                }
+                
+                db.ref('ev_trips/' + encodeURIComponent(tripName)).once('value')
+                    .then(snapshot => {
+                        const tripData = snapshot.val();
+                        if (tripData) {
+                            document.getElementById("tripTitle").value = tripData.title || tripName;
+                            document.getElementById("effRate").value = tripData.efficiency || 5;
+                            document.getElementById("departureTime").value = tripData.departureTime || '08:00';
+                            data = tripData.data || [];
+                            
+                            localStorage.setItem('ev_trip_data', JSON.stringify(data));
+                            localStorage.setItem('ev_trip_eff', tripData.efficiency || 5);
+                            localStorage.setItem('ev_trip_departure', tripData.departureTime || '08:00');
+                            localStorage.setItem('ev_trip_title', tripData.title || tripName);
+                            
+                            render();
+                            
+                            if (statusDiv) {
+                                statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
+                                statusDiv.innerHTML = `
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
+                                    </svg>
+                                    <span>ซิงก์คลาวด์แล้ว</span>
+                                `;
+                            }
+                        } else {
+                            alert("ไม่พบแผนการเดินทางออนไลน์นี้ครับ");
+                            render();
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Error loading cloud trip:", err);
+                        alert("เกิดข้อผิดพลาดในการโหลดแผนการเดินทางออนไลน์");
+                        render();
+                    });
+            } else {
+                render();
+            }
+        }
+
+        init();
+    </script>
+
+    <!-- Share Modal -->
+    <div id="shareModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6 relative">
+            <h3 class="font-bold text-lg text-gray-900 mb-2">แชร์แผนการเดินทาง</h3>
+            <p class="text-sm text-gray-500 mb-4">ทริปของคุณถูกบันทึกขึ้นระบบคลาวด์แล้ว สามารถคัดลอกลิงก์ด้านล่างเพื่อแชร์ให้เพื่อนๆ ได้เลยครับ</p>
+            <div class="flex items-center gap-2 border rounded-lg p-2 bg-gray-50 mb-4">
+                <input id="shareLinkInput" type="text" readonly class="flex-1 bg-transparent text-xs text-gray-600 outline-none w-full" value="">
+                <button onclick="copyShareLink()" class="bg-yellow-400 hover:bg-yellow-500 transition px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-800 shrink-0">คัดลอกลิงก์</button>
+            </div>
+            <div class="flex justify-end">
+                <button onclick="closeShareModal()" class="text-sm font-semibold text-gray-500 hover:text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-100 transition">ปิด</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
