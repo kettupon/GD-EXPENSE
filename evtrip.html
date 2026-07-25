@@ -712,25 +712,35 @@
             }
 
             activeCloudRef = db.collection('ev_trips').doc(title).onSnapshot(doc => {
-                if (isSyncingFromCloud) {
-                    isSyncingFromCloud = false;
+                // If the update is from our own local edit that hasn't been written to server yet, ignore it to prevent cursor/focus jumps
+                if (doc.metadata.hasPendingWrites) {
                     return;
                 }
 
                 const tripData = doc.data();
                 if (tripData && tripData.data) {
-                    document.getElementById("tripTitle").value = tripData.title || title;
-                    document.getElementById("effRate").value = tripData.efficiency || 5;
-                    document.getElementById("departureTime").value = tripData.departureTime || '08:00';
-                    
-                    data = tripData.data;
+                    const effRateEl = document.getElementById("effRate");
+                    const departureTimeEl = document.getElementById("departureTime");
 
-                    localStorage.setItem('ev_trip_data', JSON.stringify(data));
-                    localStorage.setItem('ev_trip_eff', tripData.efficiency || 5);
-                    localStorage.setItem('ev_trip_departure', tripData.departureTime || '08:00');
-                    localStorage.setItem('ev_trip_title', tripData.title || title);
+                    // Only update the local UI if the incoming data is actually different
+                    const isDataChanged = JSON.stringify(data) !== JSON.stringify(tripData.data);
+                    const isEffChanged = Number(effRateEl.value) !== (tripData.efficiency || 5);
+                    const isDepChanged = departureTimeEl.value !== (tripData.departureTime || '08:00');
 
-                    render();
+                    if (isDataChanged || isEffChanged || isDepChanged) {
+                        document.getElementById("tripTitle").value = tripData.title || title;
+                        effRateEl.value = tripData.efficiency || 5;
+                        departureTimeEl.value = tripData.departureTime || '08:00';
+                        
+                        data = tripData.data;
+
+                        localStorage.setItem('ev_trip_data', JSON.stringify(data));
+                        localStorage.setItem('ev_trip_eff', tripData.efficiency || 5);
+                        localStorage.setItem('ev_trip_departure', tripData.departureTime || '08:00');
+                        localStorage.setItem('ev_trip_title', tripData.title || title);
+
+                        render();
+                    }
 
                     const statusDiv = document.getElementById('cloudStatus');
                     if (statusDiv) {
