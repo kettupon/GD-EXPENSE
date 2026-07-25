@@ -14,7 +14,7 @@
     </style>
     <!-- Firebase SDKs compat -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
     <div class="container mx-auto p-4 max-w-5xl">
@@ -149,7 +149,7 @@
         // Initialize Firebase
         try {
             firebase.initializeApp(firebaseConfig);
-            db = firebase.database();
+            db = firebase.firestore();
             isCloudConnected = true;
             
             // Update UI status to Connected
@@ -701,6 +701,63 @@
             }
         }
 
+        let activeCloudRef = null;
+        let isSyncingFromCloud = false;
+
+        function subscribeToTrip(title) {
+            if (!isCloudConnected || !title) return;
+            
+            if (activeCloudRef) {
+                activeCloudRef(); // Firestore returns unsubscribe function
+            }
+
+            activeCloudRef = db.collection('ev_trips').doc(title).onSnapshot(doc => {
+                if (isSyncingFromCloud) {
+                    isSyncingFromCloud = false;
+                    return;
+                }
+
+                const tripData = doc.data();
+                if (tripData && tripData.data) {
+                    document.getElementById("tripTitle").value = tripData.title || title;
+                    document.getElementById("effRate").value = tripData.efficiency || 5;
+                    document.getElementById("departureTime").value = tripData.departureTime || '08:00';
+                    
+                    data = tripData.data;
+
+                    localStorage.setItem('ev_trip_data', JSON.stringify(data));
+                    localStorage.setItem('ev_trip_eff', tripData.efficiency || 5);
+                    localStorage.setItem('ev_trip_departure', tripData.departureTime || '08:00');
+                    localStorage.setItem('ev_trip_title', tripData.title || title);
+
+                    render();
+
+                    const statusDiv = document.getElementById('cloudStatus');
+                    if (statusDiv) {
+                        statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
+                        statusDiv.innerHTML = `
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
+                            </svg>
+                            <span>เรียลไทม์ซิงก์</span>
+                        `;
+                        statusDiv.setAttribute("title", "ซิงก์ข้อมูลเรียลไทม์สดผ่าน Cloud Firestore");
+                    }
+                }
+            }, err => {
+                console.error("Firestore Listen failed:", err);
+            });
+        }
+
+        function saveTripName() {
+            const title = document.getElementById("tripTitle").value.trim();
+            localStorage.setItem('ev_trip_title', title);
+            if (isCloudConnected && title) {
+                subscribeToTrip(title);
+                syncToCloudQuietly();
+            }
+        }
+
         function syncToCloudQuietly() {
             const title = document.getElementById("tripTitle").value.trim();
             if (!title || !isCloudConnected) return;
@@ -715,7 +772,8 @@
                 updatedAt: new Date().toISOString()
             };
 
-            db.ref('ev_trips/' + encodeURIComponent(title)).set(tripData)
+            isSyncingFromCloud = true;
+            db.collection('ev_trips').doc(title).set(tripData)
                 .then(() => {
                     const statusDiv = document.getElementById('cloudStatus');
                     if (statusDiv) {
@@ -724,19 +782,14 @@
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
                                 <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
                             </svg>
-                            <span>ซิงก์แล้ว</span>
+                            <span>เรียลไทม์ซิงก์</span>
                         `;
-                        setTimeout(() => {
-                            statusDiv.innerHTML = `
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
-                                </svg>
-                                <span>คลาวด์ซิงก์</span>
-                            `;
-                        }, 2000);
                     }
                 })
-                .catch(err => console.error("Cloud auto-sync failed:", err));
+                .catch(err => {
+                    isSyncingFromCloud = false;
+                    console.error("Cloud auto-sync failed:", err);
+                });
         }
 
         function shareTripOnline() {
@@ -762,14 +815,17 @@
                 updatedAt: new Date().toISOString()
             };
 
-            db.ref('ev_trips/' + encodeURIComponent(title)).set(tripData)
+            isSyncingFromCloud = true;
+            db.collection('ev_trips').doc(title).set(tripData)
                 .then(() => {
+                    subscribeToTrip(title);
                     const shareUrl = window.location.origin + window.location.pathname + '?trip=' + encodeURIComponent(title);
                     document.getElementById("shareLinkInput").value = shareUrl;
                     document.getElementById("shareModal").classList.remove("hidden");
                     document.getElementById("settingsDropdown").classList.add("hidden");
                 })
                 .catch(err => {
+                    isSyncingFromCloud = false;
                     console.error("Cloud save failed:", err);
                     alert("ไม่สามารถอัปโหลดทริปขึ้นคลาวด์ได้ในขณะนี้");
                 });
@@ -796,47 +852,11 @@
         function init() {
             const urlParams = new URLSearchParams(window.location.search);
             const tripName = urlParams.get('trip');
-            if (tripName && isCloudConnected) {
-                const statusDiv = document.getElementById('cloudStatus');
-                if (statusDiv) {
-                    statusDiv.innerHTML = '<span>กำลังโหลดทริป...</span>';
-                }
-                
-                db.ref('ev_trips/' + encodeURIComponent(tripName)).once('value')
-                    .then(snapshot => {
-                        const tripData = snapshot.val();
-                        if (tripData) {
-                            document.getElementById("tripTitle").value = tripData.title || tripName;
-                            document.getElementById("effRate").value = tripData.efficiency || 5;
-                            document.getElementById("departureTime").value = tripData.departureTime || '08:00';
-                            data = tripData.data || [];
-                            
-                            localStorage.setItem('ev_trip_data', JSON.stringify(data));
-                            localStorage.setItem('ev_trip_eff', tripData.efficiency || 5);
-                            localStorage.setItem('ev_trip_departure', tripData.departureTime || '08:00');
-                            localStorage.setItem('ev_trip_title', tripData.title || tripName);
-                            
-                            render();
-                            
-                            if (statusDiv) {
-                                statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
-                                statusDiv.innerHTML = `
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
-                                    </svg>
-                                    <span>ซิงก์คลาวด์แล้ว</span>
-                                `;
-                            }
-                        } else {
-                            alert("ไม่พบแผนการเดินทางออนไลน์นี้ครับ");
-                            render();
-                        }
-                    })
-                    .catch(err => {
-                        console.error("Error loading cloud trip:", err);
-                        alert("เกิดข้อผิดพลาดในการโหลดแผนการเดินทางออนไลน์");
-                        render();
-                    });
+            const localTitle = document.getElementById("tripTitle").value.trim();
+            const targetTitle = tripName || localTitle;
+
+            if (targetTitle && isCloudConnected) {
+                subscribeToTrip(targetTitle);
             } else {
                 render();
             }
