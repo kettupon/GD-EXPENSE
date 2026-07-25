@@ -19,68 +19,73 @@
 <body>
     <div class="container mx-auto p-4 max-w-5xl">
         <!-- Header -->
-        <div class="header font-bold text-xl mb-4 flex justify-between items-center relative pb-3 border-b border-gray-200">
-            <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 10l1.5-4.5h11L19 10H5z"/>
-                </svg>
-                <span class="text-gray-800">แดชบอร์ดวางแผนเดินทาง EV</span>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                <!-- Trip Name Input -->
-                <div class="hidden sm:flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1 text-xs shadow-sm">
-                    <span class="text-gray-400 font-normal">ทริป:</span>
-                    <input id="tripTitle" type="text" placeholder="ตั้งชื่อทริป..." class="font-semibold border-none focus:outline-none bg-transparent text-gray-700 w-32" onchange="saveTripName()">
-                </div>
-
-                <!-- Cloud Sync Status Badge -->
-                <div id="cloudStatus" class="flex items-center gap-1 text-[10px] text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg border border-gray-200 font-semibold" title="กำลังเชื่อมต่อฐานข้อมูลคลาวด์...">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+        <div class="mb-4 pb-3 border-b border-gray-200">
+            <!-- Row 1: Title + Controls -->
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 sm:w-6 sm:h-6 text-yellow-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 10l1.5-4.5h11L19 10H5z"/>
                     </svg>
-                    <span>เชื่อมต่อคลาวด์...</span>
+                    <span class="text-gray-800 font-bold text-base sm:text-xl">EV Trip Planner</span>
                 </div>
-
-                <!-- Settings & Export Menu -->
-                <div class="relative" id="settingsMenu">
-                    <button onclick="toggleSettings()" class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition focus:outline-none flex items-center justify-center border border-gray-200 bg-white shadow-sm" title="การตั้งค่า">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <!-- Cloud Sync Status Badge -->
+                    <div id="cloudStatus" class="flex items-center gap-1 text-[10px] text-gray-500 bg-gray-100 px-2 py-1 rounded-lg border border-gray-200 font-semibold" title="กำลังเชื่อมต่อฐานข้อมูลคลาวด์...">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
                         </svg>
-                    </button>
-                    <div id="settingsDropdown" class="origin-top-right absolute right-0 mt-2 w-52 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 hidden z-50 overflow-hidden">
-                        <div class="py-1">
-                            <button onclick="shareTripOnline()" class="group flex items-center px-4 py-2 text-xs text-emerald-600 hover:bg-emerald-50 w-full text-left transition font-semibold">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l4.636-2.318a3 3 0 11.832 1.664L9.516 12.42a3 3 0 010 1.62l4.646 2.324a3 3 0 11-.83 1.658L8.684 15.26a3 3 0 110-4.518z" />
-                                </svg>
-                                แชร์แผนเดินทาง (คลาวด์)
-                            </button>
-                            <button onclick="exportToCSV()" class="group flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                </svg>
-                                ส่งออกเป็น CSV
-                            </button>
-                            <button onclick="resetAllManualTimes()" class="group flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                คำนวณเวลาออโต้
-                            </button>
-                        </div>
-                        <div class="py-1">
-                            <button onclick="clearLocalStorage()" class="group flex items-center px-4 py-2 text-xs text-red-600 hover:bg-red-50 w-full text-left transition">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                                ล้างข้อมูลในเครื่อง
-                            </button>
+                        <span>เชื่อมต่อ...</span>
+                    </div>
+
+                    <!-- Settings & Export Menu -->
+                    <div class="relative" id="settingsMenu">
+                        <button onclick="toggleSettings()" class="text-gray-500 hover:text-gray-700 p-1.5 rounded-lg hover:bg-gray-100 transition focus:outline-none flex items-center justify-center border border-gray-200 bg-white shadow-sm" title="การตั้งค่า">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </button>
+                        <div id="settingsDropdown" class="origin-top-right absolute right-0 mt-2 w-52 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 hidden z-50 overflow-hidden">
+                            <div class="py-1">
+                                <button onclick="shareTripOnline()" class="group flex items-center px-4 py-2 text-xs text-emerald-600 hover:bg-emerald-50 w-full text-left transition font-semibold">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 10.742l4.636-2.318a3 3 0 11.832 1.664L9.516 12.42a3 3 0 010 1.62l4.646 2.324a3 3 0 11-.83 1.658L8.684 15.26a3 3 0 110-4.518z" />
+                                    </svg>
+                                    แชร์แผนเดินทาง (คลาวด์)
+                                </button>
+                                <button onclick="exportToCSV()" class="group flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                    </svg>
+                                    ส่งออกเป็น CSV
+                                </button>
+                                <button onclick="resetAllManualTimes()" class="group flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    คำนวณเวลาออโต้
+                                </button>
+                            </div>
+                            <div class="py-1">
+                                <button onclick="clearLocalStorage()" class="group flex items-center px-4 py-2 text-xs text-red-600 hover:bg-red-50 w-full text-left transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    ล้างข้อมูลในเครื่อง
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
+            <!-- Row 2: Trip Name Input (always visible, full width on mobile) -->
+            <div class="flex items-center gap-2 mt-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 text-xs shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                </svg>
+                <span class="text-gray-400 font-medium shrink-0">ชื่อทริป:</span>
+                <input id="tripTitle" type="text" placeholder="พิมพ์ชื่อทริปเพื่อซิงก์ออนไลน์..." class="flex-1 font-semibold border-none focus:outline-none bg-transparent text-gray-700 min-w-0" onchange="saveTripName()">
             </div>
         </div>
 
@@ -487,10 +492,10 @@
             localStorage.setItem('ev_trip_eff', eff);
             localStorage.setItem('ev_trip_departure', departureTimeStr);
 
-            // Auto-sync to cloud if trip is named
+            // Auto-sync to cloud if trip is named (debounced)
             const title = document.getElementById("tripTitle") ? document.getElementById("tripTitle").value.trim() : '';
             if (isCloudConnected && title) {
-                syncToCloudQuietly();
+                debouncedSync();
             }
         }
 
@@ -702,7 +707,17 @@
         }
 
         let activeCloudRef = null;
-        let isSyncingFromCloud = false;
+        let syncTimer = null;
+        let isReceivingFromCloud = false;
+
+        // Debounce cloud sync to prevent rapid-fire writes causing loops
+        function debouncedSync() {
+            if (isReceivingFromCloud) return; // Don't sync back when receiving cloud data
+            if (syncTimer) clearTimeout(syncTimer);
+            syncTimer = setTimeout(() => {
+                syncToCloudQuietly();
+            }, 800);
+        }
 
         function subscribeToTrip(title) {
             if (!isCloudConnected || !title) return;
@@ -728,6 +743,7 @@
                     const isDepChanged = departureTimeEl.value !== (tripData.departureTime || '08:00');
 
                     if (isDataChanged || isEffChanged || isDepChanged) {
+                        isReceivingFromCloud = true;
                         document.getElementById("tripTitle").value = tripData.title || title;
                         effRateEl.value = tripData.efficiency || 5;
                         departureTimeEl.value = tripData.departureTime || '08:00';
@@ -740,6 +756,7 @@
                         localStorage.setItem('ev_trip_title', tripData.title || title);
 
                         render();
+                        isReceivingFromCloud = false;
                     }
 
                     const statusDiv = document.getElementById('cloudStatus');
@@ -782,7 +799,6 @@
                 updatedAt: new Date().toISOString()
             };
 
-            isSyncingFromCloud = true;
             db.collection('ev_trips').doc(title).set(tripData)
                 .then(() => {
                     const statusDiv = document.getElementById('cloudStatus');
@@ -797,7 +813,6 @@
                     }
                 })
                 .catch(err => {
-                    isSyncingFromCloud = false;
                     console.error("Cloud auto-sync failed:", err);
                 });
         }
@@ -825,7 +840,6 @@
                 updatedAt: new Date().toISOString()
             };
 
-            isSyncingFromCloud = true;
             db.collection('ev_trips').doc(title).set(tripData)
                 .then(() => {
                     subscribeToTrip(title);
@@ -835,7 +849,6 @@
                     document.getElementById("settingsDropdown").classList.add("hidden");
                 })
                 .catch(err => {
-                    isSyncingFromCloud = false;
                     console.error("Cloud save failed:", err);
                     alert("ไม่สามารถอัปโหลดทริปขึ้นคลาวด์ได้ในขณะนี้");
                 });
