@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
     <title>EV Trip ERP Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         :root { --yellow: #FFD84D; --bg: #fff; --border: #eee; --text: #222; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fafafa; color: var(--text); }
         .card { background: var(--bg); border: 1px solid var(--border); border-left: 4px solid var(--yellow); padding: 12px; }
         .table-wrap { background: #fff; border: 1px solid var(--border); overflow: auto; border-radius: 8px; }
         th { background: #fffbe6; }
+        #stopMap { height: min(55vh, 480px); min-height: 300px; }
+        .leaflet-container { z-index: 0; }
     </style>
     <!-- Firebase SDKs compat -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -37,6 +42,8 @@
                         </svg>
                         <span>เชื่อมต่อ...</span>
                     </div>
+
+                    <button type="button" onclick="openTripHistory()" class="text-xs border border-gray-200 bg-white rounded-lg px-2.5 py-1.5 font-semibold text-gray-700" title="ดูประวัติทริปทั้งหมด">ทริปทั้งหมด</button>
 
                     <!-- Settings & Export Menu -->
                     <div class="relative" id="settingsMenu">
@@ -67,14 +74,7 @@
                                     คำนวณเวลาออโต้
                                 </button>
                             </div>
-                            <div class="py-1">
-                                <button onclick="clearLocalStorage()" class="group flex items-center px-4 py-2 text-xs text-red-600 hover:bg-red-50 w-full text-left transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-red-500 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                    ล้างข้อมูลในเครื่อง
-                                </button>
-                            </div>
+                            <div class="py-1 px-4 text-xs text-gray-500">ทริปทั้งหมดจัดเก็บบน Firestore</div>
                         </div>
                     </div>
                 </div>
@@ -85,7 +85,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
                 <span class="text-gray-400 font-medium shrink-0">ชื่อทริป:</span>
-                <input id="tripTitle" type="text" placeholder="พิมพ์ชื่อทริปเพื่อซิงก์ออนไลน์..." class="flex-1 font-semibold border-none focus:outline-none bg-transparent text-gray-700 min-w-0" onchange="saveTripName()">
+                <input id="tripTitle" type="text" placeholder="เปิดทริปจากรายการหรือสร้างทริปใหม่" class="flex-1 font-semibold border-none focus:outline-none bg-transparent text-gray-700 min-w-0" onchange="saveTripName()">
             </div>
         </div>
 
@@ -107,6 +107,9 @@
                 เพิ่มจุดแวะ
             </button>
             <div class="flex items-center gap-2 text-xs bg-white border border-gray-200 px-3 py-1.5 rounded-lg shadow-sm">
+                <button type="button" onclick="resetAllManualTimes()" class="p-1 rounded hover:bg-yellow-100 text-gray-600 disabled:opacity-40" title="รีเซ็ตเวลาออกทุกจุดให้คำนวณอัตโนมัติ" aria-label="รีเซ็ตเวลาออกทุกจุดให้คำนวณอัตโนมัติ">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5" /></svg>
+                </button>
                 <span class="text-gray-500 font-medium">เวลาล้อหมุน:</span>
                 <input type="time" id="departureTime" value="08:00" class="border-b border-gray-300 font-bold text-gray-800 bg-transparent focus:outline-none text-sm" onchange="calc()">
             </div>
@@ -134,6 +137,35 @@
         </div>
     </div>
 
+    <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="historyHeading">
+        <section class="bg-white rounded-xl shadow-xl max-w-xl w-full mx-auto p-4 sm:p-6 max-h-full overflow-y-auto" aria-labelledby="historyHeading">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                <h2 id="historyHeading" class="font-bold text-gray-800">ประวัติทริปทั้งหมด</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" onclick="closeTripHistory()" class="text-xs border rounded px-3 py-2 bg-white">ปิด</button>
+                    <button type="button" onclick="loadTripHistory()" class="text-xs border rounded px-3 py-2 bg-white">รีเฟรชรายการ</button>
+                    <button type="button" onclick="createNewTrip()" class="text-xs rounded px-3 py-2 bg-yellow-400 font-semibold">สร้างทริปใหม่</button>
+                </div>
+            </div>
+            <p id="historyStatus" class="text-xs text-gray-500 mb-2">กำลังโหลดรายการทริป...</p>
+            <div id="tripHistory" class="grid gap-2 max-h-64 overflow-y-auto"></div>
+        </section>
+
+    </div>
+
+    <div id="mapModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="mapModalTitle">
+        <div class="bg-white rounded-xl max-w-3xl mx-auto p-3 sm:p-5 max-h-full overflow-y-auto">
+            <div class="flex justify-between items-center gap-2 mb-2"><h2 id="mapModalTitle" class="font-bold">เลือกจุดบนแผนที่</h2><button type="button" onclick="closeStopMap()" class="px-3 py-2 rounded bg-gray-100" aria-label="ปิดแผนที่">✕</button></div>
+            <p class="text-xs text-gray-600 mb-2">เลื่อนและซูมแผนที่ แล้วแตะตำแหน่งที่ต้องการ พิกัดที่เลือกจะใช้เปิดเส้นทางภายนอก</p>
+            <div id="stopMap" aria-label="แผนที่ OpenStreetMap สำหรับเลือกจุดแวะ"></div>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                <label class="text-sm">ชื่อจุดแวะ<input id="mapPlaceName" type="text" class="block w-full border rounded p-2 mt-1" placeholder="เช่น สถานีชาร์จริมทาง"></label>
+                <div class="text-sm">พิกัดที่เลือก<div id="mapCoordinates" class="border rounded p-2 mt-1 text-gray-600">ยังไม่ได้เลือก</div></div>
+            </div>
+            <div class="flex flex-wrap justify-end gap-2 mt-3"><button type="button" onclick="closeStopMap()" class="border rounded px-4 py-2">ยกเลิก</button><button type="button" onclick="openSelectedInGoogleMaps()" class="border border-blue-300 text-blue-700 rounded px-4 py-2">เปิดใน Google Maps</button><button id="saveMapPoint" type="button" onclick="saveStopMapPoint()" disabled class="bg-yellow-400 rounded px-4 py-2 font-semibold disabled:opacity-40">บันทึกจุดนี้</button></div>
+        </div>
+    </div>
+
     <!-- Firebase Script & Logic -->
     <script>
         // Firebase Configuration (Global Online Sync)
@@ -157,20 +189,6 @@
             db = firebase.firestore();
             isCloudConnected = true;
             
-            // Update UI status to Connected
-            setTimeout(() => {
-                const statusDiv = document.getElementById('cloudStatus');
-                if (statusDiv) {
-                    statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
-                    statusDiv.innerHTML = `
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
-                        </svg>
-                        <span>คลาวด์ซิงก์</span>
-                    `;
-                    statusDiv.setAttribute("title", "เชื่อมต่อฐานข้อมูลคลาวด์เรียบร้อย (ซิงก์อัตโนมัติ)");
-                }
-            }, 800);
         } catch (e) {
             console.error("Firebase Initialization Failed: ", e);
             setTimeout(() => {
@@ -182,27 +200,33 @@
             }, 800);
         }
 
-        // Load settings from localStorage
-        const savedData = localStorage.getItem('ev_trip_data');
-        const savedEff = localStorage.getItem('ev_trip_eff');
-        const savedDeparture = localStorage.getItem('ev_trip_departure');
-        const savedTitle = localStorage.getItem('ev_trip_title') || '';
+        // Firestore is the only source of trip data. Do not seed or restore a local trip.
+        let data = [];
+        let currentTripId = null;
+        let tripLoaded = false;
+        let activeCloudRef = null;
+        let historyRef = null;
+        let syncTimer = null;
+        let isReceivingFromCloud = false;
+        let historyTrips = [];
 
-        let data = savedData ? JSON.parse(savedData) : [
-            {name: "จุดเริ่มต้น", type: "start", distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
-            {name: "สถานีชาร์จ EV", type: "charge", distance: 144, drive: 135, arrival: 0, charge: 80, chargeTime: 45},
-            {name: "จุดหมายปลายทาง", type: "stop", distance: 80, drive: 60, arrival: 0, charge: 0, chargeTime: 0}
-        ];
-
-        // Apply loaded inputs before rendering
-        if (savedEff) {
-            document.getElementById("effRate").value = savedEff;
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
         }
-        if (savedDeparture) {
-            document.getElementById("departureTime").value = savedDeparture;
+        function safeMapUrl(value) {
+            try {
+                const url = new URL(value);
+                return ['http:', 'https:'].includes(url.protocol) ? url.href : '';
+            } catch (_) { return ''; }
         }
-        document.getElementById("tripTitle").value = savedTitle;
-
+        function pointQuery(row) {
+            return Number.isFinite(Number(row?.lat)) && Number.isFinite(Number(row?.lng)) && row?.lat !== undefined && row?.lng !== undefined
+                ? `${Number(row.lat)},${Number(row.lng)}` : (row?.name || '');
+        }
+        function setTripControls(enabled) {
+            document.querySelectorAll('#grid input, #grid select, #tripTitle, #effRate, #departureTime').forEach(el => el.disabled = !enabled);
+            document.querySelectorAll('.actions button').forEach(el => el.disabled = !enabled);
+        }
         function formatMinsToTimeStr(totalMins) {
             const h = Math.floor((totalMins % 1440) / 60);
             const m = Math.floor(totalMins % 60);
@@ -230,8 +254,9 @@
                 tr.innerHTML = `
                     <td class="p-2.5 text-left relative">
                         <div class="flex items-center gap-2 w-full">
-                            <input class="flex-1 bg-transparent outline-none border-b border-transparent focus:border-yellow-400 font-medium min-w-0" value="${row.name}" onchange="update(${i},'name',this.value)">
+                            <input class="flex-1 bg-transparent outline-none border-b border-transparent font-medium min-w-0 cursor-pointer" value="${escapeHtml(row.name)}" readonly onclick="openStopMap(${i}, event)" title="คลิกเพื่อดูและแก้ไขสถานที่บนแผนที่">
                             
+                            <button type="button" onclick="openStopMap(${i}, event)" class="text-xs text-blue-700 border border-blue-200 rounded px-2 py-1 bg-blue-50 whitespace-nowrap" title="เปิดแผนที่ในแอป">แผนที่</button>
                             <!-- Navigation Menu -->
                             <div class="relative flex shrink-0" id="navMenu-${i}">
                                 <button onclick="toggleNavMenu(${i}, event)" class="text-gray-400 hover:text-yellow-600 p-1 rounded hover:bg-gray-100 transition focus:outline-none flex items-center justify-center" title="นำทาง / แผนที่">
@@ -242,11 +267,11 @@
                                 <div id="navDropdown-${i}" class="origin-top-left absolute left-0 mt-6 w-48 rounded-lg shadow-xl bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 hidden z-50 text-left overflow-hidden">
                                     <div class="px-3 py-2 text-xs bg-gray-50">
                                         <label class="block text-gray-500 font-medium mb-1">วางลิงก์แผนที่:</label>
-                                        <input type="url" class="w-full border border-gray-300 rounded px-2 py-1 text-[11px] focus:outline-none focus:border-yellow-400 bg-white" placeholder="https://maps.google..." value="${row.mapUrl || ''}" onchange="updateMapUrl(${i}, this.value)" onclick="event.stopPropagation()">
+                                        <input type="url" class="w-full border border-gray-300 rounded px-2 py-1 text-[11px] focus:outline-none focus:border-yellow-400 bg-white" placeholder="https://maps.google..." value="${escapeHtml(row.mapUrl || '')}" onchange="updateMapUrl(${i}, this.value)" onclick="event.stopPropagation()">
                                     </div>
-                                    ${row.mapUrl ? `
+                                    ${safeMapUrl(row.mapUrl) ? `
                                     <div class="py-1">
-                                        <a href="${row.mapUrl}" target="_blank" onclick="event.stopPropagation(); document.getElementById('navDropdown-${i}').classList.add('hidden');" class="group flex items-center px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 w-full text-left transition font-semibold">
+                                        <a href="${escapeHtml(safeMapUrl(row.mapUrl))}" rel="noopener noreferrer" target="_blank" onclick="event.stopPropagation(); document.getElementById('navDropdown-${i}').classList.add('hidden');" class="group flex items-center px-3 py-1.5 text-xs text-emerald-600 hover:bg-emerald-50 w-full text-left transition font-semibold">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 mr-2 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                             </svg>
@@ -254,6 +279,9 @@
                                         </a>
                                     </div>
                                     ` : ''}
+                                    <div class="py-1">
+                                        <button onclick="openStopMap(${i}, event)" class="flex items-center px-3 py-2 text-xs text-blue-700 bg-blue-50 w-full text-left font-semibold">เลือก/ดูจุดในแผนที่</button>
+                                    </div>
                                     <div class="py-1">
                                         <div class="px-3 py-0.5 text-[9px] text-gray-400 font-bold uppercase tracking-wider">ค้นหาด้วยชื่อสถานที่</div>
                                         <button onclick="openMapLink(${i}, 'google_search', event)" class="group flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 w-full text-left transition">
@@ -350,6 +378,7 @@
             data[i][key] = isNaN(val) || val === "" ? val : Number(val);
             if (key === 'chargeTime') {
                 delete data[i].manualEtd;
+                delete data[i].autoChargeTime;
             }
             calc();
         }
@@ -359,8 +388,11 @@
                 document.getElementById("departureTime").value = val;
             } else {
                 if (val === "") {
-                    delete data[i].manualEtd;
+                    restoreAutomaticTime(data[i]);
                 } else {
+                    if (data[i].type === 'charge' && !data[i].manualEtd) {
+                        data[i].autoChargeTime = Number(data[i].chargeTime) || 0;
+                    }
                     data[i].manualEtd = val;
                 }
             }
@@ -487,16 +519,7 @@
                 }
             });
 
-            // Save state to localStorage
-            localStorage.setItem('ev_trip_data', JSON.stringify(data));
-            localStorage.setItem('ev_trip_eff', eff);
-            localStorage.setItem('ev_trip_departure', departureTimeStr);
-
-            // Auto-sync to cloud if trip is named (debounced)
-            const title = document.getElementById("tripTitle") ? document.getElementById("tripTitle").value.trim() : '';
-            if (isCloudConnected && title) {
-                debouncedSync();
-            }
+            if (tripLoaded && currentTripId && !isReceivingFromCloud) debouncedSync();
         }
 
         function addRow(){
@@ -555,14 +578,21 @@
         }
 
         function resetManualTime(i) {
-            delete data[i].manualEtd;
+            restoreAutomaticTime(data[i]);
             render();
         }
 
+        function restoreAutomaticTime(row) {
+            if (row.type === 'charge' && row.autoChargeTime !== undefined) {
+                row.chargeTime = Number(row.autoChargeTime) || 0;
+            }
+            delete row.manualEtd;
+            delete row.autoChargeTime;
+        }
+
         function resetAllManualTimes() {
-            data.forEach(r => {
-                delete r.manualEtd;
-            });
+            if (!tripLoaded || !currentTripId) return;
+            data.forEach(restoreAutomaticTime);
             render();
             document.getElementById("settingsDropdown").classList.add("hidden");
         }
@@ -601,29 +631,90 @@
             document.body.removeChild(link);
         }
 
-        function clearLocalStorage() {
-            if (confirm("คุณต้องการล้างข้อมูลแผนการเดินทางที่บันทึกไว้ในเครื่องทั้งหมดใช่หรือไม่?")) {
-                localStorage.removeItem('ev_trip_data');
-                localStorage.removeItem('ev_trip_eff');
-                localStorage.removeItem('ev_trip_departure');
-                localStorage.removeItem('ev_trip_title');
-                
-                document.getElementById("effRate").value = 5;
-                document.getElementById("departureTime").value = "08:00";
-                document.getElementById("tripTitle").value = "";
-                
-                data = [
-                    {name: "จุดเริ่มต้น", type: "start", distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
-                    {name: "สถานีชาร์จ EV", type: "charge", distance: 144, drive: 135, arrival: 0, charge: 80, chargeTime: 45},
-                    {name: "จุดหมายปลายทาง", type: "stop", distance: 80, drive: 60, arrival: 0, charge: 0, chargeTime: 0}
-                ];
-                render();
-            }
+        function updateMapUrl(i, val) {
+            data[i].mapUrl = safeMapUrl(val);
+            render();
         }
 
-        function updateMapUrl(i, val) {
-            data[i].mapUrl = val;
-            localStorage.setItem('ev_trip_data', JSON.stringify(data));
+        let stopMap = null;
+        let stopMarker = null;
+        let selectedPoint = null;
+        let mapRowIndex = null;
+
+        function openStopMap(i, event) {
+            if (event) event.stopPropagation();
+            if (!tripLoaded || !data[i]) return;
+            if (location.protocol === 'file:') {
+                alert('แผนที่ต้องเปิดผ่าน HTTP/HTTPS เพื่อให้บริการ OpenStreetMap ได้รับ Referer กรุณาเปิดผ่าน localhost หรือ GitHub Pages');
+                return;
+            }
+            if (typeof L === 'undefined') { alert('โหลดแผนที่ไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่'); return; }
+            mapRowIndex = i;
+            const row = data[i];
+            document.getElementById('mapPlaceName').value = row.name || '';
+            document.getElementById('mapModal').classList.remove('hidden');
+            document.getElementById('navDropdown-' + i)?.classList.add('hidden');
+            if (!stopMap) {
+                stopMap = L.map('stopMap', {zoomControl: true});
+                L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>'
+                }).addTo(stopMap);
+                stopMap.on('click', e => setMapPoint(e.latlng.lat, e.latlng.lng));
+            }
+            const ownPoint = Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.lng)) && row.lat !== undefined && row.lng !== undefined;
+            const previous = data[i - 1];
+            const previousPoint = previous && Number.isFinite(Number(previous.lat)) && Number.isFinite(Number(previous.lng)) && previous.lat !== undefined && previous.lng !== undefined;
+            selectedPoint = null;
+            if (stopMarker) { stopMap.removeLayer(stopMarker); stopMarker = null; }
+            if (ownPoint) {
+                setMapPoint(Number(row.lat), Number(row.lng));
+                stopMap.setView([Number(row.lat), Number(row.lng)], 15);
+            } else {
+                document.getElementById('mapCoordinates').textContent = 'ยังไม่ได้เลือก';
+                document.getElementById('saveMapPoint').disabled = false;
+                stopMap.setView(previousPoint ? [Number(previous.lat), Number(previous.lng)] : [13.7563, 100.5018], previousPoint ? 12 : 6);
+            }
+            requestAnimationFrame(() => stopMap.invalidateSize());
+        }
+
+        function setMapPoint(lat, lng) {
+            selectedPoint = {lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6))};
+            document.getElementById('mapCoordinates').textContent = `${selectedPoint.lat}, ${selectedPoint.lng}`;
+            document.getElementById('saveMapPoint').disabled = false;
+            if (stopMarker) stopMarker.setLatLng([lat, lng]);
+            else stopMarker = L.marker([lat, lng]).addTo(stopMap);
+        }
+
+        function closeStopMap() {
+            document.getElementById('mapModal').classList.add('hidden');
+            mapRowIndex = null;
+        }
+
+        function openSelectedInGoogleMaps() {
+            const row = mapRowIndex === null ? null : data[mapRowIndex];
+            if (!row) return;
+            const hasSavedPoint = row.lat !== undefined && row.lng !== undefined && Number.isFinite(Number(row.lat)) && Number.isFinite(Number(row.lng));
+            const query = selectedPoint
+                ? `${selectedPoint.lat},${selectedPoint.lng}`
+                : hasSavedPoint ? `${Number(row.lat)},${Number(row.lng)}` : (document.getElementById('mapPlaceName').value.trim() || row.name);
+            if (!query) { alert('กรุณาเลือกพิกัดหรือระบุชื่อสถานที่ก่อน'); return; }
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`, '_blank', 'noopener,noreferrer');
+        }
+
+        function saveStopMapPoint() {
+            if (mapRowIndex === null || !data[mapRowIndex]) return;
+            const row = data[mapRowIndex];
+            const name = document.getElementById('mapPlaceName').value.trim();
+            if (!selectedPoint && !name) { alert('กรุณาระบุชื่อหรือเลือกพิกัด'); return; }
+            if (selectedPoint) {
+                row.lat = selectedPoint.lat;
+                row.lng = selectedPoint.lng;
+                row.mapUrl = `https://www.openstreetmap.org/?mlat=${row.lat}&mlon=${row.lng}#map=16/${row.lat}/${row.lng}`;
+            }
+            row.name = !selectedPoint || (name && name !== 'จุดแวะพักใหม่')
+                ? name : `จุดที่เลือก (${row.lat}, ${row.lng})`;
+            closeStopMap();
             render();
         }
 
@@ -645,7 +736,7 @@
 
         function openMapLink(i, type, event) {
             event.preventDefault();
-            const name = data[i].name || "";
+            const name = pointQuery(data[i]);
             if (!name) {
                 alert("กรุณาระบุชื่อสถานที่ก่อนนำทางครับ");
                 return;
@@ -659,14 +750,14 @@
             } else if (type === 'apple_search') {
                 url = `https://maps.apple.com/?q=${encodeURIComponent(name)}`;
             } else if (type === 'google_dir') {
-                if (prev && prev.name) {
-                    url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(prev.name)}&destination=${encodeURIComponent(name)}`;
+                if (prev && pointQuery(prev)) {
+                    url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(pointQuery(prev))}&destination=${encodeURIComponent(name)}`;
                 } else {
                     url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(name)}`;
                 }
             } else if (type === 'apple_dir') {
-                if (prev && prev.name) {
-                    url = `https://maps.apple.com/?saddr=${encodeURIComponent(prev.name)}&daddr=${encodeURIComponent(name)}`;
+                if (prev && pointQuery(prev)) {
+                    url = `https://maps.apple.com/?saddr=${encodeURIComponent(pointQuery(prev))}&daddr=${encodeURIComponent(name)}`;
                 } else {
                     url = `https://maps.apple.com/?daddr=${encodeURIComponent(name)}`;
                 }
@@ -698,193 +789,166 @@
             });
         });
 
-        function saveTripName() {
-            const title = document.getElementById("tripTitle").value.trim();
-            localStorage.setItem('ev_trip_title', title);
-            if (isCloudConnected && title) {
-                syncToCloudQuietly();
-            }
+        function openTripHistory() {
+            document.getElementById('historyModal').classList.remove('hidden');
+        }
+        function closeTripHistory() {
+            document.getElementById('historyModal').classList.add('hidden');
         }
 
-        let activeCloudRef = null;
-        let syncTimer = null;
-        let isReceivingFromCloud = false;
-
-        // Debounce cloud sync to prevent rapid-fire writes causing loops
-        function debouncedSync() {
-            if (isReceivingFromCloud) return; // Don't sync back when receiving cloud data
-            if (syncTimer) clearTimeout(syncTimer);
-            syncTimer = setTimeout(() => {
-                syncToCloudQuietly();
-            }, 800);
+        function showCloudError(message) {
+            document.getElementById('historyStatus').textContent = message;
+            const status = document.getElementById('cloudStatus');
+            status.className = 'text-xs text-red-700 bg-red-50 px-2 py-1 rounded border border-red-200';
+            status.textContent = 'คลาวด์ไม่พร้อม';
         }
 
-        function subscribeToTrip(title) {
-            if (!isCloudConnected || !title) return;
-            
-            if (activeCloudRef) {
-                activeCloudRef(); // Firestore returns unsubscribe function
+        function renderHistory() {
+            const list = document.getElementById('tripHistory');
+            list.replaceChildren();
+            historyTrips.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+            for (const trip of historyTrips) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'text-left border rounded-lg p-3 hover:bg-yellow-50 ' + (trip.id === currentTripId ? 'border-yellow-400 bg-yellow-50' : 'bg-white');
+                const names = Array.isArray(trip.data) ? trip.data.map(row => row.name).filter(Boolean).join(' → ') : '';
+                button.textContent = `${trip.title || 'ไม่มีชื่อ'} · ${trip.data?.length || 0} จุด\n${names}`;
+                button.style.whiteSpace = 'pre-line';
+                button.onclick = () => openTrip(trip.id);
+                list.appendChild(button);
             }
+            document.getElementById('historyStatus').textContent = historyTrips.length
+                ? `ทริปบนคลาวด์ ${historyTrips.length} รายการ` : 'ยังไม่มีทริปบนคลาวด์ กด “สร้างทริปใหม่” เพื่อเริ่ม';
+        }
 
-            activeCloudRef = db.collection('ev_trips').doc(title).onSnapshot(doc => {
-                // If the update is from our own local edit that hasn't been written to server yet, ignore it to prevent cursor/focus jumps
-                if (doc.metadata.hasPendingWrites) {
-                    return;
-                }
-
-                const tripData = doc.data();
-                if (tripData && tripData.data) {
-                    const effRateEl = document.getElementById("effRate");
-                    const departureTimeEl = document.getElementById("departureTime");
-
-                    // Only update the local UI if the incoming data is actually different
-                    const isDataChanged = JSON.stringify(data) !== JSON.stringify(tripData.data);
-                    const isEffChanged = Number(effRateEl.value) !== (tripData.efficiency || 5);
-                    const isDepChanged = departureTimeEl.value !== (tripData.departureTime || '08:00');
-
-                    if (isDataChanged || isEffChanged || isDepChanged) {
-                        isReceivingFromCloud = true;
-                        document.getElementById("tripTitle").value = tripData.title || title;
-                        effRateEl.value = tripData.efficiency || 5;
-                        departureTimeEl.value = tripData.departureTime || '08:00';
-                        
-                        data = tripData.data;
-
-                        localStorage.setItem('ev_trip_data', JSON.stringify(data));
-                        localStorage.setItem('ev_trip_eff', tripData.efficiency || 5);
-                        localStorage.setItem('ev_trip_departure', tripData.departureTime || '08:00');
-                        localStorage.setItem('ev_trip_title', tripData.title || title);
-
-                        render();
-                        isReceivingFromCloud = false;
-                    }
-
-                    const statusDiv = document.getElementById('cloudStatus');
-                    if (statusDiv) {
-                        statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
-                        statusDiv.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
-                            </svg>
-                            <span>เรียลไทม์ซิงก์</span>
-                        `;
-                        statusDiv.setAttribute("title", "ซิงก์ข้อมูลเรียลไทม์สดผ่าน Cloud Firestore");
-                    }
+        function loadTripHistory() {
+            if (!isCloudConnected) { showCloudError('เชื่อมต่อ Firestore ไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วรีเฟรช'); return; }
+            if (historyRef) historyRef();
+            document.getElementById('historyStatus').textContent = 'กำลังโหลดรายการจาก Firestore...';
+            historyRef = db.collection('ev_trips').onSnapshot(snapshot => {
+                const status = document.getElementById('cloudStatus');
+                status.className = 'flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold';
+                status.textContent = 'คลาวด์ซิงก์';
+                historyTrips = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                renderHistory();
+                const requested = new URLSearchParams(location.search).get('trip');
+                if (!currentTripId) {
+                    const initialTripId = requested || historyTrips[0]?.id;
+                    if (initialTripId) openTrip(initialTripId);
                 }
             }, err => {
-                console.error("Firestore Listen failed:", err);
+                console.error('Trip history failed:', err);
+                showCloudError('อ่านรายการทริปจาก Firestore ไม่ได้ โปรดตรวจเครือข่ายและสิทธิ์อ่าน Firestore');
+            });
+        }
+
+        function openTrip(id) {
+            if (!id || !isCloudConnected) return;
+            if (syncTimer) { clearTimeout(syncTimer); syncToCloudQuietly(); }
+            if (activeCloudRef) activeCloudRef();
+            currentTripId = id;
+            closeTripHistory();
+            tripLoaded = false;
+            setTripControls(false);
+            document.getElementById('historyStatus').textContent = 'กำลังเปิดทริป...';
+            activeCloudRef = db.collection('ev_trips').doc(id).onSnapshot(doc => {
+                if (!doc.exists) { showCloudError('ไม่พบทริปนี้ใน Firestore'); return; }
+                if (doc.metadata.hasPendingWrites) return;
+                const trip = doc.data();
+                if (!Array.isArray(trip.data)) { showCloudError('ข้อมูลทริปไม่ถูกต้อง'); return; }
+                const incoming = JSON.stringify(trip.data);
+                const changed = !tripLoaded || JSON.stringify(data) !== incoming ||
+                    Number(document.getElementById('effRate').value) !== Number(trip.efficiency || 5) ||
+                    document.getElementById('departureTime').value !== (trip.departureTime || '08:00');
+                isReceivingFromCloud = true;
+                document.getElementById('tripTitle').value = trip.title || id;
+                document.getElementById('effRate').value = trip.efficiency || 5;
+                document.getElementById('departureTime').value = trip.departureTime || '08:00';
+                if (changed) { data = trip.data; render(); }
+                isReceivingFromCloud = false;
+                tripLoaded = true;
+                setTripControls(true);
+                document.getElementById('historyStatus').textContent = `กำลังดู: ${trip.title || id}`;
+                renderHistory();
+            }, err => {
+                console.error('Trip load failed:', err);
+                tripLoaded = false;
+                showCloudError('เปิดทริปไม่ได้ โปรดตรวจสิทธิ์อ่าน Firestore');
+            });
+        }
+
+        function createNewTrip() {
+            if (!isCloudConnected) { showCloudError('ต้องเชื่อมต่อ Firestore ก่อนสร้างทริป'); return; }
+            if (syncTimer) { clearTimeout(syncTimer); syncToCloudQuietly(); }
+            const ref = db.collection('ev_trips').doc();
+            const title = `ทริป ${new Date().toLocaleString('th-TH')}`;
+            const trip = {
+                title, efficiency: 5, departureTime: '08:00', updatedAt: new Date().toISOString(),
+                data: [
+                    {name: 'จุดเริ่มต้น', type: 'start', distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
+                    {name: 'จุดแวะพักใหม่', type: 'stop', distance: 50, drive: 45, arrival: 0, charge: 0, chargeTime: 0}
+                ]
+            };
+            ref.set(trip).then(() => openTrip(ref.id)).catch(err => {
+                console.error('Create trip failed:', err);
+                showCloudError('สร้างทริปไม่ได้ โปรดตรวจสิทธิ์เขียน Firestore');
             });
         }
 
         function saveTripName() {
-            const title = document.getElementById("tripTitle").value.trim();
-            localStorage.setItem('ev_trip_title', title);
-            if (isCloudConnected && title) {
-                subscribeToTrip(title);
-                syncToCloudQuietly();
-            }
+            if (!tripLoaded) return;
+            const title = document.getElementById('tripTitle').value.trim();
+            if (!title) { alert('กรุณาระบุชื่อทริป'); return; }
+            debouncedSync();
+        }
+
+        function debouncedSync() {
+            if (!tripLoaded || !currentTripId || isReceivingFromCloud) return;
+            if (syncTimer) clearTimeout(syncTimer);
+            syncTimer = setTimeout(syncToCloudQuietly, 800);
         }
 
         function syncToCloudQuietly() {
-            const title = document.getElementById("tripTitle").value.trim();
-            if (!title || !isCloudConnected) return;
-
-            const eff = Number(document.getElementById("effRate").value) || 5;
-            const departureTimeStr = document.getElementById("departureTime").value || "08:00";
-            const tripData = {
-                title: title,
-                efficiency: eff,
-                departureTime: departureTimeStr,
-                data: data,
+            syncTimer = null;
+            if (!tripLoaded || !currentTripId || !isCloudConnected || isReceivingFromCloud) return;
+            const title = document.getElementById('tripTitle').value.trim();
+            if (!title) return;
+            const trip = {
+                title,
+                efficiency: Number(document.getElementById('effRate').value) || 5,
+                departureTime: document.getElementById('departureTime').value || '08:00',
+                data,
                 updatedAt: new Date().toISOString()
             };
-
-            db.collection('ev_trips').doc(title).set(tripData)
-                .then(() => {
-                    const statusDiv = document.getElementById('cloudStatus');
-                    if (statusDiv) {
-                        statusDiv.className = "flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 font-semibold animate-none";
-                        statusDiv.innerHTML = `
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-emerald-500" viewBox="0 0 20 20" fill="currentColor">
-                                <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4.002 0 017.753-1.977A4.5 4.5 0 1113.5 13H5.5z" />
-                            </svg>
-                            <span>เรียลไทม์ซิงก์</span>
-                        `;
-                    }
-                })
-                .catch(err => {
-                    console.error("Cloud auto-sync failed:", err);
-                });
+            db.collection('ev_trips').doc(currentTripId).set(trip).catch(err => {
+                console.error('Cloud save failed:', err);
+                showCloudError('บันทึกทริปไม่สำเร็จ โปรดตรวจสิทธิ์เขียน Firestore');
+            });
         }
 
         function shareTripOnline() {
-            const title = document.getElementById("tripTitle").value.trim();
-            if (!title) {
-                alert("กรุณาระบุชื่อทริปของคุณก่อนแชร์ออนไลน์ครับ");
-                document.getElementById("tripTitle").focus();
-                return;
-            }
-
-            if (!isCloudConnected) {
-                alert("ระบบคลาวด์ไม่ได้เชื่อมต่อขณะนี้ กรุณาลองใหม่อีกครั้งครับ");
-                return;
-            }
-
-            const eff = Number(document.getElementById("effRate").value) || 5;
-            const departureTimeStr = document.getElementById("departureTime").value || "08:00";
-            const tripData = {
-                title: title,
-                efficiency: eff,
-                departureTime: departureTimeStr,
-                data: data,
-                updatedAt: new Date().toISOString()
-            };
-
-            db.collection('ev_trips').doc(title).set(tripData)
-                .then(() => {
-                    subscribeToTrip(title);
-                    const shareUrl = window.location.origin + window.location.pathname + '?trip=' + encodeURIComponent(title);
-                    document.getElementById("shareLinkInput").value = shareUrl;
-                    document.getElementById("shareModal").classList.remove("hidden");
-                    document.getElementById("settingsDropdown").classList.add("hidden");
-                })
-                .catch(err => {
-                    console.error("Cloud save failed:", err);
-                    alert("ไม่สามารถอัปโหลดทริปขึ้นคลาวด์ได้ในขณะนี้");
-                });
+            if (!tripLoaded || !currentTripId) { alert('กรุณาเปิดทริปก่อนแชร์'); return; }
+            if (syncTimer) { clearTimeout(syncTimer); syncToCloudQuietly(); }
+            const shareUrl = location.origin + location.pathname + '?trip=' + encodeURIComponent(currentTripId);
+            document.getElementById('shareLinkInput').value = shareUrl;
+            document.getElementById('shareModal').classList.remove('hidden');
+            document.getElementById('settingsDropdown').classList.add('hidden');
         }
 
         function copyShareLink() {
-            const copyText = document.getElementById("shareLinkInput");
-            copyText.select();
-            copyText.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(copyText.value)
-                .then(() => {
-                    alert("คัดลอกลิงก์แชร์ไปยังคลิปบอร์ดแล้วครับ!");
-                })
-                .catch(err => {
-                    console.error("Failed to copy text:", err);
-                    alert("ไม่สามารถคัดลอกลิงก์อัตโนมัติได้ กรุณาคลิกคัดลอกด้วยตนเองครับ");
-                });
+            const input = document.getElementById('shareLinkInput');
+            navigator.clipboard.writeText(input.value).then(() => alert('คัดลอกลิงก์แล้ว')).catch(() => {
+                input.select(); alert('คัดลอกอัตโนมัติไม่ได้ กรุณาคัดลอกจากช่องข้อความ');
+            });
         }
 
-        function closeShareModal() {
-            document.getElementById("shareModal").classList.add("hidden");
-        }
+        function closeShareModal() { document.getElementById('shareModal').classList.add('hidden'); }
 
         function init() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const tripName = urlParams.get('trip');
-            const localTitle = document.getElementById("tripTitle").value.trim();
-            const targetTitle = tripName || localTitle;
-
-            if (targetTitle && isCloudConnected) {
-                subscribeToTrip(targetTitle);
-            } else {
-                render();
-            }
+            render();
+            setTripControls(false);
+            loadTripHistory();
         }
-
         init();
     </script>
 
