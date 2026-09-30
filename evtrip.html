@@ -16,6 +16,17 @@
         th { background: #fffbe6; }
         #stopMap { height: min(55vh, 480px); min-height: 300px; }
         .leaflet-container { z-index: 0; }
+        #mobileStops { display: none; }
+        @media (max-width: 639px) and (orientation: portrait) {
+            .table-wrap { display: none; }
+            #mobileStops { display: grid; }
+            #mobileStops > .mobile-stop-card { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; padding: 14px; align-items: center; }
+            .mobile-stop-name { grid-column: 1 / -1; font-size: 17px; }
+            .mobile-stop-detail { min-width: 0; justify-self: center; text-align: center; }
+            .mobile-stop-name { -webkit-touch-callout: none; user-select: none; }
+            .mobile-stop-card.dragging { opacity: .65; transform: scale(.98); box-shadow: 0 8px 24px rgba(0,0,0,.18); }
+            .mobile-stop-card.drop-target { outline: 3px solid #facc15; outline-offset: 2px; }
+        }
     </style>
     <!-- Firebase SDKs compat -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -116,6 +127,7 @@
         </div>
 
         <!-- Itinerary Grid Table -->
+        <div id="mobileStops" class="sm:hidden grid gap-3" aria-label="จุดแวะเดินทาง"></div>
         <div class="table-wrap shadow-sm">
             <table id="grid" class="w-full text-sm">
                 <thead>
@@ -135,6 +147,19 @@
                 <tbody></tbody>
             </table>
         </div>
+    </div>
+
+    <div id="editStopModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 p-3 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="editStopHeading">
+        <section class="bg-white rounded-xl shadow-xl w-full max-w-md p-4 max-h-full overflow-y-auto">
+            <div class="flex items-center justify-between mb-4"><h2 id="editStopHeading" class="font-bold">แก้ไขจุดแวะ</h2><button type="button" onclick="closeStopEditor()" class="px-3 py-2 rounded bg-gray-100" aria-label="ปิดหน้าต่างแก้ไข">✕</button></div>
+            <div id="editStopFields" class="grid grid-cols-2 gap-3 text-sm"></div>
+            <div class="mt-4 border-t pt-3 grid gap-2 text-sm">
+                <label><span class="flex items-center gap-1.5"><svg aria-hidden="true" class="w-4 h-4 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18 3 21V6l6-3m0 15 6 3m-6-3V3m6 18 6-3V3l-6 3m0 15V6"/></svg>ลิงก์แผนที่</span><input id="editMapUrl" type="url" class="block w-full border rounded p-2 mt-1" placeholder="https://maps.google..." onchange="updateMapUrl(editStopIndex, this.value); this.value = data[editStopIndex].mapUrl || ''"></label>
+                <div class="grid grid-cols-2 gap-2"><button type="button" onclick="openEditorMap()" class="border rounded p-2 text-blue-700">เลือกจุดบนแผนที่</button><button type="button" onclick="openEditorMapLink('google_search')" class="border rounded p-2">Google Maps</button><button type="button" onclick="openEditorMapLink('apple_search')" class="border rounded p-2">Apple Maps</button><button type="button" onclick="openEditorMapLink('google_dir')" class="border rounded p-2">เส้นทาง Google</button><button type="button" onclick="openEditorMapLink('apple_dir')" class="border rounded p-2">เส้นทาง Apple</button><button type="button" onclick="openEditorSavedLink()" class="border rounded p-2 col-span-2">เปิดลิงก์ที่บันทึก</button></div>
+            </div>
+            <div class="mt-4 border-t pt-3 flex flex-wrap gap-2"><button type="button" onclick="moveEditorStop(-1)" class="border rounded px-3 py-2">เลื่อนขึ้น</button><button type="button" onclick="moveEditorStop(1)" class="border rounded px-3 py-2">เลื่อนลง</button><button type="button" onclick="resetEditorTime()" class="border rounded px-3 py-2">คำนวณเวลาออโต้</button><button type="button" onclick="deleteEditorStop()" class="border border-red-300 text-red-700 rounded px-3 py-2">ลบจุดแวะ</button></div>
+            <button type="button" onclick="closeStopEditor()" class="mt-4 w-full bg-yellow-400 rounded p-2 font-semibold">เสร็จสิ้น</button>
+        </section>
     </div>
 
     <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 p-3 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="historyHeading">
@@ -244,7 +269,19 @@
         function render(){
             const tbody = document.querySelector("#grid tbody");
             tbody.innerHTML = "";
+            const mobileStops = document.getElementById("mobileStops");
+            mobileStops.innerHTML = "";
             data.forEach((row, i) => {
+                const card = document.createElement("div");
+                card.className = "mobile-stop-card bg-white border border-gray-200 border-l-4 border-l-yellow-400 rounded-lg shadow-sm";
+                card.dataset.stopIndex = i;
+                card.innerHTML = `<button type="button" onclick="openStopEditor(${i})" class="mobile-stop-name min-w-0 text-left font-semibold text-gray-800 truncate" aria-label="แก้ไข ${escapeHtml(row.name)}">${escapeHtml(row.name)}</button>
+                    <button type="button" onclick="openStopMap(${i}, event)" class="text-xs text-blue-700 border border-blue-200 rounded px-2 py-1 bg-blue-50 justify-self-start">แผนที่</button>
+                    <div class="mobile-stop-detail"><div class="text-[10px] leading-tight text-gray-500">แบตฯ เมื่อถึง</div><div class="mobile-arrival font-semibold text-sm text-emerald-700">—</div></div>
+                    <div class="mobile-stop-detail"><div class="text-[10px] leading-tight text-gray-500">ETA</div><time class="mobile-eta font-semibold text-sm text-gray-700">--:--</time></div>
+                    <div class="justify-self-end text-right"><div class="text-[10px] text-gray-500">ETD</div><time class="font-semibold text-gray-700 mobile-etd">--:--</time></div>`;
+                mobileStops.appendChild(card);
+                if (i > 0) bindMobileDrag(card);
                 const tr = document.createElement("tr");
                 tr.className = "border-b hover:bg-gray-50 text-center";
                 
@@ -374,6 +411,67 @@
             calc();
         }
 
+        let suppressMobileEditUntil = 0;
+        function bindMobileDrag(card) {
+            const nameButton = card.querySelector(".mobile-stop-name");
+            let timer = null;
+            let active = false;
+            let startX = 0, startY = 0;
+            let targetCard = null;
+            const clearTarget = () => {
+                if (targetCard) targetCard.classList.remove("drop-target");
+                targetCard = null;
+            };
+            const cleanup = () => {
+                clearTimeout(timer);
+                timer = null;
+                card.classList.remove("dragging");
+                clearTarget();
+                active = false;
+            };
+            nameButton.addEventListener("touchstart", event => {
+                if (event.touches.length !== 1) return;
+                startX = event.touches[0].clientX;
+                startY = event.touches[0].clientY;
+                timer = setTimeout(() => {
+                    active = true;
+                    card.classList.add("dragging");
+                    if (navigator.vibrate) navigator.vibrate(20);
+                }, 450);
+            }, {passive: true});
+            nameButton.addEventListener("touchmove", event => {
+                if (event.touches.length !== 1) { cleanup(); return; }
+                const touch = event.touches[0];
+                if (!active) {
+                    if (Math.hypot(touch.clientX - startX, touch.clientY - startY) > 10) clearTimeout(timer);
+                    return;
+                }
+                event.preventDefault();
+                const candidate = document.elementFromPoint(touch.clientX, touch.clientY)?.closest(".mobile-stop-card");
+                clearTarget();
+                if (candidate && Number(candidate.dataset.stopIndex) > 0 && candidate !== card) {
+                    targetCard = candidate;
+                    targetCard.classList.add("drop-target");
+                }
+            }, {passive: false});
+            nameButton.addEventListener("touchend", event => {
+                const wasActive = active;
+                const from = Number(card.dataset.stopIndex);
+                const to = targetCard ? Number(targetCard.dataset.stopIndex) : from;
+                cleanup();
+                if (!wasActive) return;
+                event.preventDefault();
+                suppressMobileEditUntil = Date.now() + 700;
+                if (to !== from) {
+                    const [moved] = data.splice(from, 1);
+                    data.splice(to, 0, moved);
+                    render();
+                }
+            }, {passive: false});
+            nameButton.addEventListener("touchcancel", cleanup);
+            nameButton.addEventListener("contextmenu", event => event.preventDefault());
+        }
+
         function update(i, key, val){
             data[i][key] = isNaN(val) || val === "" ? val : Number(val);
             if (key === 'chargeTime') {
@@ -491,6 +589,13 @@
             
             const rows = document.querySelectorAll("#grid tbody tr");
             data.forEach((r, i) => {
+                const mobileEtd = document.querySelectorAll(".mobile-etd")[i];
+                if (mobileEtd) mobileEtd.textContent = formatMinsToEtdTimeStr(r.etd);
+                const mobileCard = document.querySelectorAll(".mobile-stop-card")[i];
+                if (mobileCard) {
+                    mobileCard.querySelector(".mobile-eta").textContent = formatMinsToTimeStr(r.eta);
+                    mobileCard.querySelector(".mobile-arrival").textContent = i === 0 ? "—" : `${r.arrival.toFixed(1)}%`;
+                }
                 if (rows[i]) {
                     rows[i].cells[4].innerText = formatMinsToTimeStr(r.eta);
                     
@@ -519,7 +624,91 @@
                 }
             });
 
+            if (editStopIndex !== null) refreshStopEditor();
+
             if (tripLoaded && currentTripId && !isReceivingFromCloud) debouncedSync();
+        }
+
+        let editStopIndex = null;
+        function openStopEditor(i) {
+            if (Date.now() < suppressMobileEditUntil) return;
+            editStopIndex = i;
+            document.getElementById("editStopModal").classList.remove("hidden");
+            refreshStopEditor();
+        }
+        function closeStopEditor() {
+            document.getElementById("editStopModal").classList.add("hidden");
+            editStopIndex = null;
+        }
+        function refreshStopEditor() {
+            const i = editStopIndex;
+            if (i === null || !data[i]) return;
+            const r = data[i];
+            document.getElementById("editStopHeading").textContent = "แก้ไขจุดแวะ";
+            const icon = (path) => `<svg aria-hidden="true" class="w-4 h-4 text-yellow-600 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
+            const icons = {
+                name: icon("M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0z M12 10h.01"),
+                type: icon("M4 7h16 M4 12h16 M4 17h10"),
+                distance: icon("M4 17c2-6 5-1 8-7s5-2 8-5 M4 20h16"),
+                drive: icon("M12 6v6l4 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20"),
+                eta: icon("M12 6v6l4 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20"),
+                arrival: icon("M3 11h3l2-5 4 12 2-7h7"),
+                charge: icon("M13 2 5 13h6l-1 9 9-12h-6l1-8"),
+                chargeTime: icon("M12 6v6l4 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20"),
+                etd: icon("M12 6v6l4 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20")
+            };
+            const caption = (label, key) => `<span class="flex items-center gap-1.5">${icons[key]}${label}</span>`;
+            const field = (label, key, value, type = "number", extra = "") => `<label>${caption(label, key)}<input type="${type}" class="block w-full border rounded p-2 mt-1" value="${escapeHtml(value)}" ${extra} onchange="updateEditorField('${key}', this.value)"></label>`;
+            document.getElementById("editStopFields").innerHTML =
+                field("ชื่อสถานที่", "name", r.name || "", "text") +
+                `<label>${caption("ประเภท", "type")}<select class="block w-full border rounded p-2 mt-1" onchange="updateEditorField('type', this.value)"><option value="start" ${r.type === 'start' ? 'selected' : ''}>จุดเริ่มต้น</option><option value="charge" ${r.type === 'charge' ? 'selected' : ''}>จุดชาร์จ</option><option value="stop" ${r.type === 'stop' ? 'selected' : ''}>จุดแวะพัก</option></select></label>` +
+                field("ระยะทาง (กม.)", "distance", i === 0 ? 0 : r.distance, "number", i === 0 ? "disabled" : 'min="0"') +
+                field("เวลาขับ (นาที)", "drive", i === 0 ? 0 : r.drive, "number", i === 0 ? "disabled" : 'min="0"') +
+                `<div>${caption("เวลาถึง (ETA)", "eta")}<div class="border rounded p-2 mt-1">${formatMinsToTimeStr(r.eta)}</div></div>` +
+                `<div>${caption("แบตเตอรี่เมื่อถึง", "arrival")}<div class="border rounded p-2 mt-1">${i === 0 ? '-' : r.arrival.toFixed(1) + '%'}</div></div>` +
+                field("ชาร์จถึง %", "charge", r.charge, "number", 'min="0" max="100"') +
+                field("เวลาชาร์จ (นาที)", "chargeTime", r.type === 'charge' ? r.chargeTime : 0, "number", r.type === 'charge' ? 'min="0"' : "disabled") +
+                field("เวลาออก (ETD)", "etd", formatMinsToEtdTimeStr(r.etd), "time", i === 0 ? "disabled" : "");
+            document.getElementById("editMapUrl").value = r.mapUrl || "";
+        }
+        function updateEditorField(key, value) {
+            const i = editStopIndex;
+            if (i === null) return;
+            if (key === "name") {
+                data[i].name = value.trim() || data[i].name;
+                render();
+            } else if (key === "type") updateType(i, value);
+            else if (key === "etd") updateEtd(i, value);
+            else update(i, key, value);
+            refreshStopEditor();
+        }
+        function openEditorMap() {
+            const i = editStopIndex;
+            closeStopEditor();
+            openStopMap(i);
+        }
+        function openEditorMapLink(type) {
+            if (editStopIndex === null) return;
+            openMapLink(editStopIndex, type, {preventDefault() {}});
+        }
+        function openEditorSavedLink() {
+            const url = editStopIndex === null ? null : safeMapUrl(data[editStopIndex].mapUrl);
+            if (url) window.open(url, "_blank", "noopener,noreferrer");
+        }
+        function moveEditorStop(dir) {
+            const i = editStopIndex;
+            closeStopEditor();
+            moveRow(i, dir);
+        }
+        function resetEditorTime() {
+            const i = editStopIndex;
+            if (i === null) return;
+            resetManualTime(i);
+        }
+        function deleteEditorStop() {
+            const i = editStopIndex;
+            closeStopEditor();
+            delRow(i);
         }
 
         function addRow(){
