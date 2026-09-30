@@ -17,9 +17,16 @@
         #stopMap { height: min(55vh, 480px); min-height: 300px; }
         .leaflet-container { z-index: 0; }
         #mobileStops { display: none; }
+        #actualMobileStops { display: none; }
+        .stop-editor-panel { max-height: calc(100dvh - 24px); display: flex; flex-direction: column; overflow: hidden; }
+        .stop-editor-content { min-height: 0; overflow-y: auto; padding-bottom: 16px; }
+        .stop-editor-save { flex: none; box-shadow: 0 -8px 16px rgba(255,255,255,.9); }
+        .stop-name-type-row { grid-template-columns: minmax(0, 7fr) minmax(0, 13fr); }
+        #mobileStops button, #actualMobileStops button, .stop-editor-panel button, #planModeButton, #departureModeButton { touch-action: manipulation; }
         @media (max-width: 639px) and (orientation: portrait) {
             .table-wrap { display: none; }
             #mobileStops { display: grid; }
+            #actualMobileStops { display: grid; }
             #mobileStops > .mobile-stop-card { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; padding: 14px; align-items: center; }
             .mobile-stop-name { grid-column: 1 / -1; font-size: 17px; }
             .mobile-stop-detail { min-width: 0; justify-self: center; text-align: center; }
@@ -100,9 +107,14 @@
             </div>
         </div>
 
+        <div class="flex gap-2 mb-4" role="group" aria-label="โหมดการเดินทาง">
+            <button id="planModeButton" type="button" onclick="setMode('plan')" class="bg-yellow-400 font-semibold rounded-lg px-4 py-2 text-sm">โหมดวางแผน</button>
+            <button id="departureModeButton" type="button" onclick="setMode('departure')" class="bg-white border rounded-lg px-4 py-2 text-sm">โหมดออกเดินทาง</button>
+        </div>
+        <div id="planView">
         <!-- Summary Cards Grid -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
-            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">อัตราสิ้นเปลือง</small><div class="flex items-center gap-1 mt-1"><input id="effRate" type="number" value="5" class="w-12 border-b font-bold text-center text-gray-800" onchange="calc()"> <span class="text-xs text-gray-500">กม./1%</span></div></div>
+            <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">อัตราสิ้นเปลือง</small><div class="flex items-center gap-1 mt-1"><input id="effRate" type="number" inputmode="decimal" step="any" value="5" class="w-12 border-b font-bold text-center text-gray-800" onchange="calc()"> <span class="text-xs text-gray-500">กม./1%</span></div></div>
             <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">ระยะทางรวม</small><div class="value font-bold text-lg text-gray-800" id="totalKm">0 กม.</div></div>
             <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">เวลาขับรถรวม</small><div class="value font-bold text-lg text-gray-800" id="totalTime">0 นาที</div></div>
             <div class="card rounded-lg shadow-sm"><small class="text-gray-400 font-medium">จุดแวะทั้งหมด</small><div class="value font-bold text-lg text-gray-800" id="totalStops">0</div></div>
@@ -147,18 +159,43 @@
                 <tbody></tbody>
             </table>
         </div>
+        </div>
+        <div id="departureView" class="hidden">
+            <p class="text-sm text-gray-600 mb-3">บันทึกค่าที่เกิดขึ้นจริงแต่ละจุด แล้วเทียบกับแผนเดิม</p>
+            <div id="departureSummary" class="text-sm bg-white border rounded-lg p-3 mb-3"></div>
+            <div id="actualMobileStops" class="grid gap-3 sm:hidden"></div>
+            <div class="table-wrap shadow-sm" id="actualTableWrap">
+                <table class="w-full text-sm">
+                    <thead><tr><th class="p-3 text-left">สถานที่</th><th class="p-3">ระยะทาง (กม.)</th><th class="p-3">เวลาถึงจริง</th><th class="p-3">แบตฯ เมื่อถึง</th><th class="p-3">ชาร์จถึง / แบตฯ ออก %</th><th class="p-3">เวลาชาร์จ (นาที)</th><th class="p-3">เวลาออกจริง</th><th class="p-3">ค่าชาร์จจริง (บาท)</th></tr></thead>
+                    <tbody id="actualTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="actualStopModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 p-3 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="actualStopHeading">
+        <section class="stop-editor-panel bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+            <div class="stop-editor-content">
+            <div class="flex items-center justify-between mb-3"><h2 id="actualStopHeading" class="font-bold"></h2><button type="button" onclick="closeActualEditor()" class="px-3 py-2 rounded bg-gray-100" aria-label="ปิดบันทึกค่าจริง">✕</button></div>
+            <p class="text-xs text-gray-500 mb-3">กรอกค่าจริงที่ทราบ ช่องที่ยังไม่ได้บันทึกเว้นว่างได้</p>
+            <div id="actualStopFields" class="grid grid-cols-2 gap-3 text-sm pb-4"></div>
+            </div>
+            <button type="button" onclick="closeActualEditor()" class="stop-editor-save mt-4 w-full bg-yellow-400 rounded p-2 font-semibold">เสร็จสิ้น</button>
+        </section>
     </div>
 
     <div id="editStopModal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 p-3 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="editStopHeading">
-        <section class="bg-white rounded-xl shadow-xl w-full max-w-md p-4 max-h-full overflow-y-auto">
+        <section class="stop-editor-panel bg-white rounded-xl shadow-xl w-full max-w-md p-4">
+            <div class="stop-editor-content">
             <div class="flex items-center justify-between mb-4"><h2 id="editStopHeading" class="font-bold">แก้ไขจุดแวะ</h2><button type="button" onclick="closeStopEditor()" class="px-3 py-2 rounded bg-gray-100" aria-label="ปิดหน้าต่างแก้ไข">✕</button></div>
             <div id="editStopFields" class="grid grid-cols-2 gap-3 text-sm"></div>
             <div class="mt-4 border-t pt-3 grid gap-2 text-sm">
                 <label><span class="flex items-center gap-1.5"><svg aria-hidden="true" class="w-4 h-4 text-yellow-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18 3 21V6l6-3m0 15 6 3m-6-3V3m6 18 6-3V3l-6 3m0 15V6"/></svg>ลิงก์แผนที่</span><input id="editMapUrl" type="url" class="block w-full border rounded p-2 mt-1" placeholder="https://maps.google..." onchange="updateMapUrl(editStopIndex, this.value); this.value = data[editStopIndex].mapUrl || ''"></label>
                 <div class="grid grid-cols-2 gap-2"><button type="button" onclick="openEditorMap()" class="border rounded p-2 text-blue-700">เลือกจุดบนแผนที่</button><button type="button" onclick="openEditorMapLink('google_search')" class="border rounded p-2">Google Maps</button><button type="button" onclick="openEditorMapLink('apple_search')" class="border rounded p-2">Apple Maps</button><button type="button" onclick="openEditorMapLink('google_dir')" class="border rounded p-2">เส้นทาง Google</button><button type="button" onclick="openEditorMapLink('apple_dir')" class="border rounded p-2">เส้นทาง Apple</button><button type="button" onclick="openEditorSavedLink()" class="border rounded p-2 col-span-2">เปิดลิงก์ที่บันทึก</button></div>
             </div>
-            <div class="mt-4 border-t pt-3 flex flex-wrap gap-2"><button type="button" onclick="moveEditorStop(-1)" class="border rounded px-3 py-2">เลื่อนขึ้น</button><button type="button" onclick="moveEditorStop(1)" class="border rounded px-3 py-2">เลื่อนลง</button><button type="button" onclick="resetEditorTime()" class="border rounded px-3 py-2">คำนวณเวลาออโต้</button><button type="button" onclick="deleteEditorStop()" class="border border-red-300 text-red-700 rounded px-3 py-2">ลบจุดแวะ</button></div>
-            <button type="button" onclick="closeStopEditor()" class="mt-4 w-full bg-yellow-400 rounded p-2 font-semibold">เสร็จสิ้น</button>
+            <div class="mt-4 border-t pt-3 pb-4 flex flex-wrap gap-2"><button type="button" onclick="moveEditorStop(-1)" class="border rounded px-3 py-2">เลื่อนขึ้น</button><button type="button" onclick="moveEditorStop(1)" class="border rounded px-3 py-2">เลื่อนลง</button><button type="button" onclick="resetEditorTime()" class="border rounded px-3 py-2">คำนวณเวลาออโต้</button><button type="button" onclick="deleteEditorStop()" class="border border-red-300 text-red-700 rounded px-3 py-2">ลบจุดแวะ</button></div>
+            </div>
+            <button type="button" onclick="closeStopEditor()" class="stop-editor-save mt-4 w-full bg-yellow-400 rounded p-2 font-semibold">เสร็จสิ้น</button>
         </section>
     </div>
 
@@ -234,6 +271,17 @@
         let syncTimer = null;
         let isReceivingFromCloud = false;
         let historyTrips = [];
+        let actualStops = {};
+        let currentMode = 'plan';
+        let actualEditIndex = null;
+        function newStopId() {
+            return globalThis.crypto?.randomUUID?.() || `stop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        }
+        function ensureStopIds() {
+            let added = false;
+            data.forEach(row => { if (!row.stopId) { row.stopId = newStopId(); added = true; } });
+            return added;
+        }
 
         function escapeHtml(value) {
             return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -266,7 +314,180 @@
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
 
+        const actualFields = [
+            {key: 'distance', label: 'ระยะทางจริง (กม.)', type: 'number', unit: 'กม.'},
+            {key: 'arrivalTime', label: 'เวลาถึงจริง', type: 'time', unit: 'นาที'},
+            {key: 'arrivalBattery', label: 'แบตฯ เมื่อถึงจริง', type: 'number', unit: '%'},
+            {key: 'chargedTo', label: 'ชาร์จถึงจริง', type: 'number', unit: '%'},
+            {key: 'chargeTime', label: 'เวลาชาร์จจริง (นาที)', type: 'number', unit: 'นาที'},
+            {key: 'departureTime', label: 'เวลาออกจริง', type: 'time', unit: 'นาที'},
+            {key: 'chargingCost', label: 'ค่าใช้จ่ายชาร์จจริง (บาท)', type: 'number', unit: 'บาท'}
+        ];
+        function actualFieldsFor(row) { return actualFields.filter(field => field.key !== 'chargingCost' || row.type === 'charge'); }
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('planView').classList.toggle('hidden', mode !== 'plan');
+            document.getElementById('departureView').classList.toggle('hidden', mode !== 'departure');
+            document.getElementById('planModeButton').className = mode === 'plan' ? 'bg-yellow-400 font-semibold rounded-lg px-4 py-2 text-sm' : 'bg-white border rounded-lg px-4 py-2 text-sm';
+            document.getElementById('departureModeButton').className = mode === 'departure' ? 'bg-yellow-400 font-semibold rounded-lg px-4 py-2 text-sm' : 'bg-white border rounded-lg px-4 py-2 text-sm';
+            if (mode === 'departure') renderActuals();
+        }
+        function actualFor(row) { return actualStops[row.stopId] || {}; }
+        function plannedActualValue(row, key) {
+            if (key === 'chargingCost') return row.plannedChargingCost ?? row.chargingCost ?? null;
+            if (key === 'arrivalTime') return formatMinsToEtdTimeStr(row.eta || 0);
+            if (key === 'departureTime') return formatMinsToEtdTimeStr(row.etd || 0);
+            if (key === 'arrivalBattery') return Number(row.arrival || 0).toFixed(1);
+            if (key === 'chargedTo') return row.charge || 0;
+            if (key === 'chargeTime') return row.type === 'charge' ? row.chargeTime || 0 : 0;
+            return row.distance || 0;
+        }
+        function actualComparison(row, field, value) {
+            const planned = plannedActualValue(row, field.key);
+            if (planned === null) return '';
+            const plannedText = `แผน ${planned}${field.type === 'number' ? ' ' + field.unit : ''}`;
+            if (value === undefined || value === '') return plannedText;
+            let delta;
+            if (field.type === 'time') {
+                const [ah, am] = value.split(':').map(Number);
+                const [ph, pm] = String(planned).split(':').map(Number);
+                delta = ah * 60 + am - ph * 60 - pm;
+                if (delta > 720) delta -= 1440;
+                if (delta < -720) delta += 1440;
+            } else {
+                delta = Number(value) - Number(planned);
+            }
+            const rounded = Math.round(delta * 10) / 10;
+            return `${plannedText} · ${rounded === 0 ? 'ตรงแผน' : `ต่าง ${rounded > 0 ? '+' : ''}${rounded} ${field.type === 'time' ? 'นาที' : field.unit}`}`;
+        }
+        function actualLegEfficiency(i) {
+            if (i <= 0 || !data[i]) return {value: null, reason: ''};
+            const previous = data[i - 1];
+            const previousActual = actualFor(previous);
+            const currentActual = actualFor(data[i]);
+            const departureBattery = previous.type === 'start' || previous.type === 'charge'
+                ? previousActual.chargedTo : previousActual.arrivalBattery;
+            if (departureBattery === undefined || currentActual.arrivalBattery === undefined || currentActual.distance === undefined) {
+                return {value: null, reason: 'รอระยะทางและแบตฯ จริง'};
+            }
+            const batteryDrop = Number(departureBattery) - Number(currentActual.arrivalBattery);
+            if (batteryDrop <= 0) return {value: null, reason: 'แบตฯ ไม่ลดลง'};
+            return {value: Number(currentActual.distance) / batteryDrop, distance: Number(currentActual.distance), batteryDrop, reason: ''};
+        }
+        function actualElapsedTime() {
+            if (!data.length) return null;
+            const start = actualFor(data[0]).departureTime;
+            if (!start) return null;
+            let latest = null;
+            for (let i = 1; i < data.length; i++) {
+                const actual = actualFor(data[i]);
+                if (actual.departureTime || actual.arrivalTime) {
+                    latest = {time: actual.departureTime || actual.arrivalTime, name: data[i].name, departed: !!actual.departureTime, index: i};
+                }
+            }
+            if (!latest) return null;
+            const [startHour, startMinute] = start.split(':').map(Number);
+            const [endHour, endMinute] = latest.time.split(':').map(Number);
+            let minutes = endHour * 60 + endMinute - startHour * 60 - startMinute;
+            if (minutes < 0) minutes += 1440;
+            return {...latest, minutes};
+        }
+        function renderActuals() {
+            const mobile = document.getElementById('actualMobileStops');
+            const tbody = document.getElementById('actualTableBody');
+            mobile.replaceChildren();
+            tbody.replaceChildren();
+            const logged = data.filter(row => Object.keys(actualFor(row)).length > 0).length;
+            const validLegs = data.slice(1).map((_, index) => actualLegEfficiency(index + 1)).filter(leg => leg.value !== null);
+            const totalDistance = validLegs.reduce((sum, leg) => sum + leg.distance, 0);
+            const totalBatteryDrop = validLegs.reduce((sum, leg) => sum + leg.batteryDrop, 0);
+            const average = totalBatteryDrop > 0 ? `${(totalDistance / totalBatteryDrop).toFixed(2)} กม./1%` : '—';
+            const elapsed = actualElapsedTime();
+            const elapsedText = elapsed ? `${Math.floor(elapsed.minutes / 60)} ชม. ${elapsed.minutes % 60} นาที` : '—';
+            const elapsedNote = elapsed ? `นับถึง${elapsed.departed ? 'เวลาออกจาก' : 'เวลาถึง'} ${escapeHtml(elapsed.name)}${elapsed.index === data.length - 1 ? '' : ' (ระหว่างทาง)'}` : 'รอเวลาออกจริงจากจุดเริ่มและเวลาจุดถัดไป';
+            const chargeRows = data.filter(row => row.type === 'charge');
+            const costRows = chargeRows.filter(row => actualFor(row).chargingCost !== undefined);
+            const totalCost = costRows.reduce((sum, row) => sum + Number(actualFor(row).chargingCost), 0);
+            const timedChargeRows = chargeRows.filter(row => actualFor(row).chargeTime !== undefined);
+            const totalChargeMinutes = timedChargeRows.reduce((sum, row) => sum + Number(actualFor(row).chargeTime), 0);
+            document.getElementById('departureSummary').innerHTML = `<div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                <div class="bg-emerald-50 rounded-lg p-3"><div class="text-xs text-gray-600">ประสิทธิภาพจริงเฉลี่ย</div><strong class="block text-lg text-emerald-700 mt-1">${average}</strong><small class="text-gray-500">${validLegs.length} / ${Math.max(0, data.length - 1)} ช่วงที่มีข้อมูลครบ</small></div>
+                <div class="bg-yellow-50 rounded-lg p-3"><div class="text-xs text-gray-600">เวลาที่ผ่านไปจริง</div><strong class="block text-lg text-gray-800 mt-1">${elapsedText}</strong><small class="text-gray-500">${elapsedNote}</small></div>
+                <div class="bg-amber-50 rounded-lg p-3"><div class="text-xs text-gray-600">เวลาชาร์จจริงรวม</div><strong class="block text-lg text-amber-700 mt-1">${timedChargeRows.length ? Math.floor(totalChargeMinutes / 60) + ' ชม. ' + totalChargeMinutes % 60 + ' นาที' : '—'}</strong><small class="text-gray-500">${timedChargeRows.length} / ${chargeRows.length} จุดชาร์จที่บันทึก</small></div>
+                <div class="bg-blue-50 rounded-lg p-3"><div class="text-xs text-gray-600">ค่าชาร์จจริงรวม</div><strong class="block text-lg text-blue-700 mt-1">${costRows.length ? totalCost.toLocaleString('th-TH', {maximumFractionDigits: 2}) + ' บาท' : '—'}</strong><small class="text-gray-500">${costRows.length} / ${chargeRows.length} จุดชาร์จที่บันทึก</small></div>
+                </div><p class="text-xs text-gray-500 mt-2">บันทึกแล้ว ${logged} / ${data.length} จุด · ค่าจริงแยกจากแผน</p>`;
+            data.forEach((row, i) => {
+                const actual = actualFor(row);
+                if (i > 0) {
+                    const efficiency = actualLegEfficiency(i);
+                    const connector = document.createElement('div');
+                    connector.className = 'text-center text-xs text-gray-600 py-1';
+                    connector.textContent = efficiency.value === null
+                        ? `↓ ประสิทธิภาพจริง — กม./1% · ${efficiency.reason}`
+                        : `↓ ประสิทธิภาพจริง ${efficiency.value.toFixed(2)} กม./1%`;
+                    mobile.appendChild(connector);
+                }
+                const card = document.createElement('div');
+                card.className = 'actual-stop-card bg-white border border-l-4 border-l-yellow-400 rounded-lg shadow-sm p-3';
+                card.innerHTML = `<button type="button" onclick="openActualEditor(${i})" class="font-semibold text-left w-full truncate">${escapeHtml(row.name)}</button>
+                    <div class="grid grid-cols-4 gap-2 items-center mt-2 text-center text-xs">
+                        <button type="button" onclick="openStopMap(${i}, event)" class="text-blue-700 border border-blue-200 rounded px-2 py-1 bg-blue-50">แผนที่</button>
+                        <div><div class="text-gray-500">ถึงจริง</div><strong>${escapeHtml(actual.arrivalTime ?? '—')}</strong></div>
+                        <div><div class="text-gray-500">${i === 0 ? 'แบตฯ ออก' : 'แบตฯ จริง'}</div><strong>${i === 0 ? (actual.chargedTo === undefined ? '—' : escapeHtml(actual.chargedTo) + '%') : (actual.arrivalBattery === undefined ? '—' : escapeHtml(actual.arrivalBattery) + '%')}</strong></div>
+                        <div><div class="text-gray-500">ออกจริง</div><strong>${escapeHtml(actual.departureTime ?? '—')}</strong></div>
+                    </div>
+                    <div class="text-[11px] text-gray-500 mt-2">แผน: ถึง ${formatMinsToEtdTimeStr(row.eta || 0)} · แบตฯ ${Number(row.arrival || 0).toFixed(1)}% · ออก ${formatMinsToEtdTimeStr(row.etd || 0)}</div>
+                    ${row.type === 'charge' ? `<div class="text-[11px] text-blue-700 mt-1">ค่าชาร์จจริง: ${actual.chargingCost === undefined ? '—' : escapeHtml(actual.chargingCost) + ' บาท'}</div>` : ''}`;
+                mobile.appendChild(card);
+                const tr = document.createElement('tr');
+                tr.className = 'border-b text-center';
+                tr.innerHTML = `<td class="p-2 text-left font-semibold min-w-40">${escapeHtml(row.name)}</td>` +
+                    actualFields.map(field => field.key === 'chargingCost' && row.type !== 'charge' ? '<td class="p-2 text-gray-400">—</td>' : `<td class="p-2 min-w-28"><input aria-label="${escapeHtml(i === 0 && field.key === 'chargedTo' ? 'แบตเตอรี่ตอนออกเดินทาง (%)' : field.label)}: ${escapeHtml(row.name)}" type="${field.type}" ${field.type === 'number' ? `inputmode="${['distance','chargingCost'].includes(field.key) ? 'decimal' : 'numeric'}" min="0" ${field.unit === '%' ? 'max="100"' : ''} step="${['distance','chargingCost'].includes(field.key) ? 'any' : '1'}"` : ''} value="${escapeHtml(actual[field.key] ?? '')}" class="w-24 border rounded p-1 text-center" onchange="updateActual(${i}, '${field.key}', this.value)"><div class="text-[10px] text-gray-500 mt-1">${escapeHtml(actualComparison(row, field, actual[field.key]))}</div></td>`).join('');
+                tbody.appendChild(tr);
+            });
+            if (actualEditIndex !== null) renderActualEditor();
+        }
+        function openActualEditor(i) {
+            actualEditIndex = i;
+            document.getElementById('actualStopModal').classList.remove('hidden');
+            renderActualEditor();
+        }
+        function closeActualEditor() {
+            document.getElementById('actualStopModal').classList.add('hidden');
+            actualEditIndex = null;
+        }
+        function renderActualEditor() {
+            const i = actualEditIndex;
+            if (i === null || !data[i]) return;
+            const row = data[i];
+            const actual = actualFor(row);
+            document.getElementById('actualStopHeading').textContent = `ค่าจริง: ${row.name}`;
+            document.getElementById('actualStopFields').innerHTML = actualFieldsFor(row).map(field => `<label class="min-w-0">${i === 0 && field.key === 'chargedTo' ? 'แบตเตอรี่ตอนออกเดินทาง (%)' : field.label}<input type="${field.type}" ${field.type === 'number' ? `inputmode="${['distance','chargingCost'].includes(field.key) ? 'decimal' : 'numeric'}" min="0" ${field.unit === '%' ? 'max="100"' : ''} step="${['distance','chargingCost'].includes(field.key) ? 'any' : '1'}"` : ''} value="${escapeHtml(actual[field.key] ?? '')}" class="block w-full border rounded p-2 mt-1" onchange="updateActual(${i}, '${field.key}', this.value)"><small class="block text-gray-500 mt-1">${escapeHtml(actualComparison(row, field, actual[field.key]))}</small></label>`).join('');
+        }
+        function updateActual(i, key, value) {
+            if (!tripLoaded || !data[i] || !actualFieldsFor(data[i]).some(field => field.key === key)) return;
+            const field = actualFields.find(field => field.key === key);
+            if (value !== '' && field.type === 'number' && (!Number.isFinite(Number(value)) || Number(value) < 0 || (field.unit === '%' && Number(value) > 100))) {
+                alert('กรุณากรอกค่าที่ถูกต้อง');
+                renderActuals();
+                return;
+            }
+            if (value !== '' && field.type === 'time' && !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) {
+                alert('กรุณากรอกเวลาให้ถูกต้อง');
+                renderActuals();
+                return;
+            }
+            const stopId = data[i].stopId;
+            if (!actualStops[stopId]) actualStops[stopId] = {};
+            if (value === '') delete actualStops[stopId][key];
+            else actualStops[stopId][key] = field.type === 'number' ? Number(value) : value;
+            if (!Object.keys(actualStops[stopId]).length) delete actualStops[stopId];
+            renderActuals();
+            debouncedSync();
+        }
+
         function render(){
+            ensureStopIds();
             const tbody = document.querySelector("#grid tbody");
             tbody.innerHTML = "";
             const mobileStops = document.getElementById("mobileStops");
@@ -346,18 +567,18 @@
                         </select>
                     </td>
                     <td class="p-2.5">
-                        <input type="number" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isStart ? 0 : row.distance}" ${isStart ? 'disabled' : ''} onchange="update(${i},'distance',this.value)">
+                        <input type="number" inputmode="decimal" step="any" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isStart ? 0 : row.distance}" ${isStart ? 'disabled' : ''} onchange="update(${i},'distance',this.value)">
                     </td>
                     <td class="p-2.5">
-                        <input type="number" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isStart ? 0 : row.drive}" ${isStart ? 'disabled' : ''} onchange="update(${i},'drive',this.value)">
+                        <input type="number" inputmode="numeric" step="1" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isStart ? 0 : row.drive}" ${isStart ? 'disabled' : ''} onchange="update(${i},'drive',this.value)">
                     </td>
                     <td class="p-2.5 font-semibold text-gray-600">-</td>
                     <td class="p-2.5 font-mono font-bold text-emerald-600">-</td>
                     <td class="p-2.5">
-                        <input type="number" min="0" max="100" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${row.charge}" onchange="update(${i},'charge',this.value)">
+                        <input type="number" inputmode="numeric" step="1" min="0" max="100" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${row.charge}" onchange="update(${i},'charge',this.value)">
                     </td>
                     <td class="p-2.5">
-                        <input type="number" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isCharge ? row.chargeTime : 0}" ${isCharge ? '' : 'disabled class="opacity-30"'} onchange="update(${i},'chargeTime',this.value)">
+                        <input type="number" inputmode="numeric" step="1" min="0" class="w-16 bg-transparent text-center border-b border-transparent focus:border-yellow-400 font-semibold" value="${isCharge ? row.chargeTime : 0}" ${isCharge ? '' : 'disabled class="opacity-30"'} onchange="update(${i},'chargeTime',this.value)">
                     </td>
                     <td class="p-2.5">
                         <input type="time" class="bg-transparent text-center font-semibold text-gray-700 focus:outline-none focus:border-yellow-400" value="${formatMinsToEtdTimeStr(row.etd || 0)}" onchange="updateEtd(${i}, this.value)" ${isStart ? 'disabled' : ''}>
@@ -625,6 +846,7 @@
             });
 
             if (editStopIndex !== null) refreshStopEditor();
+            renderActuals();
 
             if (tripLoaded && currentTripId && !isReceivingFromCloud) debouncedSync();
         }
@@ -658,10 +880,9 @@
                 etd: icon("M12 6v6l4 2 M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20")
             };
             const caption = (label, key) => `<span class="flex items-center gap-1.5">${icons[key]}${label}</span>`;
-            const field = (label, key, value, type = "number", extra = "") => `<label>${caption(label, key)}<input type="${type}" class="block w-full border rounded p-2 mt-1" value="${escapeHtml(value)}" ${extra} onchange="updateEditorField('${key}', this.value)"></label>`;
+            const field = (label, key, value, type = "number", extra = "") => `<label>${caption(label, key)}<input type="${type}" ${type === 'number' ? `inputmode="${key === 'distance' ? 'decimal' : 'numeric'}" step="${key === 'distance' ? 'any' : '1'}"` : ''} class="block w-full border rounded p-2 mt-1" value="${escapeHtml(value)}" ${extra} onchange="updateEditorField('${key}', this.value)"></label>`;
             document.getElementById("editStopFields").innerHTML =
-                field("ชื่อสถานที่", "name", r.name || "", "text") +
-                `<label>${caption("ประเภท", "type")}<select class="block w-full border rounded p-2 mt-1" onchange="updateEditorField('type', this.value)"><option value="start" ${r.type === 'start' ? 'selected' : ''}>จุดเริ่มต้น</option><option value="charge" ${r.type === 'charge' ? 'selected' : ''}>จุดชาร์จ</option><option value="stop" ${r.type === 'stop' ? 'selected' : ''}>จุดแวะพัก</option></select></label>` +
+                `<div class="col-span-2 grid stop-name-type-row gap-2 items-start">${field("ชื่อสถานที่", "name", r.name || "", "text")}<div>${caption("ประเภท", "type")}<div class="grid grid-cols-3 gap-1 mt-1" role="group" aria-label="ประเภทจุดแวะ">${[['start','จุดเริ่ม'],['charge','จุดชาร์จ'],['stop','จุดพัก']].map(([value, label]) => `<button type="button" aria-pressed="${r.type === value}" onclick="updateEditorField('type', '${value}')" class="min-w-0 rounded border px-1 py-2 text-[10px] font-semibold ${r.type === value ? 'bg-yellow-400 border-yellow-500' : 'bg-white border-gray-300'}">${label}</button>`).join('')}</div></div></div>` +
                 field("ระยะทาง (กม.)", "distance", i === 0 ? 0 : r.distance, "number", i === 0 ? "disabled" : 'min="0"') +
                 field("เวลาขับ (นาที)", "drive", i === 0 ? 0 : r.drive, "number", i === 0 ? "disabled" : 'min="0"') +
                 `<div>${caption("เวลาถึง (ETA)", "eta")}<div class="border rounded p-2 mt-1">${formatMinsToTimeStr(r.eta)}</div></div>` +
@@ -1035,6 +1256,7 @@
             if (!id || !isCloudConnected) return;
             if (syncTimer) { clearTimeout(syncTimer); syncToCloudQuietly(); }
             if (activeCloudRef) activeCloudRef();
+            closeActualEditor();
             currentTripId = id;
             closeTripHistory();
             tripLoaded = false;
@@ -1047,15 +1269,23 @@
                 if (!Array.isArray(trip.data)) { showCloudError('ข้อมูลทริปไม่ถูกต้อง'); return; }
                 const incoming = JSON.stringify(trip.data);
                 const changed = !tripLoaded || JSON.stringify(data) !== incoming ||
+                    JSON.stringify(actualStops) !== JSON.stringify(trip.actualStops || {}) ||
                     Number(document.getElementById('effRate').value) !== Number(trip.efficiency || 5) ||
                     document.getElementById('departureTime').value !== (trip.departureTime || '08:00');
                 isReceivingFromCloud = true;
                 document.getElementById('tripTitle').value = trip.title || id;
                 document.getElementById('effRate').value = trip.efficiency || 5;
                 document.getElementById('departureTime').value = trip.departureTime || '08:00';
-                if (changed) { data = trip.data; render(); }
+                let addedIds = false;
+                if (changed) {
+                    data = trip.data;
+                    actualStops = trip.actualStops || {};
+                    addedIds = ensureStopIds();
+                    render();
+                }
                 isReceivingFromCloud = false;
                 tripLoaded = true;
+                if (addedIds) debouncedSync();
                 setTripControls(true);
                 document.getElementById('historyStatus').textContent = `กำลังดู: ${trip.title || id}`;
                 renderHistory();
@@ -1073,9 +1303,10 @@
             const title = `ทริป ${new Date().toLocaleString('th-TH')}`;
             const trip = {
                 title, efficiency: 5, departureTime: '08:00', updatedAt: new Date().toISOString(),
+                actualStops: {},
                 data: [
-                    {name: 'จุดเริ่มต้น', type: 'start', distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
-                    {name: 'จุดแวะพักใหม่', type: 'stop', distance: 50, drive: 45, arrival: 0, charge: 0, chargeTime: 0}
+                    {stopId: newStopId(), name: 'จุดเริ่มต้น', type: 'start', distance: 0, drive: 0, arrival: 100, charge: 100, chargeTime: 0},
+                    {stopId: newStopId(), name: 'จุดแวะพักใหม่', type: 'stop', distance: 50, drive: 45, arrival: 0, charge: 0, chargeTime: 0}
                 ]
             };
             ref.set(trip).then(() => openTrip(ref.id)).catch(err => {
@@ -1107,6 +1338,7 @@
                 efficiency: Number(document.getElementById('effRate').value) || 5,
                 departureTime: document.getElementById('departureTime').value || '08:00',
                 data,
+                actualStops,
                 updatedAt: new Date().toISOString()
             };
             db.collection('ev_trips').doc(currentTripId).set(trip).catch(err => {
