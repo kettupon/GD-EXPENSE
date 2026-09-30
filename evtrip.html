@@ -23,6 +23,7 @@
         .stop-editor-save { flex: none; box-shadow: 0 -8px 16px rgba(255,255,255,.9); }
         .stop-name-type-row { grid-template-columns: minmax(0, 7fr) minmax(0, 13fr); }
         #mobileStops button, #actualMobileStops button, .stop-editor-panel button, #planModeButton, #departureModeButton { touch-action: manipulation; }
+        #forecastToggle { box-shadow: 0 4px 16px rgba(0,0,0,.16); touch-action: manipulation; }
         @media (max-width: 639px) and (orientation: portrait) {
             .table-wrap { display: none; }
             #mobileStops { display: grid; }
@@ -160,8 +161,11 @@
             </table>
         </div>
         </div>
-        <div id="departureView" class="hidden">
+        <div id="departureView" class="hidden pb-4">
             <p class="text-sm text-gray-600 mb-3">บันทึกค่าที่เกิดขึ้นจริงแต่ละจุด แล้วเทียบกับแผนเดิม</p>
+            <div class="sticky top-0 z-40 flex justify-end bg-[#fafafa] py-2 mb-2">
+                <button id="forecastToggle" type="button" onclick="toggleForecast()" class="bg-indigo-600 text-white rounded-full px-5 py-3 font-semibold disabled:opacity-50" disabled>คาดการณ์</button>
+            </div>
             <div id="departureSummary" class="text-sm bg-white border rounded-lg p-3 mb-3"></div>
             <div id="actualMobileStops" class="grid gap-3 sm:hidden"></div>
             <div class="table-wrap shadow-sm" id="actualTableWrap">
@@ -274,6 +278,7 @@
         let actualStops = {};
         let currentMode = 'plan';
         let actualEditIndex = null;
+        let forecastEnabled = false;
         function newStopId() {
             return globalThis.crypto?.randomUUID?.() || `stop-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         }
@@ -392,6 +397,87 @@
             if (minutes < 0) minutes += 1440;
             return {...latest, minutes};
         }
+        function actualClockNearPlan(clock, plannedMinutes) {
+            const [hours, minutes] = clock.split(':').map(Number);
+            const clockMinutes = hours * 60 + minutes;
+            return clockMinutes + Math.max(0, Math.round((plannedMinutes - clockMinutes) / 1440)) * 1440;
+        }
+        function forecastPrerequisite() {
+            if (data.length < 3) return {ready: false, reason: 'ต้องมีจุดถัดไปหลังสองจุดแรก'};
+            const first = actualFor(data[0]);
+            const second = actualFor(data[1]);
+            if (!first.departureTime || (!second.arrivalTime && !second.departureTime) || actualLegEfficiency(1).value === null) {
+                return {ready: false, reason: 'บันทึกเวลาและแบตฯ จริงของสองจุดแรก รวมทั้งระยะทางช่วงแรกก่อน'};
+            }
+            return {ready: true, reason: ''};
+        }
+        function toggleForecast() {
+            if (!forecastPrerequisite().ready) return;
+            forecastEnabled = !forecastEnabled;
+            renderActuals();
+        }
+        function computeForecasts(validLegs) {
+            const completedDistance = validLegs.reduce((sum, leg) => sum + leg.distance, 0);
+            const completedDrop = validLegs.reduce((sum, leg) => sum + leg.batteryDrop, 0);
+            const observedEfficiency = completedDrop > 0 ? completedDistance / completedDrop : null;
+            const efficiency = observedEfficiency;
+            const efficiencySource = 'อัตราจริงจากช่วงที่บันทึก';
+            let anchorIndex = 0;
+            const progressFields = ['arrivalTime', 'departureTime', 'arrivalBattery', 'chargedTo', 'chargeTime', 'distance', 'chargingCost'];
+            data.forEach((row, i) => {
+                if (progressFields.some(key => actualFor(row)[key] !== undefined)) anchorIndex = i;
+            });
+            const forecasts = new Map();
+            if (!data.length) return {forecasts, anchorIndex, efficiency, efficiencySource, note: 'ยังไม่มีจุดแวะ'};
+            const anchor = data[anchorIndex];
+            const actual = actualFor(anchor);
+            let time = null;
+            let battery = null;
+            const notes = [];
+            if (anchorIndex === 0) {
+                time = actual.departureTime ? actualClockNearPlan(actual.departureTime, anchor.etd || 0) : anchor.etd;
+                battery = actual.chargedTo ?? actual.arrivalBattery ?? null;
+            } else {
+                if (actual.departureTime) time = actualClockNearPlan(actual.departureTime, anchor.etd || 0);
+                else if (actual.arrivalTime) {
+                    time = actualClockNearPlan(actual.arrivalTime, anchor.eta || 0);
+                    if (anchor.type === 'charge') {
+                        time += actual.chargeTime !== undefined ? Number(actual.chargeTime) : Number(anchor.chargeTime || 0);
+                        if (actual.chargeTime === undefined) notes.push('ใช้เวลาชาร์จตามแผนที่จุดล่าสุด');
+                    }
+                }
+                if (anchor.type === 'charge') {
+                    if (actual.chargedTo !== undefined) battery = Number(actual.chargedTo);
+                    else if (actual.arrivalBattery !== undefined && Number(anchor.charge) > 0) {
+                        battery = Math.max(Number(actual.arrivalBattery ?? 0), Number(anchor.charge));
+                        notes.push('ใช้เปอร์เซ็นต์ชาร์จตามแผนที่จุดล่าสุด');
+                    } else notes.push('รอแบตเตอรี่หลังชาร์จจริงที่จุดล่าสุด');
+                } else if (actual.arrivalBattery !== undefined) battery = Number(actual.arrivalBattery);
+            }
+            for (let i = anchorIndex + 1; i < data.length; i++) {
+                const row = data[i];
+                const drive = row.drive === undefined || row.drive === null || row.drive === '' ? null : Number(row.drive);
+                const distance = row.distance === undefined || row.distance === null || row.distance === '' ? null : Number(row.distance);
+                const eta = time !== null && Number.isFinite(drive) ? time + drive : null;
+                const arrivalBattery = battery !== null && efficiency !== null && Number.isFinite(distance)
+                    ? Math.max(0, battery - distance / efficiency) : null;
+                const chargeMinutes = row.type === 'charge'
+                    ? (row.chargeTime === undefined || row.chargeTime === null || row.chargeTime === '' ? null : Number(row.chargeTime))
+                    : 0;
+                const etd = eta !== null && Number.isFinite(chargeMinutes) ? eta + chargeMinutes : null;
+                forecasts.set(i, {eta, arrivalBattery, etd});
+                time = etd;
+                battery = arrivalBattery === null ? null : row.type === 'charge'
+                    ? (Number(row.charge) > 0 ? Math.max(arrivalBattery, Number(row.charge)) : null) : arrivalBattery;
+            }
+            return {forecasts, anchorIndex, efficiency, efficiencySource, note: notes.join(' · ')};
+        }
+        function forecastMarkup(forecast, source) {
+            return `<div class="bg-indigo-50 border border-indigo-100 rounded-lg p-2 mt-2 text-xs text-indigo-900">
+                <strong>คาดการณ์สด</strong> <span class="text-indigo-600">(${source})</span>
+                <div class="grid grid-cols-3 gap-1 mt-1 text-center"><span>ถึง<br><b>${forecast.eta === null ? '—' : formatMinsToTimeStr(forecast.eta)}</b></span><span>แบตฯ เมื่อถึง<br><b>${forecast.arrivalBattery === null ? '—' : forecast.arrivalBattery.toFixed(1) + '%'}</b></span><span>ออก<br><b>${forecast.etd === null ? '—' : formatMinsToTimeStr(forecast.etd)}</b></span></div>
+            </div>`;
+        }
         function renderActuals() {
             const mobile = document.getElementById('actualMobileStops');
             const tbody = document.getElementById('actualTableBody');
@@ -402,6 +488,13 @@
             const totalDistance = validLegs.reduce((sum, leg) => sum + leg.distance, 0);
             const totalBatteryDrop = validLegs.reduce((sum, leg) => sum + leg.batteryDrop, 0);
             const average = totalBatteryDrop > 0 ? `${(totalDistance / totalBatteryDrop).toFixed(2)} กม./1%` : '—';
+            const prerequisite = forecastPrerequisite();
+            if (!prerequisite.ready) forecastEnabled = false;
+            const forecastButton = document.getElementById('forecastToggle');
+            forecastButton.disabled = !prerequisite.ready;
+            forecastButton.textContent = forecastEnabled ? 'เลิกคาดการณ์' : 'คาดการณ์';
+            forecastButton.title = prerequisite.ready ? (forecastEnabled ? 'ซ่อนค่าคาดการณ์' : 'แสดงค่าคาดการณ์') : prerequisite.reason;
+            const projection = forecastEnabled ? computeForecasts(validLegs) : null;
             const elapsed = actualElapsedTime();
             const elapsedText = elapsed ? `${Math.floor(elapsed.minutes / 60)} ชม. ${elapsed.minutes % 60} นาที` : '—';
             const elapsedNote = elapsed ? `นับถึง${elapsed.departed ? 'เวลาออกจาก' : 'เวลาถึง'} ${escapeHtml(elapsed.name)}${elapsed.index === data.length - 1 ? '' : ' (ระหว่างทาง)'}` : 'รอเวลาออกจริงจากจุดเริ่มและเวลาจุดถัดไป';
@@ -415,7 +508,8 @@
                 <div class="bg-yellow-50 rounded-lg p-3"><div class="text-xs text-gray-600">เวลาที่ผ่านไปจริง</div><strong class="block text-lg text-gray-800 mt-1">${elapsedText}</strong><small class="text-gray-500">${elapsedNote}</small></div>
                 <div class="bg-amber-50 rounded-lg p-3"><div class="text-xs text-gray-600">เวลาชาร์จจริงรวม</div><strong class="block text-lg text-amber-700 mt-1">${timedChargeRows.length ? Math.floor(totalChargeMinutes / 60) + ' ชม. ' + totalChargeMinutes % 60 + ' นาที' : '—'}</strong><small class="text-gray-500">${timedChargeRows.length} / ${chargeRows.length} จุดชาร์จที่บันทึก</small></div>
                 <div class="bg-blue-50 rounded-lg p-3"><div class="text-xs text-gray-600">ค่าชาร์จจริงรวม</div><strong class="block text-lg text-blue-700 mt-1">${costRows.length ? totalCost.toLocaleString('th-TH', {maximumFractionDigits: 2}) + ' บาท' : '—'}</strong><small class="text-gray-500">${costRows.length} / ${chargeRows.length} จุดชาร์จที่บันทึก</small></div>
-                </div><p class="text-xs text-gray-500 mt-2">บันทึกแล้ว ${logged} / ${data.length} จุด · ค่าจริงแยกจากแผน</p>`;
+                </div><p class="text-xs text-gray-500 mt-2">บันทึกแล้ว ${logged} / ${data.length} จุด · ค่าจริงแยกจากแผน</p>
+                <p class="text-xs text-indigo-700 mt-1">${!prerequisite.ready ? prerequisite.reason : forecastEnabled ? `คาดการณ์ ${projection.forecasts.size} จุดที่เหลือ · ${projection.efficiencySource} ${projection.efficiency.toFixed(2)} กม./1%${projection.note ? ' · ' + escapeHtml(projection.note) : ''}` : 'แตะ “คาดการณ์” เพื่อดูทุกจุดที่เหลือ'}</p>`;
             data.forEach((row, i) => {
                 const actual = actualFor(row);
                 if (i > 0) {
@@ -437,13 +531,19 @@
                         <div><div class="text-gray-500">ออกจริง</div><strong>${escapeHtml(actual.departureTime ?? '—')}</strong></div>
                     </div>
                     <div class="text-[11px] text-gray-500 mt-2">แผน: ถึง ${formatMinsToEtdTimeStr(row.eta || 0)} · แบตฯ ${Number(row.arrival || 0).toFixed(1)}% · ออก ${formatMinsToEtdTimeStr(row.etd || 0)}</div>
-                    ${row.type === 'charge' ? `<div class="text-[11px] text-blue-700 mt-1">ค่าชาร์จจริง: ${actual.chargingCost === undefined ? '—' : escapeHtml(actual.chargingCost) + ' บาท'}</div>` : ''}`;
+                    ${row.type === 'charge' ? `<div class="text-[11px] text-blue-700 mt-1">ค่าชาร์จจริง: ${actual.chargingCost === undefined ? '—' : escapeHtml(actual.chargingCost) + ' บาท'}</div>` : ''}
+                    ${projection?.forecasts.has(i) ? forecastMarkup(projection.forecasts.get(i), projection.efficiencySource) : ''}`;
                 mobile.appendChild(card);
                 const tr = document.createElement('tr');
                 tr.className = 'border-b text-center';
                 tr.innerHTML = `<td class="p-2 text-left font-semibold min-w-40">${escapeHtml(row.name)}</td>` +
                     actualFields.map(field => field.key === 'chargingCost' && row.type !== 'charge' ? '<td class="p-2 text-gray-400">—</td>' : `<td class="p-2 min-w-28"><input aria-label="${escapeHtml(i === 0 && field.key === 'chargedTo' ? 'แบตเตอรี่ตอนออกเดินทาง (%)' : field.label)}: ${escapeHtml(row.name)}" type="${field.type}" ${field.type === 'number' ? `inputmode="${['distance','chargingCost'].includes(field.key) ? 'decimal' : 'numeric'}" min="0" ${field.unit === '%' ? 'max="100"' : ''} step="${['distance','chargingCost'].includes(field.key) ? 'any' : '1'}"` : ''} value="${escapeHtml(actual[field.key] ?? '')}" class="w-24 border rounded p-1 text-center" onchange="updateActual(${i}, '${field.key}', this.value)"><div class="text-[10px] text-gray-500 mt-1">${escapeHtml(actualComparison(row, field, actual[field.key]))}</div></td>`).join('');
                 tbody.appendChild(tr);
+                if (projection?.forecasts.has(i)) {
+                    const forecastRow = document.createElement('tr');
+                    forecastRow.innerHTML = `<td colspan="8" class="p-2 text-left">${forecastMarkup(projection.forecasts.get(i), projection.efficiencySource)}</td>`;
+                    tbody.appendChild(forecastRow);
+                }
             });
             if (actualEditIndex !== null) renderActualEditor();
         }
@@ -1257,6 +1357,7 @@
             if (syncTimer) { clearTimeout(syncTimer); syncToCloudQuietly(); }
             if (activeCloudRef) activeCloudRef();
             closeActualEditor();
+            if (currentTripId !== id) forecastEnabled = false;
             currentTripId = id;
             closeTripHistory();
             tripLoaded = false;
